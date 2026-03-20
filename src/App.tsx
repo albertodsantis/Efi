@@ -12,6 +12,7 @@ import Directory from './views/Directory';
 import Profile from './views/Profile';
 import Settings from './views/Settings';
 import AIAssistant from './components/AIAssistant';
+import OnboardingTour from './components/OnboardingTour';
 
 const MainLayout = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -54,6 +55,7 @@ const MainLayout = () => {
             return (
               <button
                 key={tab.id}
+                id={`nav-${tab.id}`}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex flex-col items-center justify-center w-14 gap-1.5 transition-all duration-300 active:scale-90 relative ${isActive ? '' : 'text-slate-300 dark:text-slate-500'}`}
                 style={isActive ? { color: accentColor } : {}}
@@ -74,6 +76,7 @@ const MainLayout = () => {
 export default function App() {
   return (
     <AppProvider>
+      <OnboardingTour />
       <MainLayout />
     </AppProvider>
   );

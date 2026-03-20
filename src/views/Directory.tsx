@@ -19,13 +19,13 @@ export default function Directory() {
 
   const getStatusColor = (status: string) => {
     switch(status) {
-      case 'Prospecto': return 'bg-blue-100 text-blue-700';
-      case 'Activo': return 'bg-emerald-100 text-emerald-700';
-      case 'En Negociación': return 'bg-amber-100 text-amber-700';
-      case 'Inactivo': return 'bg-gray-100 text-gray-700';
-      case 'On Hold': return 'bg-gray-100 text-gray-700';
-      case 'Relación Culminada': return 'bg-rose-100 text-rose-700';
-      default: return 'bg-gray-100 text-gray-700';
+      case 'Prospecto': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400';
+      case 'Activo': return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400';
+      case 'En Negociación': return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400';
+      case 'Inactivo': return 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300';
+      case 'On Hold': return 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300';
+      case 'Relación Culminada': return 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400';
+      default: return 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300';
     }
   };
 
@@ -87,7 +87,7 @@ export default function Directory() {
   return (
     <div className="p-6 flex flex-col h-full animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex justify-between items-center mb-6 mt-4">
-        <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Directory</h1>
+        <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Directory</h1>
         <button
           className="w-12 h-12 rounded-full flex items-center justify-center text-white shadow-[0_8px_30px_rgb(0,0,0,0.12)] transition-transform active:scale-95"
           style={{ backgroundColor: accentColor }}
@@ -97,13 +97,13 @@ export default function Directory() {
       </div>
 
       <div className="relative mb-6">
-        <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400" size={20} />
+        <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={20} />
         <input
           type="text"
           placeholder="Search brands or contacts..."
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="w-full bg-white/80 backdrop-blur-xl border border-white/60 rounded-[2rem] pl-14 pr-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:border-transparent shadow-[0_8px_30px_rgb(0,0,0,0.03)] transition-all placeholder:text-slate-400 text-slate-800"
+          className="w-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-white/60 dark:border-slate-700/60 rounded-[2rem] pl-14 pr-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:border-transparent shadow-[0_8px_30px_rgb(0,0,0,0.03)] transition-all placeholder:text-slate-400 text-slate-800 dark:text-slate-100"
           style={{ '--tw-ring-color': accentColor } as any}
         />
       </div>
@@ -112,22 +112,22 @@ export default function Directory() {
         {filteredPartners.map(partner => {
           const isExpanded = expandedId === partner.id;
           return (
-            <div key={partner.id} className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.03)] border border-white/60 overflow-hidden transition-all">
+            <div key={partner.id} className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.03)] border border-white/60 dark:border-slate-700/60 overflow-hidden transition-all">
               <div
-                className="p-5 flex items-center justify-between cursor-pointer active:bg-slate-50/50"
+                className="p-5 flex items-center justify-between cursor-pointer active:bg-slate-50/50 dark:active:bg-slate-700/50"
                 onClick={() => setExpandedId(isExpanded ? null : partner.id)}
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-[1.25rem] bg-slate-50 border border-slate-100 flex items-center justify-center text-slate-400 shrink-0">
+                  <div className="w-14 h-14 rounded-[1.25rem] bg-slate-50 dark:bg-slate-700 border border-slate-100 dark:border-slate-600 flex items-center justify-center text-slate-400 dark:text-slate-500 shrink-0">
                     <Building2 size={24} />
                   </div>
                   <div>
-                    <h3 className="font-bold text-slate-800 text-lg leading-tight">{partner.name}</h3>
+                    <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg leading-tight">{partner.name}</h3>
                     <select
                       value={partner.status}
                       onChange={(e) => updatePartner(partner.id, { status: e.target.value as any })}
                       onClick={(e) => e.stopPropagation()}
-                      className={`text-[11px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-xl mt-1.5 inline-block appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 ${getStatusColor(partner.status)}`}
+                      className={`text-[11px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-xl mt-1.5 inline-block appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 dark:focus:ring-offset-slate-800 ${getStatusColor(partner.status)}`}
                       style={{ '--tw-ring-color': accentColor } as any}
                     >
                       <option value="Prospecto">Prospecto</option>
@@ -139,49 +139,49 @@ export default function Directory() {
                     </select>
                   </div>
                 </div>
-                <div className="text-slate-400 shrink-0 ml-2">
+                <div className="text-slate-400 dark:text-slate-500 shrink-0 ml-2">
                   {isExpanded ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
                 </div>
               </div>
 
               {isExpanded && (
-                <div className="px-5 pb-5 pt-2 border-t border-slate-100/50 bg-slate-50/30">
-                  <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-4 mt-2">Contacts</h4>
+                <div className="px-5 pb-5 pt-2 border-t border-slate-100/50 dark:border-slate-700/50 bg-slate-50/30 dark:bg-slate-900/30">
+                  <h4 className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 mt-2">Contacts</h4>
                   {partner.contacts.length > 0 ? (
                     <div className="space-y-3">
                       {partner.contacts.map(contact => (
-                        <div key={contact.id} className="bg-white p-5 rounded-[1.5rem] border border-slate-100 shadow-sm">
+                        <div key={contact.id} className="bg-white dark:bg-slate-800 p-5 rounded-[1.5rem] border border-slate-100 dark:border-slate-700 shadow-sm">
                           <div className="flex justify-between items-start mb-3">
                             <div>
-                              <p className="font-bold text-[15px] text-slate-800">{contact.name}</p>
-                              <p className="text-[13px] text-slate-500 font-medium mt-0.5">{contact.role}</p>
+                              <p className="font-bold text-[15px] text-slate-800 dark:text-slate-100">{contact.name}</p>
+                              <p className="text-[13px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">{contact.role}</p>
                             </div>
                             <div className="flex gap-1.5">
                               <button 
                                 onClick={() => setEditingContact({ partnerId: partner.id, contact })}
-                                className="w-9 h-9 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                                className="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
                               >
                                 <Edit2 size={16} />
                               </button>
                               <button 
                                 onClick={() => handleDeleteContact(partner.id, contact.id)}
-                                className="w-9 h-9 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 hover:text-rose-500 hover:bg-rose-50 transition-colors"
+                                className="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-rose-500 hover:bg-rose-900/30 transition-colors"
                               >
                                 <Trash2 size={16} />
                               </button>
                               <button 
                                 onClick={() => setComposingTo({ contact, partner })}
-                                className="w-9 h-9 rounded-full bg-slate-50 flex items-center justify-center text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
+                                className="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
                               >
                                 <Send size={16} />
                               </button>
                             </div>
                           </div>
-                          <div className="flex gap-4 mt-4 pt-4 border-t border-slate-50">
-                            <a href={`mailto:${contact.email}`} className="flex items-center gap-2 text-[13px] font-bold text-slate-500 hover:text-slate-800 transition-colors">
+                          <div className="flex gap-4 mt-4 pt-4 border-t border-slate-50 dark:border-slate-700">
+                            <a href={`mailto:${contact.email}`} className="flex items-center gap-2 text-[13px] font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors">
                               <Mail size={16} /> Email
                             </a>
-                            <a href={`https://instagram.com/${contact.ig.replace('@','')}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-[13px] font-bold text-slate-500 hover:text-slate-800 transition-colors">
+                            <a href={`https://instagram.com/${contact.ig.replace('@','')}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-[13px] font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors">
                               <Instagram size={16} /> {contact.ig}
                             </a>
                           </div>
@@ -189,11 +189,11 @@ export default function Directory() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-[15px] text-slate-400 font-medium italic py-3">No contacts registered.</p>
+                    <p className="text-[15px] text-slate-400 dark:text-slate-500 font-medium italic py-3">No contacts registered.</p>
                   )}
                   <button 
                     onClick={() => setAddingContactTo(partner.id)}
-                    className="w-full mt-4 py-4 border-2 border-dashed border-slate-200 rounded-[1.5rem] text-[13px] font-bold text-slate-500 hover:bg-slate-50 hover:text-slate-700 transition-colors active:scale-[0.98]"
+                    className="w-full mt-4 py-4 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-[1.5rem] text-[13px] font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300 transition-colors active:scale-[0.98]"
                   >
                     + Add Contact
                   </button>
@@ -203,7 +203,7 @@ export default function Directory() {
           );
         })}
         {filteredPartners.length === 0 && (
-          <div className="text-center py-12 text-slate-400">
+          <div className="text-center py-12 text-slate-400 dark:text-slate-500">
             <p className="font-medium text-[15px]">No results found.</p>
           </div>
         )}
@@ -212,22 +212,22 @@ export default function Directory() {
       {/* Compose Message Modal */}
       {composingTo && (
         <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center">
-          <div className="bg-white w-full sm:w-[90%] sm:rounded-[2.5rem] rounded-t-[2.5rem] p-8 animate-in slide-in-from-bottom-full duration-300 shadow-2xl">
+          <div className="bg-white dark:bg-slate-800 w-full sm:w-[90%] sm:rounded-[2.5rem] rounded-t-[2.5rem] p-8 animate-in slide-in-from-bottom-full duration-300 shadow-2xl">
             <div className="flex justify-between items-center mb-8">
               <div>
-                <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Message {composingTo.contact.name}</h2>
-                <p className="text-[13px] text-slate-500 font-medium mt-1">{composingTo.partner.name}</p>
+                <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Message {composingTo.contact.name}</h2>
+                <p className="text-[13px] text-slate-500 dark:text-slate-400 font-medium mt-1">{composingTo.partner.name}</p>
               </div>
-              <button onClick={() => setComposingTo(null)} className="text-slate-400 p-2.5 bg-slate-100 rounded-full active:scale-90 transition-transform hover:bg-slate-200"><X size={20} /></button>
+              <button onClick={() => setComposingTo(null)} className="text-slate-400 dark:text-slate-500 p-2.5 bg-slate-100 dark:bg-slate-700 rounded-full active:scale-90 transition-transform hover:bg-slate-200 dark:hover:bg-slate-600"><X size={20} /></button>
             </div>
             
             <div className="space-y-5">
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">Use Template</label>
+                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Use Template</label>
                 <select 
                   value={selectedTemplateId} 
                   onChange={e => handleTemplateSelect(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white transition-all appearance-none text-slate-800"
+                  className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all appearance-none text-slate-800 dark:text-slate-100"
                   style={{ '--tw-ring-color': accentColor } as any}
                 >
                   <option value="">-- Select --</option>
@@ -240,20 +240,20 @@ export default function Directory() {
               {selectedTemplateId && (
                 <>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">Subject</label>
+                    <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Subject</label>
                     <input 
                       value={messagePreview.subject} 
                       onChange={e => setMessagePreview({...messagePreview, subject: e.target.value})}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white transition-all text-slate-800" 
+                      className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 dark:text-slate-100" 
                       style={{ '--tw-ring-color': accentColor } as any} 
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">Message</label>
+                    <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Message</label>
                     <textarea 
                       value={messagePreview.body} 
                       onChange={e => setMessagePreview({...messagePreview, body: e.target.value})}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white transition-all min-h-[160px] text-slate-800" 
+                      className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all min-h-[160px] text-slate-800 dark:text-slate-100" 
                       style={{ '--tw-ring-color': accentColor } as any} 
                     />
                   </div>
@@ -275,27 +275,27 @@ export default function Directory() {
       {/* Add Contact Modal */}
       {addingContactTo && (
         <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center">
-          <div className="bg-white w-full sm:w-[90%] sm:rounded-[2.5rem] rounded-t-[2.5rem] p-8 animate-in slide-in-from-bottom-full duration-300 shadow-2xl">
+          <div className="bg-white dark:bg-slate-800 w-full sm:w-[90%] sm:rounded-[2.5rem] rounded-t-[2.5rem] p-8 animate-in slide-in-from-bottom-full duration-300 shadow-2xl">
             <div className="flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Add Contact</h2>
-              <button onClick={() => setAddingContactTo(null)} className="text-slate-400 p-2.5 bg-slate-100 rounded-full active:scale-90 transition-transform hover:bg-slate-200"><X size={20} /></button>
+              <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Add Contact</h2>
+              <button onClick={() => setAddingContactTo(null)} className="text-slate-400 dark:text-slate-500 p-2.5 bg-slate-100 dark:bg-slate-700 rounded-full active:scale-90 transition-transform hover:bg-slate-200 dark:hover:bg-slate-600"><X size={20} /></button>
             </div>
             <form onSubmit={handleAddContact} className="space-y-5">
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">Name</label>
-                <input required value={newContact.name} onChange={e => setNewContact({...newContact, name: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white transition-all text-slate-800" style={{ '--tw-ring-color': accentColor } as any} placeholder="e.g. Juan Pérez" />
+                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Name</label>
+                <input required value={newContact.name} onChange={e => setNewContact({...newContact, name: e.target.value})} className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 dark:text-slate-100" style={{ '--tw-ring-color': accentColor } as any} placeholder="e.g. Juan Pérez" />
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">Role</label>
-                <input required value={newContact.role} onChange={e => setNewContact({...newContact, role: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white transition-all text-slate-800" style={{ '--tw-ring-color': accentColor } as any} placeholder="e.g. PR Manager" />
+                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Role</label>
+                <input required value={newContact.role} onChange={e => setNewContact({...newContact, role: e.target.value})} className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 dark:text-slate-100" style={{ '--tw-ring-color': accentColor } as any} placeholder="e.g. PR Manager" />
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">Email</label>
-                <input type="email" required value={newContact.email} onChange={e => setNewContact({...newContact, email: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white transition-all text-slate-800" style={{ '--tw-ring-color': accentColor } as any} placeholder="juan@brand.com" />
+                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Email</label>
+                <input type="email" required value={newContact.email} onChange={e => setNewContact({...newContact, email: e.target.value})} className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 dark:text-slate-100" style={{ '--tw-ring-color': accentColor } as any} placeholder="juan@brand.com" />
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">Instagram</label>
-                <input value={newContact.ig} onChange={e => setNewContact({...newContact, ig: e.target.value})} className="w-full bg-slate-50 border border-slate-200 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white transition-all text-slate-800" style={{ '--tw-ring-color': accentColor } as any} placeholder="@juanperez" />
+                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Instagram</label>
+                <input value={newContact.ig} onChange={e => setNewContact({...newContact, ig: e.target.value})} className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 dark:text-slate-100" style={{ '--tw-ring-color': accentColor } as any} placeholder="@juanperez" />
               </div>
               <button type="submit" className="w-full text-white font-bold py-4 rounded-[1.5rem] mt-6 transition-opacity hover:opacity-90 active:scale-[0.98] shadow-md text-[15px]" style={{ backgroundColor: accentColor }}>
                 Save Contact
@@ -307,27 +307,27 @@ export default function Directory() {
       {/* Edit Contact Modal */}
       {editingContact && (
         <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center">
-          <div className="bg-white w-full sm:w-[90%] sm:rounded-[2.5rem] rounded-t-[2.5rem] p-8 animate-in slide-in-from-bottom-full duration-300 shadow-2xl">
+          <div className="bg-white dark:bg-slate-800 w-full sm:w-[90%] sm:rounded-[2.5rem] rounded-t-[2.5rem] p-8 animate-in slide-in-from-bottom-full duration-300 shadow-2xl">
             <div className="flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-bold text-slate-800 tracking-tight">Edit Contact</h2>
-              <button onClick={() => setEditingContact(null)} className="text-slate-400 p-2.5 bg-slate-100 rounded-full active:scale-90 transition-transform hover:bg-slate-200"><X size={20} /></button>
+              <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Edit Contact</h2>
+              <button onClick={() => setEditingContact(null)} className="text-slate-400 dark:text-slate-500 p-2.5 bg-slate-100 dark:bg-slate-700 rounded-full active:scale-90 transition-transform hover:bg-slate-200 dark:hover:bg-slate-600"><X size={20} /></button>
             </div>
             <form onSubmit={handleEditContact} className="space-y-5">
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">Name</label>
-                <input required value={editingContact.contact.name} onChange={e => setEditingContact({...editingContact, contact: {...editingContact.contact, name: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white transition-all text-slate-800" style={{ '--tw-ring-color': accentColor } as any} placeholder="e.g. Juan Pérez" />
+                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Name</label>
+                <input required value={editingContact.contact.name} onChange={e => setEditingContact({...editingContact, contact: {...editingContact.contact, name: e.target.value}})} className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 dark:text-slate-100" style={{ '--tw-ring-color': accentColor } as any} placeholder="e.g. Juan Pérez" />
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">Role</label>
-                <input required value={editingContact.contact.role} onChange={e => setEditingContact({...editingContact, contact: {...editingContact.contact, role: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white transition-all text-slate-800" style={{ '--tw-ring-color': accentColor } as any} placeholder="e.g. PR Manager" />
+                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Role</label>
+                <input required value={editingContact.contact.role} onChange={e => setEditingContact({...editingContact, contact: {...editingContact.contact, role: e.target.value}})} className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 dark:text-slate-100" style={{ '--tw-ring-color': accentColor } as any} placeholder="e.g. PR Manager" />
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">Email</label>
-                <input required type="email" value={editingContact.contact.email} onChange={e => setEditingContact({...editingContact, contact: {...editingContact.contact, email: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white transition-all text-slate-800" style={{ '--tw-ring-color': accentColor } as any} placeholder="juan@example.com" />
+                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Email</label>
+                <input required type="email" value={editingContact.contact.email} onChange={e => setEditingContact({...editingContact, contact: {...editingContact.contact, email: e.target.value}})} className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 dark:text-slate-100" style={{ '--tw-ring-color': accentColor } as any} placeholder="juan@example.com" />
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-2.5">Instagram</label>
-                <input required value={editingContact.contact.ig} onChange={e => setEditingContact({...editingContact, contact: {...editingContact.contact, ig: e.target.value}})} className="w-full bg-slate-50 border border-slate-200 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white transition-all text-slate-800" style={{ '--tw-ring-color': accentColor } as any} placeholder="@juanperez" />
+                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Instagram</label>
+                <input required value={editingContact.contact.ig} onChange={e => setEditingContact({...editingContact, contact: {...editingContact.contact, ig: e.target.value}})} className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 dark:text-slate-100" style={{ '--tw-ring-color': accentColor } as any} placeholder="@juanperez" />
               </div>
               <button type="submit" className="w-full text-white font-bold py-4 rounded-[1.5rem] mt-6 transition-opacity hover:opacity-90 active:scale-[0.98] shadow-md text-[15px]" style={{ backgroundColor: accentColor }}>
                 Save Changes

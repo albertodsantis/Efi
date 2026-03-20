@@ -1,4 +1,4 @@
-export type TaskStatus = 'Pendiente' | 'En Progreso' | 'En Revisión' | 'Completada';
+export type TaskStatus = 'Pendiente' | 'En Progreso' | 'En Revisión' | 'Completada' | 'Cobro';
 export type PartnerStatus = 'Prospecto' | 'En Negociación' | 'Activo' | 'Inactivo' | 'On Hold' | 'Relación Culminada';
 
 export interface Contact {

@@ -162,60 +162,60 @@ export default function Settings() {
 
       <div className="mb-10">
         <div className="flex justify-between items-center mb-4 ml-2 pr-2">
-          <h2 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Plantillas de Mensajes</h2>
-          <button onClick={() => setIsAddingTemplate(true)} className="text-gray-500 hover:text-gray-900 transition-colors">
+          <h2 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest">Plantillas de Mensajes</h2>
+          <button onClick={() => setIsAddingTemplate(true)} className="text-gray-500 hover:text-gray-900 dark:hover:text-white transition-colors">
             <Plus size={18} />
           </button>
         </div>
         <div className="space-y-3">
           {templates.map(template => (
-            <div key={template.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex justify-between items-center">
+            <div key={template.id} className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-slate-700 flex justify-between items-center">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-gray-400">
+                <div className="w-10 h-10 rounded-xl bg-gray-50 dark:bg-slate-700 flex items-center justify-center text-gray-400 dark:text-gray-500">
                   <MessageSquare size={16} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 text-sm">{template.name}</h3>
-                  <p className="text-xs text-gray-500 truncate max-w-[200px]">{template.subject}</p>
+                  <h3 className="font-bold text-gray-900 dark:text-white text-sm">{template.name}</h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[200px]">{template.subject}</p>
                 </div>
               </div>
-              <button onClick={() => deleteTemplate(template.id)} className="p-2 text-gray-400 hover:text-rose-500 transition-colors">
+              <button onClick={() => deleteTemplate(template.id)} className="p-2 text-gray-400 hover:text-rose-500 dark:hover:text-rose-400 transition-colors">
                 <Trash2 size={16} />
               </button>
             </div>
           ))}
           {templates.length === 0 && (
-            <p className="text-sm text-gray-500 text-center py-4 bg-white rounded-2xl border border-gray-100 border-dashed">No hay plantillas.</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4 bg-white dark:bg-slate-800 rounded-2xl border border-gray-100 dark:border-slate-700 border-dashed">No hay plantillas.</p>
           )}
         </div>
       </div>
 
-      <button className="w-full py-4 rounded-2xl font-bold text-rose-500 bg-rose-50 flex items-center justify-center gap-2 transition-colors hover:bg-rose-100 active:scale-[0.98]">
+      <button className="w-full py-4 rounded-2xl font-bold text-rose-500 dark:text-rose-400 bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center gap-2 transition-colors hover:bg-rose-100 dark:hover:bg-rose-500/20 active:scale-[0.98]">
         <LogOut size={20} strokeWidth={2.5} />
         Cerrar Sesión
       </button>
 
       {/* Add Template Modal */}
       {isAddingTemplate && (
-        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center">
-          <div className="bg-white w-full sm:w-[90%] sm:rounded-3xl rounded-t-[2rem] p-6 animate-in slide-in-from-bottom-full duration-300 shadow-2xl">
+        <div className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center">
+          <div className="bg-white dark:bg-slate-800 w-full sm:w-[90%] sm:rounded-3xl rounded-t-[2rem] p-6 animate-in slide-in-from-bottom-full duration-300 shadow-2xl">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Nueva Plantilla</h2>
-              <button onClick={() => setIsAddingTemplate(false)} className="text-gray-400 p-2 bg-gray-100 rounded-full active:scale-90 transition-transform">✕</button>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Nueva Plantilla</h2>
+              <button onClick={() => setIsAddingTemplate(false)} className="text-gray-400 dark:text-gray-500 p-2 bg-gray-100 dark:bg-slate-700 rounded-full active:scale-90 transition-transform">✕</button>
             </div>
             <form onSubmit={handleAddTemplate} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Nombre de la Plantilla</label>
-                <input required value={newTemplate.name} onChange={e => setNewTemplate({...newTemplate, name: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:bg-white transition-all" style={{ '--tw-ring-color': accentColor } as any} placeholder="Ej. Primer Contacto" />
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Nombre de la Plantilla</label>
+                <input required value={newTemplate.name} onChange={e => setNewTemplate({...newTemplate, name: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all" style={{ '--tw-ring-color': accentColor } as any} placeholder="Ej. Primer Contacto" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Asunto</label>
-                <input required value={newTemplate.subject} onChange={e => setNewTemplate({...newTemplate, subject: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:bg-white transition-all" style={{ '--tw-ring-color': accentColor } as any} placeholder="Usa {{brandName}}, {{creatorName}}" />
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Asunto</label>
+                <input required value={newTemplate.subject} onChange={e => setNewTemplate({...newTemplate, subject: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all" style={{ '--tw-ring-color': accentColor } as any} placeholder="Usa {{brandName}}, {{creatorName}}" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Cuerpo del Mensaje</label>
-                <textarea required value={newTemplate.body} onChange={e => setNewTemplate({...newTemplate, body: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:bg-white transition-all min-h-[120px]" style={{ '--tw-ring-color': accentColor } as any} placeholder="Hola {{contactName}}..." />
-                <p className="text-[10px] text-gray-400 mt-2 font-medium">Variables: {'{{brandName}}, {{contactName}}, {{creatorName}}, {{deliverable}}'}</p>
+                <label className="block text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Cuerpo del Mensaje</label>
+                <textarea required value={newTemplate.body} onChange={e => setNewTemplate({...newTemplate, body: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all min-h-[120px]" style={{ '--tw-ring-color': accentColor } as any} placeholder="Hola {{contactName}}..." />
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-2 font-medium">Variables: {'{{brandName}}, {{contactName}}, {{creatorName}}, {{deliverable}}'}</p>
               </div>
               <button type="submit" className="w-full text-white font-bold py-4 rounded-2xl mt-2 transition-opacity hover:opacity-90 active:scale-[0.98] shadow-md" style={{ backgroundColor: accentColor }}>
                 Guardar Plantilla

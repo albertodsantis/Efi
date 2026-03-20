@@ -124,12 +124,12 @@ export default function Pipeline() {
       {/* Header & Tabs */}
       <div className="p-6 pb-2 bg-transparent sticky top-0 z-10">
         <div className="flex justify-between items-center mb-6 mt-4">
-          <h1 className="text-3xl font-bold text-slate-800 tracking-tight">Pipeline</h1>
+          <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Pipeline</h1>
           <div className="flex gap-3">
             <button
               onClick={syncDownFromCalendar}
               disabled={isSyncingDown}
-              className="w-12 h-12 rounded-full flex items-center justify-center bg-white/80 backdrop-blur-md text-slate-500 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 transition-transform active:scale-95 disabled:opacity-50"
+              className="w-12 h-12 rounded-full flex items-center justify-center bg-white/80 dark:bg-slate-800/80 backdrop-blur-md text-slate-500 dark:text-slate-400 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 dark:border-slate-700/60 transition-transform active:scale-95 disabled:opacity-50"
               title="Sync from Google Calendar"
             >
               <DownloadCloud size={20} className={isSyncingDown ? "animate-bounce" : ""} />
@@ -144,7 +144,7 @@ export default function Pipeline() {
           </div>
         </div>
 
-        <div className="flex bg-white/50 backdrop-blur-md p-1.5 rounded-[1.5rem] mb-4 border border-white/60 shadow-[0_4px_20px_rgb(0,0,0,0.02)]">
+        <div className="flex bg-white/50 dark:bg-slate-800/50 backdrop-blur-md p-1.5 rounded-[1.5rem] mb-4 border border-white/60 dark:border-slate-700/60 shadow-[0_4px_20px_rgb(0,0,0,0.02)]">
           {[
             { id: 'kanban', icon: Trello, label: 'Kanban' },
             { id: 'list', icon: ListIcon, label: 'List' },
@@ -153,7 +153,7 @@ export default function Pipeline() {
             <button
               key={t.id}
               onClick={() => setView(t.id as any)}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-[13px] font-bold transition-all ${view === t.id ? 'bg-white shadow-[0_4px_15px_rgb(0,0,0,0.04)] text-slate-800' : 'text-slate-400 hover:text-slate-600'}`}
+              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-2xl text-[13px] font-bold transition-all ${view === t.id ? 'bg-white dark:bg-slate-700 shadow-[0_4px_15px_rgb(0,0,0,0.04)] text-slate-800 dark:text-slate-100' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300'}`}
             >
               <t.icon size={18} />
               <span className="hidden sm:inline">{t.label}</span>
@@ -166,22 +166,22 @@ export default function Pipeline() {
       <div className="flex-1 px-6 pb-6 overflow-y-auto hide-scrollbar">
         {view === 'kanban' && (
           <div className="h-full flex flex-col">
-            <div className="flex items-center justify-between mb-6 bg-white/80 backdrop-blur-xl rounded-[2rem] p-3 shadow-[0_8px_30px_rgb(0,0,0,0.03)] border border-white/60">
+            <div className="flex items-center justify-between mb-6 bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-[2rem] p-3 shadow-[0_8px_30px_rgb(0,0,0,0.03)] border border-white/60 dark:border-slate-700/60">
               <button
                 onClick={() => setCurrentStatusIdx(Math.max(0, currentStatusIdx - 1))}
                 disabled={currentStatusIdx === 0}
-                className="p-3 text-slate-400 disabled:opacity-30 active:scale-90 transition-transform"
+                className="p-3 text-slate-400 dark:text-slate-500 disabled:opacity-30 active:scale-90 transition-transform"
               >
                 <ChevronLeft size={24} />
               </button>
               <div className="text-center flex-1">
-                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Phase {currentStatusIdx + 1} of {STATUSES.length}</span>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Phase {currentStatusIdx + 1} of {STATUSES.length}</span>
                 <h2 className="text-lg font-extrabold" style={{ color: accentColor }}>{currentStatus}</h2>
               </div>
               <button
                 onClick={() => setCurrentStatusIdx(Math.min(STATUSES.length - 1, currentStatusIdx + 1))}
                 disabled={currentStatusIdx === STATUSES.length - 1}
-                className="p-3 text-slate-400 disabled:opacity-30 active:scale-90 transition-transform"
+                className="p-3 text-slate-400 dark:text-slate-500 disabled:opacity-30 active:scale-90 transition-transform"
               >
                 <ChevronRight size={24} />
               </button>
@@ -191,24 +191,24 @@ export default function Pipeline() {
               {columnTasks.map(task => {
                 const partner = partners.find(p => p.id === task.partnerId);
                 return (
-                  <div key={task.id} className="bg-white/80 backdrop-blur-xl p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.03)] border border-white/60 active:scale-[0.98] transition-transform">
+                  <div key={task.id} className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.03)] border border-white/60 dark:border-slate-700/60 active:scale-[0.98] transition-transform">
                     <div className="flex justify-between items-start mb-4">
-                      <span className="text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full bg-slate-100 text-slate-500">
+                      <span className="text-[11px] font-bold uppercase tracking-wider px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300">
                         {partner?.name}
                       </span>
-                      <span className="text-base font-extrabold text-slate-800">${task.value.toLocaleString()}</span>
+                      <span className="text-base font-extrabold text-slate-800 dark:text-slate-100">${task.value.toLocaleString()}</span>
                     </div>
-                    <h3 className="font-bold text-slate-800 mb-2 text-lg leading-tight">{task.title}</h3>
-                    <p className="text-sm text-slate-400 line-clamp-2 mb-5 font-medium">{task.description}</p>
+                    <h3 className="font-bold text-slate-800 dark:text-slate-100 mb-2 text-lg leading-tight">{task.title}</h3>
+                    <p className="text-sm text-slate-400 dark:text-slate-500 line-clamp-2 mb-5 font-medium">{task.description}</p>
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
+                      <div className="flex items-center gap-2 text-xs font-bold text-slate-400 dark:text-slate-500">
                         <CalendarIcon size={14} />
                         {new Date(task.dueDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })}
                       </div>
                       <button 
                         onClick={() => syncToCalendar(task)}
                         disabled={syncingTaskId === task.id}
-                        className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-3 py-2 rounded-xl transition-colors ${task.gcalEventId ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+                        className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-3 py-2 rounded-xl transition-colors ${task.gcalEventId ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
                       >
                         {syncingTaskId === task.id ? (
                           <RefreshCw size={14} className="animate-spin" />
@@ -224,7 +224,7 @@ export default function Pipeline() {
                 );
               })}
               {columnTasks.length === 0 && (
-                <div className="text-center py-12 text-slate-400 border-2 border-dashed border-white/60 rounded-[2rem] bg-white/40 backdrop-blur-sm">
+                <div className="text-center py-12 text-slate-400 dark:text-slate-500 border-2 border-dashed border-white/60 dark:border-slate-700/60 rounded-[2rem] bg-white/40 dark:bg-slate-800/40 backdrop-blur-sm">
                   <p className="font-medium">No tasks in this phase</p>
                 </div>
               )}
@@ -237,33 +237,33 @@ export default function Pipeline() {
             {tasks.map(task => {
               const partner = partners.find(p => p.id === task.partnerId);
               return (
-                <div key={task.id} className="bg-white/80 backdrop-blur-xl p-5 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.03)] border border-white/60 flex flex-col gap-3">
+                <div key={task.id} className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl p-5 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.03)] border border-white/60 dark:border-slate-700/60 flex flex-col gap-3">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h3 className="font-bold text-slate-800 text-base">{task.title}</h3>
-                      <p className="text-[10px] font-bold text-slate-400 mt-1 uppercase tracking-wider">{partner?.name || 'No Brand'}</p>
+                      <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base">{task.title}</h3>
+                      <p className="text-[10px] font-bold text-slate-400 dark:text-slate-500 mt-1 uppercase tracking-wider">{partner?.name || 'No Brand'}</p>
                     </div>
                     <div className="text-right">
-                      <span className="text-sm font-extrabold text-slate-800 block">${task.value.toLocaleString()}</span>
+                      <span className="text-sm font-extrabold text-slate-800 dark:text-slate-100 block">${task.value.toLocaleString()}</span>
                       <span className={`text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-lg mt-1.5 inline-block ${
-                        task.status === 'Completada' ? 'bg-emerald-50 text-emerald-600' :
-                        task.status === 'En Progreso' ? 'bg-amber-50 text-amber-600' :
-                        'bg-indigo-50 text-indigo-600'
+                        task.status === 'Completada' ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' :
+                        task.status === 'En Progreso' ? 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' :
+                        'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400'
                       }`}>
                         {task.status}
                       </span>
                     </div>
                   </div>
-                  <p className="text-sm text-slate-400 line-clamp-2 font-medium">{task.description}</p>
-                  <div className="flex items-center justify-between mt-2 pt-4 border-t border-slate-100/50">
-                    <div className="flex items-center gap-2 text-xs font-bold text-slate-400">
+                  <p className="text-sm text-slate-400 dark:text-slate-500 line-clamp-2 font-medium">{task.description}</p>
+                  <div className="flex items-center justify-between mt-2 pt-4 border-t border-slate-100/50 dark:border-slate-700/50">
+                    <div className="flex items-center gap-2 text-xs font-bold text-slate-400 dark:text-slate-500">
                       <CalendarIcon size={14} />
                       {new Date(task.dueDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' })}
                     </div>
                     <button 
                       onClick={() => syncToCalendar(task)}
                       disabled={syncingTaskId === task.id}
-                      className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-3 py-2 rounded-xl transition-colors ${task.gcalEventId ? 'bg-emerald-50 text-emerald-600' : 'bg-slate-50 text-slate-500 hover:bg-slate-100'}`}
+                      className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-3 py-2 rounded-xl transition-colors ${task.gcalEventId ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400' : 'bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
                     >
                       {syncingTaskId === task.id ? (
                         <RefreshCw size={14} className="animate-spin" />
@@ -282,18 +282,18 @@ export default function Pipeline() {
         )}
 
         {view === 'calendar' && (
-          <div className="bg-white/80 backdrop-blur-xl rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.03)] border border-white/60 p-5">
+          <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.03)] border border-white/60 dark:border-slate-700/60 p-5">
             <div className="flex justify-between items-center mb-5">
-              <button onClick={prevMonth} className="p-2 text-slate-400 hover:bg-slate-50 rounded-full transition-colors"><ChevronLeft size={20} /></button>
-              <h2 className="text-lg font-bold text-slate-800 capitalize">
+              <button onClick={prevMonth} className="p-2 text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-full transition-colors"><ChevronLeft size={20} /></button>
+              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100 capitalize">
                 {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
               </h2>
-              <button onClick={nextMonth} className="p-2 text-slate-400 hover:bg-slate-50 rounded-full transition-colors"><ChevronRight size={20} /></button>
+              <button onClick={nextMonth} className="p-2 text-slate-400 dark:text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-full transition-colors"><ChevronRight size={20} /></button>
             </div>
             
             <div className="grid grid-cols-7 gap-1 mb-3">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <div key={day} className="text-center text-[10px] font-bold text-slate-400 uppercase tracking-wider py-2">
+                <div key={day} className="text-center text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider py-2">
                   {day}
                 </div>
               ))}
@@ -311,14 +311,14 @@ export default function Pipeline() {
                   <div 
                     key={dateString} 
                     onClick={() => dayTasks.length > 0 && setSelectedDate(dateString)}
-                    className={`aspect-square p-1.5 flex flex-col rounded-2xl border transition-colors ${isToday ? 'border-slate-200 bg-slate-50' : 'border-transparent hover:border-slate-100'} ${dayTasks.length > 0 ? 'cursor-pointer hover:bg-slate-50' : ''}`}
+                    className={`aspect-square p-1.5 flex flex-col rounded-2xl border transition-colors ${isToday ? 'border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700/50' : 'border-transparent hover:border-slate-100 dark:hover:border-slate-700'} ${dayTasks.length > 0 ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700/50' : ''}`}
                   >
-                    <span className={`text-xs font-bold mb-1 ${isToday ? 'text-slate-800' : 'text-slate-400'} ${dayTasks.length > 0 ? 'w-6 h-6 flex items-center justify-center rounded-full text-white' : ''}`} style={dayTasks.length > 0 ? { backgroundColor: accentColor } : {}}>
+                    <span className={`text-xs font-bold mb-1 ${isToday ? 'text-slate-800 dark:text-slate-100' : 'text-slate-400 dark:text-slate-500'} ${dayTasks.length > 0 ? 'w-6 h-6 flex items-center justify-center rounded-full text-white' : ''}`} style={dayTasks.length > 0 ? { backgroundColor: accentColor } : {}}>
                       {date.getDate()}
                     </span>
                     <div className="flex-1 overflow-hidden flex flex-col gap-1 mt-0.5">
                       {dayTasks.map(task => (
-                        <div key={task.id} className="w-full h-1.5 rounded-full bg-slate-300" title={task.title} style={{ backgroundColor: task.gcalEventId ? '#10b981' : accentColor, opacity: 0.8 }} />
+                        <div key={task.id} className="w-full h-1.5 rounded-full bg-slate-300 dark:bg-slate-600" title={task.title} style={{ backgroundColor: task.gcalEventId ? '#10b981' : accentColor, opacity: 0.8 }} />
                       ))}
                     </div>
                   </div>
@@ -332,37 +332,37 @@ export default function Pipeline() {
       {/* Day Details Modal */}
       {selectedDate && (
         <div className="absolute inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center">
-          <div className="bg-white w-full sm:w-[90%] sm:rounded-3xl rounded-t-[2rem] p-6 animate-in slide-in-from-bottom-full duration-300 shadow-2xl">
+          <div className="bg-white dark:bg-slate-800 w-full sm:w-[90%] sm:rounded-3xl rounded-t-[2rem] p-6 animate-in slide-in-from-bottom-full duration-300 shadow-2xl">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 tracking-tight">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">
                 {new Date(selectedDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
               </h2>
-              <button onClick={() => setSelectedDate(null)} className="text-gray-400 p-2 bg-gray-100 rounded-full active:scale-90 transition-transform">✕</button>
+              <button onClick={() => setSelectedDate(null)} className="text-gray-400 dark:text-slate-400 p-2 bg-gray-100 dark:bg-slate-700 rounded-full active:scale-90 transition-transform">✕</button>
             </div>
             <div className="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
               {tasks.filter(t => t.dueDate === selectedDate).map(task => {
                 const partner = partners.find(p => p.id === task.partnerId);
                 return (
-                  <div key={task.id} className="bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                  <div key={task.id} className="bg-gray-50 dark:bg-slate-700/50 p-4 rounded-2xl border border-gray-100 dark:border-slate-600">
                     <div className="flex justify-between items-start mb-2">
                       <div>
-                        <h3 className="font-bold text-gray-900 text-sm">{task.title}</h3>
-                        <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider mt-0.5">{partner?.name || 'Sin Marca'}</p>
+                        <h3 className="font-bold text-gray-900 dark:text-white text-sm">{task.title}</h3>
+                        <p className="text-[10px] font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mt-0.5">{partner?.name || 'Sin Marca'}</p>
                       </div>
                       <span className={`text-[10px] font-bold uppercase tracking-widest px-2 py-1 rounded-md ${
-                        task.status === 'Completado' ? 'bg-emerald-100 text-emerald-700' :
-                        task.status === 'Producción' ? 'bg-amber-100 text-amber-700' :
-                        'bg-blue-100 text-blue-700'
+                        task.status === 'Completada' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' :
+                        task.status === 'En Progreso' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400' :
+                        'bg-blue-100 dark:bg-indigo-900/30 text-blue-700 dark:text-indigo-400'
                       }`}>
                         {task.status}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-500 font-medium mb-3">{task.description}</p>
+                    <p className="text-xs text-gray-500 dark:text-slate-400 font-medium mb-3">{task.description}</p>
                     <div className="flex justify-end">
                       <button 
                         onClick={() => syncToCalendar(task)}
                         disabled={syncingTaskId === task.id}
-                        className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg transition-colors ${task.gcalEventId ? 'bg-emerald-100 text-emerald-700' : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'}`}
+                        className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1.5 rounded-lg transition-colors ${task.gcalEventId ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : 'bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 text-gray-600 dark:text-slate-300 hover:bg-gray-50 dark:hover:bg-slate-700'}`}
                       >
                         {syncingTaskId === task.id ? (
                           <RefreshCw size={12} className="animate-spin" />
@@ -385,28 +385,28 @@ export default function Pipeline() {
       {/* Add Task Modal */}
       {isAdding && (
         <div className="absolute inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center">
-          <div className="bg-white w-full sm:w-[90%] sm:rounded-3xl rounded-t-[2rem] p-6 animate-in slide-in-from-bottom-full duration-300 shadow-2xl">
+          <div className="bg-white dark:bg-slate-800 w-full sm:w-[90%] sm:rounded-3xl rounded-t-[2rem] p-6 animate-in slide-in-from-bottom-full duration-300 shadow-2xl">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900 tracking-tight">Nueva Tarea</h2>
-              <button onClick={() => setIsAdding(false)} className="text-gray-400 p-2 bg-gray-100 rounded-full active:scale-90 transition-transform">✕</button>
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white tracking-tight">Nueva Tarea</h2>
+              <button onClick={() => setIsAdding(false)} className="text-gray-400 dark:text-slate-400 p-2 bg-gray-100 dark:bg-slate-700 rounded-full active:scale-90 transition-transform">✕</button>
             </div>
             <form onSubmit={handleAddTask} className="space-y-5">
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Título</label>
-                <input required value={newTask.title} onChange={e => setNewTask({...newTask, title: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3.5 text-sm font-medium focus:outline-none focus:ring-2 focus:bg-white transition-all" style={{ '--tw-ring-color': accentColor } as any} placeholder="Ej. Reel de TikTok" />
+                <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2">Título</label>
+                <input required value={newTask.title} onChange={e => setNewTask({...newTask, title: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-2xl px-4 py-3.5 text-sm font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-gray-900 dark:text-white" style={{ '--tw-ring-color': accentColor } as any} placeholder="Ej. Reel de TikTok" />
               </div>
               <div>
-                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Partner / Marca</label>
-                <input required value={newTask.partnerName} onChange={e => setNewTask({...newTask, partnerName: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3.5 text-sm font-medium focus:outline-none focus:ring-2 focus:bg-white transition-all" style={{ '--tw-ring-color': accentColor } as any} placeholder="Ej. Nike (Se creará si no existe)" />
+                <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2">Partner / Marca</label>
+                <input required value={newTask.partnerName} onChange={e => setNewTask({...newTask, partnerName: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-2xl px-4 py-3.5 text-sm font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-gray-900 dark:text-white" style={{ '--tw-ring-color': accentColor } as any} placeholder="Ej. Nike (Se creará si no existe)" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Valor ($)</label>
-                  <input type="number" required value={newTask.value} onChange={e => setNewTask({...newTask, value: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3.5 text-sm font-medium focus:outline-none focus:ring-2 focus:bg-white transition-all" style={{ '--tw-ring-color': accentColor } as any} placeholder="0" />
+                  <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2">Valor ($)</label>
+                  <input type="number" required value={newTask.value} onChange={e => setNewTask({...newTask, value: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-2xl px-4 py-3.5 text-sm font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-gray-900 dark:text-white" style={{ '--tw-ring-color': accentColor } as any} placeholder="0" />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Fecha</label>
-                  <input type="date" required value={newTask.dueDate} onChange={e => setNewTask({...newTask, dueDate: e.target.value})} className="w-full bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3.5 text-sm font-medium focus:outline-none focus:ring-2 focus:bg-white transition-all text-gray-700" style={{ '--tw-ring-color': accentColor } as any} />
+                  <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wider mb-2">Fecha</label>
+                  <input type="date" required value={newTask.dueDate} onChange={e => setNewTask({...newTask, dueDate: e.target.value})} className="w-full bg-gray-50 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-2xl px-4 py-3.5 text-sm font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-gray-700 dark:text-slate-300" style={{ '--tw-ring-color': accentColor } as any} />
                 </div>
               </div>
               <button type="submit" className="w-full text-white font-bold py-4 rounded-2xl mt-4 transition-opacity hover:opacity-90 active:scale-[0.98] shadow-md" style={{ backgroundColor: accentColor }}>

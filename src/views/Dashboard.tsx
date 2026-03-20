@@ -18,30 +18,30 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex justify-between items-center mt-4">
         <div>
-          <p className="text-slate-400 text-sm font-medium mb-1">Good morning,</p>
-          <h1 className="text-3xl font-bold text-slate-800 tracking-tight">{profile.name.split(' ')[0]}</h1>
+          <p className="text-slate-400 dark:text-slate-500 text-sm font-medium mb-1">Good morning,</p>
+          <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">{profile.name.split(' ')[0]}</h1>
         </div>
-        <img src={profile.avatar} alt="Avatar" className="w-14 h-14 rounded-full border-4 border-white shadow-sm object-cover" />
+        <img src={profile.avatar} alt="Avatar" className="w-14 h-14 rounded-full border-4 border-white dark:border-slate-800 shadow-sm object-cover" />
       </div>
 
       {/* Metrics */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white/60 backdrop-blur-xl p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 flex flex-col gap-4">
+        <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 dark:border-slate-700/60 flex flex-col gap-4">
           <div className="p-3 rounded-full w-fit" style={{ backgroundColor: `${accentColor}15`, color: accentColor }}>
             <DollarSign size={24} strokeWidth={2.5} />
           </div>
           <div>
-            <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest mb-1">Active Pipeline</p>
-            <p className="text-2xl font-extrabold text-slate-800">${activePipelineValue.toLocaleString()}</p>
+            <p className="text-slate-400 dark:text-slate-500 text-[11px] font-bold uppercase tracking-widest mb-1">Active Pipeline</p>
+            <p className="text-2xl font-extrabold text-slate-800 dark:text-slate-100">${activePipelineValue.toLocaleString()}</p>
           </div>
         </div>
-        <div className="bg-white/60 backdrop-blur-xl p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 flex flex-col gap-4">
+        <div className="bg-white/60 dark:bg-slate-800/60 backdrop-blur-xl p-6 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 dark:border-slate-700/60 flex flex-col gap-4">
           <div className="p-3 rounded-full w-fit" style={{ backgroundColor: `${accentColor}15`, color: accentColor }}>
             <CheckCircle2 size={24} strokeWidth={2.5} />
           </div>
           <div>
-            <p className="text-slate-400 text-[11px] font-bold uppercase tracking-widest mb-1">Tasks Today</p>
-            <p className="text-2xl font-extrabold text-slate-800">{tasksToday}</p>
+            <p className="text-slate-400 dark:text-slate-500 text-[11px] font-bold uppercase tracking-widest mb-1">Tasks Today</p>
+            <p className="text-2xl font-extrabold text-slate-800 dark:text-slate-100">{tasksToday}</p>
           </div>
         </div>
       </div>
@@ -49,25 +49,25 @@ export default function Dashboard() {
       {/* Upcoming */}
       <div>
         <div className="flex justify-between items-end mb-6">
-          <h2 className="text-xl font-bold text-slate-800">Upcoming Deliverables</h2>
+          <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">Upcoming Deliverables</h2>
         </div>
         <div className="space-y-4">
           {upcomingTasks.map(task => {
             const partner = partners.find(p => p.id === task.partnerId);
             return (
-              <div key={task.id} className="bg-white/80 backdrop-blur-xl p-5 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.03)] border border-white/60 flex items-center gap-4 transition-transform active:scale-95">
+              <div key={task.id} className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl p-5 rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.03)] border border-white/60 dark:border-slate-700/60 flex items-center gap-4 transition-transform active:scale-95">
                 <div className="w-12 h-12 rounded-full flex items-center justify-center text-lg font-bold" style={{ backgroundColor: `${accentColor}10`, color: accentColor }}>
                   {partner?.name.charAt(0)}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h3 className="font-bold text-slate-800 text-base truncate mb-0.5">{task.title}</h3>
-                  <p className="text-xs text-slate-400 font-semibold truncate">{partner?.name} • {task.status}</p>
+                  <h3 className="font-bold text-slate-800 dark:text-slate-100 text-base truncate mb-0.5">{task.title}</h3>
+                  <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold truncate">{partner?.name} • {task.status}</p>
                 </div>
                 <div className="flex flex-col items-end gap-1.5 shrink-0">
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                     {new Date(task.dueDate).toLocaleDateString('en-US', { day: '2-digit', month: 'short' })}
                   </span>
-                  <div className="w-6 h-6 rounded-full border-2 border-slate-200 flex items-center justify-center">
+                  <div className="w-6 h-6 rounded-full border-2 border-slate-200 dark:border-slate-700 flex items-center justify-center">
                     {task.status === 'Cobro' && <div className="w-3 h-3 rounded-full" style={{ backgroundColor: accentColor }} />}
                   </div>
                 </div>
@@ -75,7 +75,7 @@ export default function Dashboard() {
             );
           })}
           {upcomingTasks.length === 0 && (
-            <p className="text-sm text-slate-400 font-medium text-center py-8 bg-white/50 rounded-[2rem] border border-white/60 border-dashed">No upcoming deliverables.</p>
+            <p className="text-sm text-slate-400 dark:text-slate-500 font-medium text-center py-8 bg-white/50 dark:bg-slate-800/50 rounded-[2rem] border border-white/60 dark:border-slate-700/60 border-dashed">No upcoming deliverables.</p>
           )}
         </div>
       </div>

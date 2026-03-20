@@ -232,28 +232,41 @@ export default function AIAssistant() {
   return (
     <>
       {/* Floating Button (Interactive Island) */}
-      <button
-        onClick={() => setIsOpen(true)}
-        className={`absolute bottom-[88px] left-1/2 -translate-x-1/2 h-14 pl-2 pr-6 rounded-full flex items-center gap-3 text-white transition-all duration-500 hover:scale-105 active:scale-95 z-40 group ${isOpen ? 'opacity-0 pointer-events-none translate-y-4 scale-90' : 'opacity-100 translate-y-0 scale-100'}`}
-        style={{
-          background: 'rgba(15, 23, 42, 0.35)',
-          backdropFilter: 'blur(16px)',
-          WebkitBackdropFilter: 'blur(16px)',
-          border: `1px solid rgba(255,255,255,0.15)`,
-          boxShadow: `0 8px 32px rgba(0,0,0,0.3), 0 0 20px ${accentColor || '#8b5cf6'}40`
-        }}
-      >
-        {/* Glowing orb */}
-        <div className="relative w-10 h-10 rounded-full flex items-center justify-center overflow-hidden shadow-inner">
-          <div className="absolute inset-0 animate-[spin_4s_linear_infinite] opacity-80" style={{ background: `conic-gradient(from 0deg, transparent, ${accentColor || '#8b5cf6'}, transparent)` }} />
-          <div className="absolute inset-[2px] bg-slate-900 rounded-full flex items-center justify-center z-10">
-            <Sparkles size={16} style={{ color: accentColor || '#8b5cf6' }} className="animate-pulse" />
-          </div>
-          <div className="absolute inset-0 blur-md z-0" style={{ backgroundColor: accentColor || '#8b5cf6', opacity: 0.4 }} />
+      <div className={`absolute bottom-[88px] left-1/2 -translate-x-1/2 z-40 transition-all duration-500 ${isOpen ? 'opacity-0 pointer-events-none translate-y-4 scale-90' : 'opacity-100 translate-y-0 scale-100'}`}>
+        <div className="rounded-full" style={{ 
+          '--accent-glow': `${accentColor || '#8b5cf6'}60`,
+          boxShadow: '0 5px 15px rgba(0,0,0,0.2), 0 0 15px var(--accent-glow)'
+        } as React.CSSProperties}>
+          <button
+            id="tia-assistant-btn"
+            onClick={() => setIsOpen(true)}
+            className="relative h-11 pl-1.5 pr-5 rounded-full flex items-center gap-2.5 text-white transition-all duration-500 hover:scale-105 active:scale-95 group overflow-hidden"
+            style={{
+              background: 'rgba(15, 23, 42, 0.35)',
+              backdropFilter: 'blur(16px)',
+              WebkitBackdropFilter: 'blur(16px)',
+            }}
+          >
+            <div className="absolute top-1/2 left-1/2 w-[250%] aspect-square -translate-x-1/2 -translate-y-1/2 animate-[spin_4s_linear_infinite] opacity-80" style={{ background: `conic-gradient(from 0deg, transparent, ${accentColor || '#8b5cf6'}, transparent)` }} />
+            <div className="absolute inset-[1px] bg-slate-900/80 rounded-full z-0" />
+            
+            {/* Shimmer overlay */}
+            <div className="absolute inset-0 z-20 overflow-hidden rounded-full pointer-events-none">
+              <div className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
+            </div>
+            
+            {/* Glowing orb */}
+            <div className="relative w-8 h-8 rounded-full flex items-center justify-center overflow-hidden shadow-inner z-10">
+              <div className="absolute inset-[2px] rounded-full flex items-center justify-center z-10">
+                <Sparkles size={14} style={{ color: accentColor || '#8b5cf6' }} />
+              </div>
+              <div className="absolute inset-0 blur-md z-0" style={{ backgroundColor: accentColor || '#8b5cf6', opacity: 0.4 }} />
+            </div>
+            
+            <span className="text-xs font-bold tracking-[0.2em] text-white/90 uppercase z-10">TIA</span>
+          </button>
         </div>
-        
-        <span className="text-sm font-bold tracking-[0.2em] text-white/90 uppercase">TIA</span>
-      </button>
+      </div>
 
       {/* Chat Window */}
       {isOpen && (
@@ -267,7 +280,7 @@ export default function AIAssistant() {
               <div className="relative w-9 h-9 rounded-full bg-white/20 flex items-center justify-center overflow-hidden backdrop-blur-sm border border-white/30 shadow-sm">
                 <div className="absolute inset-0 animate-[spin_4s_linear_infinite] opacity-60" style={{ background: `conic-gradient(from 0deg, transparent, white, transparent)` }} />
                 <div className="absolute inset-[2px] rounded-full flex items-center justify-center" style={{ backgroundColor: accentColor || '#8b5cf6' }}>
-                  <Sparkles size={16} className="text-white animate-pulse" />
+                  <Sparkles size={16} className="text-white" />
                 </div>
               </div>
               <div>
