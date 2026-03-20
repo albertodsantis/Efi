@@ -1,4 +1,4 @@
-# TIA - Backend Structure
+# Tía - Backend Structure
 
 ## 1. Purpose
 
@@ -10,7 +10,7 @@ This document is written in English for technical consistency.
 
 Product-facing behavior still follows these rules:
 
-- TIA serves Spanish-speaking users
+- Tía serves Spanish-speaking users
 - visible UI text remains in Spanish
 - backend contracts and engineering documentation remain in English
 

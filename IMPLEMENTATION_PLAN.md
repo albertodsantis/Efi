@@ -1,4 +1,4 @@
-# TIA - Implementation Plan
+# Tía - Implementation Plan
 
 ## 1. Purpose
 
@@ -10,7 +10,7 @@ This document is written in English for implementation clarity.
 
 Product constraints still apply:
 
-- TIA is a Spanish-first product
+- Tía is a Spanish-first product
 - visible UI text should remain in Spanish
 - internal planning and engineering docs remain in English
 

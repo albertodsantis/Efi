@@ -53,7 +53,7 @@ export default function OnboardingTour() {
     },
     {
       target: '#tia-assistant-btn',
-      content: 'Conoce a TIA, tu asistente de IA. Pídele que añada tareas, busque contactos o actualice estados por ti.',
+      content: 'Conoce a Tía, tu asistente de IA. Pídele que añada tareas, busque contactos o actualice estados por ti.',
       placement: 'top',
     }
   ];

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { Search, Plus, Building2, Mail, Instagram, ChevronDown, ChevronUp, Send, Edit2, Trash2, X } from 'lucide-react';
 import { Contact, Partner } from '@shared/domain';
+import OverlayModal from '../components/OverlayModal';
 
 const PARTNER_STATUSES = [
   'Prospecto',
@@ -11,6 +12,20 @@ const PARTNER_STATUSES = [
   'On Hold',
   'Relación Culminada',
 ] as const;
+
+const PARTNER_STATUS_LABELS: Record<string, string> = {
+  Prospecto: 'Prospecto',
+  'En NegociaciÃ³n': 'En negociacion',
+  Activo: 'Activo',
+  Inactivo: 'Inactivo',
+  'On Hold': 'En pausa',
+  'RelaciÃ³n Culminada': 'Relacion cerrada',
+};
+
+const modalPanelClass =
+  'bg-white dark:bg-slate-800 w-full sm:w-[90%] sm:rounded-[2.5rem] rounded-t-[2.5rem] p-8 pt-10 shadow-2xl';
+const fieldClass =
+  'w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 dark:text-slate-100';
 
 export default function Directory() {
   const { partners, accentColor, templates, profile, addContact, updateContact, deleteContact, updatePartner, addPartner, tasks } = useAppContext();
@@ -54,6 +69,12 @@ export default function Directory() {
     }
   };
 
+  const closeComposer = () => {
+    setComposingTo(null);
+    setSelectedTemplateId('');
+    setMessagePreview({ subject: '', body: '' });
+  };
+
   const handleTemplateSelect = (templateId: string) => {
     setSelectedTemplateId(templateId);
     const template = templates.find(t => t.id === templateId);
@@ -83,14 +104,12 @@ export default function Directory() {
     if (!composingTo) return;
     const mailto = `mailto:${composingTo.contact.email}?subject=${encodeURIComponent(messagePreview.subject)}&body=${encodeURIComponent(messagePreview.body)}`;
     window.open(mailto, '_blank');
-    setComposingTo(null);
-    setSelectedTemplateId('');
-    setMessagePreview({ subject: '', body: '' });
+    closeComposer();
   };
 
   const handleAddPartner = async (e: React.FormEvent) => {
     e.preventDefault();
-    const partnerId = await addPartner({ name: newPartner.name, status: newPartner.status, contacts: [] });
+    const partnerId = await addPartner({ name: newPartner.name.trim(), status: newPartner.status, contacts: [] });
     setExpandedId(partnerId);
     setIsAddingPartner(false);
     setNewPartner({ name: '', status: 'Prospecto' });
@@ -118,11 +137,20 @@ export default function Directory() {
   };
 
   return (
-    <div className="p-6 flex flex-col h-full animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="flex justify-between items-center mb-6 mt-4">
-        <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Directory</h1>
+    <div className="p-6 lg:px-8 lg:py-8 flex flex-col h-full animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <div className="mb-6 mt-2 flex items-start justify-between gap-4 lg:mb-8 lg:mt-0">
+        <div className="lg:hidden">
+          <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">
+            Relaciones comerciales
+          </p>
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900 dark:text-slate-100">Directorio</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+            Centraliza marcas, contactos y mensajes para mover conversaciones sin perder contexto.
+          </p>
+        </div>
         <button
           onClick={() => setIsAddingPartner(true)}
+          aria-label="Anadir marca"
           className="w-12 h-12 rounded-full flex items-center justify-center text-white shadow-[0_8px_30px_rgb(0,0,0,0.12)] transition-transform active:scale-95"
           style={{ backgroundColor: accentColor }}
         >
@@ -130,11 +158,11 @@ export default function Directory() {
         </button>
       </div>
 
-      <div className="relative mb-6">
+      <div className="relative mb-6 lg:max-w-xl">
         <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={20} />
         <input
           type="text"
-          placeholder="Search brands or contacts..."
+          placeholder="Buscar marcas o contactos"
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="w-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-white/60 dark:border-slate-700/60 rounded-[2rem] pl-14 pr-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:border-transparent shadow-[0_8px_30px_rgb(0,0,0,0.03)] transition-all placeholder:text-slate-400 text-slate-800 dark:text-slate-100"
@@ -142,13 +170,15 @@ export default function Directory() {
         />
       </div>
 
-      <div className="space-y-4 flex-1 overflow-y-auto pb-4 hide-scrollbar">
+      <div className="grid gap-4 xl:grid-cols-2 2xl:grid-cols-3 flex-1 overflow-y-auto pb-4 hide-scrollbar auto-rows-max">
         {filteredPartners.map(partner => {
           const isExpanded = expandedId === partner.id;
           return (
             <div key={partner.id} className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.03)] border border-white/60 dark:border-slate-700/60 overflow-hidden transition-all">
-              <div
-                className="p-5 flex items-center justify-between cursor-pointer active:bg-slate-50/50 dark:active:bg-slate-700/50"
+              <button
+                type="button"
+                aria-expanded={isExpanded}
+                className="w-full p-5 flex items-center justify-between cursor-pointer text-left active:bg-slate-50/50 dark:active:bg-slate-700/50"
                 onClick={() => setExpandedId(isExpanded ? null : partner.id)}
               >
                 <div className="flex items-center gap-4">
@@ -161,12 +191,13 @@ export default function Directory() {
                       value={partner.status}
                       onChange={(e) => void updatePartner(partner.id, { status: e.target.value as any })}
                       onClick={(e) => e.stopPropagation()}
+                      aria-label={`Cambiar estado de ${partner.name}`}
                       className={`text-[11px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-xl mt-1.5 inline-block appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 dark:focus:ring-offset-slate-800 ${getStatusColor(partner.status)}`}
                       style={{ '--tw-ring-color': accentColor } as any}
                     >
                       {PARTNER_STATUSES.map((status) => (
                         <option key={status} value={status}>
-                          {status}
+                          {PARTNER_STATUS_LABELS[status]}
                         </option>
                       ))}
                     </select>
@@ -175,11 +206,11 @@ export default function Directory() {
                 <div className="text-slate-400 dark:text-slate-500 shrink-0 ml-2">
                   {isExpanded ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
                 </div>
-              </div>
+              </button>
 
               {isExpanded && (
                 <div className="px-5 pb-5 pt-2 border-t border-slate-100/50 dark:border-slate-700/50 bg-slate-50/30 dark:bg-slate-900/30">
-                  <h4 className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 mt-2">Contacts</h4>
+                  <h4 className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 mt-2">Contactos</h4>
                   {partner.contacts.length > 0 ? (
                     <div className="space-y-3">
                       {partner.contacts.map(contact => (
@@ -192,18 +223,21 @@ export default function Directory() {
                             <div className="flex gap-1.5">
                               <button 
                                 onClick={() => setEditingContact({ partnerId: partner.id, contact })}
+                                aria-label={`Editar contacto ${contact.name}`}
                                 className="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
                               >
                                 <Edit2 size={16} />
                               </button>
                               <button 
                                 onClick={() => handleDeleteContact(partner.id, contact.id)}
+                                aria-label={`Eliminar contacto ${contact.name}`}
                                 className="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-rose-500 hover:bg-rose-900/30 transition-colors"
                               >
                                 <Trash2 size={16} />
                               </button>
                               <button 
                                 onClick={() => setComposingTo({ contact, partner })}
+                                aria-label={`Redactar mensaje para ${contact.name}`}
                                 className="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
                               >
                                 <Send size={16} />
@@ -222,13 +256,13 @@ export default function Directory() {
                       ))}
                     </div>
                   ) : (
-                    <p className="text-[15px] text-slate-400 dark:text-slate-500 font-medium italic py-3">No contacts registered.</p>
+                    <p className="text-[15px] text-slate-400 dark:text-slate-500 font-medium italic py-3">Aun no hay contactos registrados.</p>
                   )}
                   <button 
                     onClick={() => setAddingContactTo(partner.id)}
                     className="w-full mt-4 py-4 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-[1.5rem] text-[13px] font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300 transition-colors active:scale-[0.98]"
                   >
-                    + Add Contact
+                    + Anadir contacto
                   </button>
                 </div>
               )}
@@ -237,17 +271,17 @@ export default function Directory() {
         })}
         {filteredPartners.length === 0 && (
           <div className="text-center py-12 text-slate-400 dark:text-slate-500">
-            <p className="font-medium text-[15px]">No results found.</p>
+            <p className="font-medium text-[15px]">No hay resultados.</p>
           </div>
         )}
       </div>
 
       {isAddingPartner && (
-        <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center">
-          <div className="bg-white dark:bg-slate-800 w-full sm:w-[90%] sm:rounded-[2.5rem] rounded-t-[2.5rem] p-8 animate-in slide-in-from-bottom-full duration-300 shadow-2xl">
+        <OverlayModal tone="slate" onClose={() => setIsAddingPartner(false)}>
+          <div className={modalPanelClass}>
             <div className="flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Nueva Marca</h2>
-              <button onClick={() => setIsAddingPartner(false)} className="text-slate-400 dark:text-slate-500 p-2.5 bg-slate-100 dark:bg-slate-700 rounded-full active:scale-90 transition-transform hover:bg-slate-200 dark:hover:bg-slate-600"><X size={20} /></button>
+              <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Nueva marca</h2>
+              <button onClick={() => setIsAddingPartner(false)} aria-label="Cerrar modal" className="text-slate-400 dark:text-slate-500 p-2.5 bg-slate-100 dark:bg-slate-700 rounded-full active:scale-90 transition-transform hover:bg-slate-200 dark:hover:bg-slate-600"><X size={20} /></button>
             </div>
             <form onSubmit={handleAddPartner} className="space-y-5">
               <div>
@@ -256,7 +290,7 @@ export default function Directory() {
                   required
                   value={newPartner.name}
                   onChange={(e) => setNewPartner({ ...newPartner, name: e.target.value })}
-                  className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 dark:text-slate-100"
+                  className={fieldClass}
                   style={{ '--tw-ring-color': accentColor } as any}
                   placeholder="Ej. Nike, Samsung, Zara"
                 />
@@ -266,46 +300,45 @@ export default function Directory() {
                 <select
                   value={newPartner.status}
                   onChange={(e) => setNewPartner({ ...newPartner, status: e.target.value as Partner['status'] })}
-                  className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 dark:text-slate-100"
+                  className={fieldClass}
                   style={{ '--tw-ring-color': accentColor } as any}
                 >
                   {PARTNER_STATUSES.map((status) => (
                     <option key={status} value={status}>
-                      {status}
+                      {PARTNER_STATUS_LABELS[status]}
                     </option>
                   ))}
                 </select>
               </div>
               <button type="submit" className="w-full text-white font-bold py-4 rounded-[1.5rem] mt-6 transition-opacity hover:opacity-90 active:scale-[0.98] shadow-md text-[15px]" style={{ backgroundColor: accentColor }}>
-                Crear Marca
+                Crear marca
               </button>
             </form>
           </div>
-        </div>
+        </OverlayModal>
       )}
 
-      {/* Compose Message Modal */}
       {composingTo && (
-        <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center">
-          <div className="bg-white dark:bg-slate-800 w-full sm:w-[90%] sm:rounded-[2.5rem] rounded-t-[2.5rem] p-8 animate-in slide-in-from-bottom-full duration-300 shadow-2xl">
+        <OverlayModal tone="slate" onClose={closeComposer}>
+          <div className={modalPanelClass}>
             <div className="flex justify-between items-center mb-8">
               <div>
-                <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Message {composingTo.contact.name}</h2>
+                <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Mensaje para {composingTo.contact.name}</h2>
                 <p className="text-[13px] text-slate-500 dark:text-slate-400 font-medium mt-1">{composingTo.partner.name}</p>
               </div>
-              <button onClick={() => setComposingTo(null)} className="text-slate-400 dark:text-slate-500 p-2.5 bg-slate-100 dark:bg-slate-700 rounded-full active:scale-90 transition-transform hover:bg-slate-200 dark:hover:bg-slate-600"><X size={20} /></button>
+              <button onClick={closeComposer} aria-label="Cerrar modal" className="text-slate-400 dark:text-slate-500 p-2.5 bg-slate-100 dark:bg-slate-700 rounded-full active:scale-90 transition-transform hover:bg-slate-200 dark:hover:bg-slate-600"><X size={20} /></button>
             </div>
             
             <div className="space-y-5">
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Use Template</label>
+                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Usar plantilla</label>
                 <select 
                   value={selectedTemplateId} 
                   onChange={e => handleTemplateSelect(e.target.value)}
-                  className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all appearance-none text-slate-800 dark:text-slate-100"
+                  className={fieldClass}
                   style={{ '--tw-ring-color': accentColor } as any}
                 >
-                  <option value="">-- Select --</option>
+                  <option value="">Selecciona una plantilla</option>
                   {templates.map(t => (
                     <option key={t.id} value={t.id}>{t.name}</option>
                   ))}
@@ -315,20 +348,20 @@ export default function Directory() {
               {selectedTemplateId && (
                 <>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Subject</label>
+                    <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Asunto</label>
                     <input 
                       value={messagePreview.subject} 
                       onChange={e => setMessagePreview({...messagePreview, subject: e.target.value})}
-                      className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 dark:text-slate-100" 
+                      className={fieldClass}
                       style={{ '--tw-ring-color': accentColor } as any} 
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Message</label>
+                    <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Mensaje</label>
                     <textarea 
                       value={messagePreview.body} 
                       onChange={e => setMessagePreview({...messagePreview, body: e.target.value})}
-                      className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all min-h-[160px] text-slate-800 dark:text-slate-100" 
+                      className={`${fieldClass} min-h-[160px]`}
                       style={{ '--tw-ring-color': accentColor } as any} 
                     />
                   </div>
@@ -338,30 +371,30 @@ export default function Directory() {
                     style={{ backgroundColor: accentColor }}
                   >
                     <Send size={20} />
-                    Open in Mail Client
+                    Abrir en correo
                   </button>
                 </>
               )}
             </div>
           </div>
-        </div>
+        </OverlayModal>
       )}
 
       {/* Add Contact Modal */}
       {addingContactTo && (
-        <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center">
-          <div className="bg-white dark:bg-slate-800 w-full sm:w-[90%] sm:rounded-[2.5rem] rounded-t-[2.5rem] p-8 animate-in slide-in-from-bottom-full duration-300 shadow-2xl">
+        <OverlayModal tone="slate" onClose={() => setAddingContactTo(null)}>
+          <div className={modalPanelClass}>
             <div className="flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Add Contact</h2>
-              <button onClick={() => setAddingContactTo(null)} className="text-slate-400 dark:text-slate-500 p-2.5 bg-slate-100 dark:bg-slate-700 rounded-full active:scale-90 transition-transform hover:bg-slate-200 dark:hover:bg-slate-600"><X size={20} /></button>
+              <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Nuevo contacto</h2>
+              <button onClick={() => setAddingContactTo(null)} aria-label="Cerrar modal" className="text-slate-400 dark:text-slate-500 p-2.5 bg-slate-100 dark:bg-slate-700 rounded-full active:scale-90 transition-transform hover:bg-slate-200 dark:hover:bg-slate-600"><X size={20} /></button>
             </div>
             <form onSubmit={handleAddContact} className="space-y-5">
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Name</label>
+                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Nombre</label>
                 <input required value={newContact.name} onChange={e => setNewContact({...newContact, name: e.target.value})} className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 dark:text-slate-100" style={{ '--tw-ring-color': accentColor } as any} placeholder="e.g. Juan Pérez" />
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Role</label>
+                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Rol</label>
                 <input required value={newContact.role} onChange={e => setNewContact({...newContact, role: e.target.value})} className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 dark:text-slate-100" style={{ '--tw-ring-color': accentColor } as any} placeholder="e.g. PR Manager" />
               </div>
               <div>
@@ -373,27 +406,27 @@ export default function Directory() {
                 <input value={newContact.ig} onChange={e => setNewContact({...newContact, ig: e.target.value})} className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 dark:text-slate-100" style={{ '--tw-ring-color': accentColor } as any} placeholder="@juanperez" />
               </div>
               <button type="submit" className="w-full text-white font-bold py-4 rounded-[1.5rem] mt-6 transition-opacity hover:opacity-90 active:scale-[0.98] shadow-md text-[15px]" style={{ backgroundColor: accentColor }}>
-                Save Contact
+                Guardar contacto
               </button>
             </form>
           </div>
-        </div>
+        </OverlayModal>
       )}
       {/* Edit Contact Modal */}
       {editingContact && (
-        <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center">
-          <div className="bg-white dark:bg-slate-800 w-full sm:w-[90%] sm:rounded-[2.5rem] rounded-t-[2.5rem] p-8 animate-in slide-in-from-bottom-full duration-300 shadow-2xl">
+        <OverlayModal tone="slate" onClose={() => setEditingContact(null)}>
+          <div className={modalPanelClass}>
             <div className="flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Edit Contact</h2>
-              <button onClick={() => setEditingContact(null)} className="text-slate-400 dark:text-slate-500 p-2.5 bg-slate-100 dark:bg-slate-700 rounded-full active:scale-90 transition-transform hover:bg-slate-200 dark:hover:bg-slate-600"><X size={20} /></button>
+              <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Editar contacto</h2>
+              <button onClick={() => setEditingContact(null)} aria-label="Cerrar modal" className="text-slate-400 dark:text-slate-500 p-2.5 bg-slate-100 dark:bg-slate-700 rounded-full active:scale-90 transition-transform hover:bg-slate-200 dark:hover:bg-slate-600"><X size={20} /></button>
             </div>
             <form onSubmit={handleEditContact} className="space-y-5">
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Name</label>
+                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Nombre</label>
                 <input required value={editingContact.contact.name} onChange={e => setEditingContact({...editingContact, contact: {...editingContact.contact, name: e.target.value}})} className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 dark:text-slate-100" style={{ '--tw-ring-color': accentColor } as any} placeholder="e.g. Juan Pérez" />
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Role</label>
+                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Rol</label>
                 <input required value={editingContact.contact.role} onChange={e => setEditingContact({...editingContact, contact: {...editingContact.contact, role: e.target.value}})} className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 dark:text-slate-100" style={{ '--tw-ring-color': accentColor } as any} placeholder="e.g. PR Manager" />
               </div>
               <div>
@@ -405,11 +438,11 @@ export default function Directory() {
                 <input required value={editingContact.contact.ig} onChange={e => setEditingContact({...editingContact, contact: {...editingContact.contact, ig: e.target.value}})} className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 dark:text-slate-100" style={{ '--tw-ring-color': accentColor } as any} placeholder="@juanperez" />
               </div>
               <button type="submit" className="w-full text-white font-bold py-4 rounded-[1.5rem] mt-6 transition-opacity hover:opacity-90 active:scale-[0.98] shadow-md text-[15px]" style={{ backgroundColor: accentColor }}>
-                Save Changes
+                Guardar cambios
               </button>
             </form>
           </div>
-        </div>
+        </OverlayModal>
       )}
     </div>
   );

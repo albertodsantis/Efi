@@ -1,12 +1,12 @@
-# TIA - Product Requirements Document
+# Tía - Product Requirements Document
 
 ## 1. Purpose
 
-This document defines the target product for the `MVP Production Baseline` version of TIA. Any functional change that conflicts with this document requires an explicit update to the canon.
+This document defines the target product for the `MVP Production Baseline` version of Tía. Any functional change that conflicts with this document requires an explicit update to the canon.
 
 ## 2. Product Vision
 
-TIA is a micro SaaS for content creators and creator operators who need to manage deliverables, brand relationships, contacts, templates, and follow-up work without relying on scattered spreadsheets, notes, reminders, and inbox threads.
+Tía is a micro SaaS for content creators and creator operators who need to manage deliverables, brand relationships, contacts, templates, and follow-up work without relying on scattered spreadsheets, notes, reminders, and inbox threads.
 
 The delivery sequence is:
 
@@ -25,7 +25,7 @@ The MVP goal is to turn the current prototype into a real, persistent web applic
 
 ## 3. Language and Audience
 
-TIA is built for Spanish-speaking users.
+Tía is built for Spanish-speaking users.
 
 Rules:
 
@@ -66,7 +66,7 @@ Shared multi-user collaboration is not part of MVP v1, but the system should not
 
 ## 6. Release Goal
 
-Release target: `TIA MVP v1`
+Release target: `Tía MVP v1`
 
 The v1 release must be an authenticated, persistent, commercially credible web application that is ready for daily use and works correctly across desktop and mobile browsers.
 
@@ -183,12 +183,12 @@ Approved brand statuses:
 ### 8.5 Calendar and Reminders
 
 - As a creator, I want to sync a task with Google Calendar so I do not miss deadlines.
-- As a creator, I want to pull date changes from Calendar so TIA stays aligned.
+- As a creator, I want to pull date changes from Calendar so Tía stays aligned.
 - As a creator, I want to enable notifications so I can remember upcoming deliverables.
 
 ### 8.6 Cross-Device Use
 
-- As a creator, I want the same account to work well on desktop and mobile web so I can use TIA from wherever I am.
+- As a creator, I want the same account to work well on desktop and mobile web so I can use Tía from wherever I am.
 - As a creator, I want the backend to preserve my data consistently so switching devices does not change my operational context.
 
 ## 9. Out of Scope
@@ -198,7 +198,7 @@ Everything below is explicitly out of scope for MVP v1:
 - real-time multi-user collaboration
 - shared workspaces with granular permissions
 - invoicing, collections, or advanced accounting
-- sending email from TIA-owned servers
+- sending email from Tía-owned servers
 - internal messaging
 - native iOS or Android apps
 - automatically imported social media analytics

@@ -15,6 +15,7 @@ import {
   X,
 } from 'lucide-react';
 import type { Task, TaskStatus } from '@shared/domain';
+import OverlayModal from '../components/OverlayModal';
 
 const REVIEW_STATUS = `En Revisi${'\u00f3'}n` as TaskStatus;
 const STATUSES: TaskStatus[] = ['Pendiente', 'En Progreso', REVIEW_STATUS, 'Completada', 'Cobro'];
@@ -68,8 +69,19 @@ export default function Pipeline() {
     () => [...tasks].sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()),
     [tasks],
   );
+  const tasksByStatus = useMemo(
+    () =>
+      STATUSES.reduce(
+        (accumulator, status) => {
+          accumulator[status] = sortedTasks.filter((task) => task.status === status);
+          return accumulator;
+        },
+        {} as Record<TaskStatus, Task[]>,
+      ),
+    [sortedTasks],
+  );
   const currentStatus = STATUSES[currentStatusIdx];
-  const visibleTasks = view === 'kanban' ? sortedTasks.filter((task) => task.status === currentStatus) : sortedTasks;
+  const visibleTasks = view === 'kanban' ? tasksByStatus[currentStatus] : sortedTasks;
   const todayIso = new Date().toISOString().split('T')[0];
   const selectedDateTasks = selectedDate
     ? sortedTasks.filter((task) => task.dueDate === selectedDate)
@@ -253,6 +265,7 @@ export default function Pipeline() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => openEdit(task)}
+              aria-label={`Editar ${task.title}`}
               className="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-700/50 border border-slate-100 dark:border-slate-600 flex items-center justify-center text-slate-500 dark:text-slate-300"
             >
               <PencilLine size={15} />
@@ -260,6 +273,7 @@ export default function Pipeline() {
             <button
               onClick={() => void removeTask(task)}
               disabled={deletingTaskId === task.id}
+              aria-label={`Eliminar ${task.title}`}
               className="w-9 h-9 rounded-full bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-400/10 flex items-center justify-center text-rose-500 disabled:opacity-50"
             >
               <Trash2 size={15} />
@@ -267,6 +281,9 @@ export default function Pipeline() {
             <button
               onClick={() => void syncTask(task)}
               disabled={syncingTaskId === task.id}
+              aria-label={
+                task.gcalEventId ? `Revisar sincronizacion de ${task.title}` : `Sincronizar ${task.title}`
+              }
               className={`flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider px-3 py-2 rounded-xl ${
                 task.gcalEventId
                   ? 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
@@ -328,14 +345,34 @@ export default function Pipeline() {
 
   return (
     <div className="flex flex-col h-full animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="p-6 pb-2 sticky top-0 z-10">
-        <div className="flex items-center justify-between mb-6 mt-4">
-          <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Pipeline</h1>
-          <div className="flex gap-3">
-            <button onClick={syncDown} disabled={isSyncingDown} className="w-12 h-12 rounded-full bg-white/80 dark:bg-slate-800/80 border border-white/60 dark:border-slate-700/60 text-slate-500 dark:text-slate-400 flex items-center justify-center disabled:opacity-50">
+      <div className="sticky top-0 z-10 px-6 pb-3 pt-3 backdrop-blur-xl lg:px-8 lg:pt-5">
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div className="min-w-0 lg:hidden">
+            <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">
+              Operacion comercial
+            </p>
+            <h1 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100">
+              Pipeline
+            </h1>
+            <p className="mt-2 max-w-[15rem] text-xs leading-5 text-slate-500 dark:text-slate-400 sm:max-w-xs">
+              Sigue entregables, prioriza bloqueos y cambia fases sin perder la vista completa del negocio.
+            </p>
+          </div>
+          <div className="flex shrink-0 w-auto justify-end gap-3">
+            <button
+              onClick={syncDown}
+              disabled={isSyncingDown}
+              aria-label="Traer cambios desde Google Calendar"
+              className="h-12 w-12 rounded-full bg-white/80 dark:bg-slate-800/80 border border-white/60 dark:border-slate-700/60 text-slate-500 dark:text-slate-400 flex items-center justify-center disabled:opacity-50"
+            >
               <DownloadCloud size={20} className={isSyncingDown ? 'animate-bounce' : ''} />
             </button>
-            <button onClick={openCreate} className="w-12 h-12 rounded-full text-white flex items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.12)]" style={{ backgroundColor: accentColor }}>
+            <button
+              onClick={openCreate}
+              aria-label="Crear nueva tarea"
+              className="h-12 w-12 rounded-full text-white flex items-center justify-center shadow-[0_8px_30px_rgb(0,0,0,0.12)]"
+              style={{ backgroundColor: accentColor }}
+            >
               <Plus size={28} />
             </button>
           </div>
@@ -350,21 +387,85 @@ export default function Pipeline() {
         </div>
       </div>
 
-      <div className="flex-1 px-6 pb-6 overflow-y-auto hide-scrollbar space-y-4">
+      <div className="flex-1 overflow-y-auto hide-scrollbar space-y-4 px-6 pb-6 lg:px-8">
         {view === 'kanban' && (
           <div className="space-y-4">
-            <div className={`${cardClass} p-3 flex items-center justify-between`}>
-              <button onClick={() => setCurrentStatusIdx(Math.max(0, currentStatusIdx - 1))} disabled={currentStatusIdx === 0} className="p-3 text-slate-400 dark:text-slate-500 disabled:opacity-30"><ChevronLeft size={24} /></button>
-              <div className="text-center flex-1">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">Fase {currentStatusIdx + 1} de {STATUSES.length}</p>
-                <h2 className="text-lg font-extrabold" style={{ color: accentColor }}>{currentStatus}</h2>
+            <div className="lg:hidden space-y-4">
+              <div className={`${cardClass} flex items-center justify-between p-3`}>
+                <button
+                  onClick={() => setCurrentStatusIdx(Math.max(0, currentStatusIdx - 1))}
+                  disabled={currentStatusIdx === 0}
+                  aria-label="Ver fase anterior"
+                  className="p-3 text-slate-400 dark:text-slate-500 disabled:opacity-30"
+                >
+                  <ChevronLeft size={24} />
+                </button>
+                <div className="flex-1 text-center">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
+                    Fase {currentStatusIdx + 1} de {STATUSES.length}
+                  </p>
+                  <h2 className="text-lg font-extrabold" style={{ color: accentColor }}>
+                    {currentStatus}
+                  </h2>
+                </div>
+                <button
+                  onClick={() => setCurrentStatusIdx(Math.min(STATUSES.length - 1, currentStatusIdx + 1))}
+                  disabled={currentStatusIdx === STATUSES.length - 1}
+                  aria-label="Ver siguiente fase"
+                  className="p-3 text-slate-400 dark:text-slate-500 disabled:opacity-30"
+                >
+                  <ChevronRight size={24} />
+                </button>
               </div>
-              <button onClick={() => setCurrentStatusIdx(Math.min(STATUSES.length - 1, currentStatusIdx + 1))} disabled={currentStatusIdx === STATUSES.length - 1} className="p-3 text-slate-400 dark:text-slate-500 disabled:opacity-30"><ChevronRight size={24} /></button>
+              {visibleTasks.length > 0 ? (
+                visibleTasks.map(renderTask)
+              ) : (
+                <div className={`${cardClass} border-dashed border-2 p-12 text-center text-slate-400 dark:text-slate-500`}>
+                  <p className="font-medium">No hay tareas en esta fase.</p>
+                </div>
+              )}
             </div>
-            {visibleTasks.length > 0 ? visibleTasks.map(renderTask) : <div className={`${cardClass} p-12 text-center text-slate-400 dark:text-slate-500 border-dashed border-2`}><p className="font-medium">No hay tareas en esta fase.</p></div>}
+            <div className="hidden gap-4 lg:grid lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
+              {STATUSES.map((status) => {
+                const columnTasks = tasksByStatus[status];
+                return (
+                  <section key={status} className={`${cardClass} p-4 lg:p-5`}>
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">
+                          Fase
+                        </p>
+                        <h2 className="mt-1 text-base font-extrabold" style={{ color: accentColor }}>
+                          {status}
+                        </h2>
+                      </div>
+                      <span className="inline-flex h-9 min-w-9 items-center justify-center rounded-2xl bg-slate-100 px-3 text-xs font-black text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                        {columnTasks.length}
+                      </span>
+                    </div>
+                    <div className="mt-4 space-y-4">
+                      {columnTasks.length > 0 ? (
+                        columnTasks.map(renderTask)
+                      ) : (
+                        <div className="rounded-[1.6rem] border border-dashed border-slate-200 px-4 py-8 text-center text-sm font-medium text-slate-400 dark:border-slate-700 dark:text-slate-500">
+                          Sin tareas en esta fase.
+                        </div>
+                      )}
+                    </div>
+                  </section>
+                );
+              })}
+            </div>
           </div>
         )}
-        {view === 'list' && (visibleTasks.length > 0 ? visibleTasks.map(renderTask) : <div className={`${cardClass} p-12 text-center text-slate-400 dark:text-slate-500 border-dashed border-2`}><p className="font-medium">Todavia no hay tareas.</p></div>)}
+        {view === 'list' &&
+          (sortedTasks.length > 0 ? (
+            <div className="grid gap-4 xl:grid-cols-2 2xl:grid-cols-3">{sortedTasks.map(renderTask)}</div>
+          ) : (
+            <div className={`${cardClass} border-dashed border-2 p-12 text-center text-slate-400 dark:text-slate-500`}>
+              <p className="font-medium">Todavia no hay tareas.</p>
+            </div>
+          ))}
         {view === 'calendar' && (
           <div className={`${cardClass} p-5`}>
             <div className="flex items-center justify-between mb-5">
@@ -379,7 +480,7 @@ export default function Pipeline() {
       </div>
 
       {selectedDate && (
-        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center">
+        <OverlayModal onClose={() => setSelectedDate(null)}>
           <div className="bg-white dark:bg-slate-800 w-full sm:w-[90%] sm:rounded-3xl rounded-t-[2rem] p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{new Date(selectedDate).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}</h2>
@@ -387,11 +488,11 @@ export default function Pipeline() {
             </div>
             <div className="space-y-3 max-h-[60vh] overflow-y-auto">{selectedDateTasks.map(renderTask)}</div>
           </div>
-        </div>
+        </OverlayModal>
       )}
 
       {modalMode && (
-        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center">
+        <OverlayModal onClose={resetModal}>
           <div className="bg-white dark:bg-slate-800 w-full sm:w-[90%] sm:rounded-3xl rounded-t-[2rem] p-6">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white">{modalMode === 'edit' ? 'Editar tarea' : 'Nueva tarea'}</h2>
@@ -420,7 +521,7 @@ export default function Pipeline() {
               </div>
             </form>
           </div>
-        </div>
+        </OverlayModal>
       )}
     </div>
   );

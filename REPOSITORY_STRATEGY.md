@@ -1,14 +1,14 @@
-# TIA - Repository Strategy
+# Tía - Repository Strategy
 
 ## 1. Purpose
 
-This document defines how the repository must evolve to support TIA as a micro SaaS.
+This document defines how the repository must evolve to support Tía as a micro SaaS.
 
 It is not a product roadmap. It is the engineering and repository strategy that keeps product delivery aligned with the intended distribution model.
 
 ## 2. Product Delivery Strategy
 
-TIA will be delivered in this order:
+Tía will be delivered in this order:
 
 1. web application as the primary product surface
 2. mobile web experience from the same responsive web application

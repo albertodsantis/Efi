@@ -1,8 +1,8 @@
-# TIA - Technology Stack Definition
+# Tía - Technology Stack Definition
 
 ## 1. Purpose
 
-This document locks the approved technical stack for taking TIA from the current prototype to a production-ready micro SaaS baseline.
+This document locks the approved technical stack for taking Tía from the current prototype to a production-ready micro SaaS baseline.
 
 ## 2. Language and Product Context
 
@@ -10,7 +10,7 @@ This document is written in English for technical consistency across AI-driven w
 
 Product context still matters:
 
-- TIA is a Spanish-first product
+- Tía is a Spanish-first product
 - visible UI copy remains in Spanish
 - brand tone remains in Spanish
 - engineering documentation remains in English

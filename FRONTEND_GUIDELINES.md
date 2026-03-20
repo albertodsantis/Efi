@@ -1,8 +1,8 @@
-# TIA - Frontend Guidelines
+# Tía - Frontend Guidelines
 
 ## 1. Purpose
 
-This document defines the visual system and interaction rules for TIA MVP v1. The UI must preserve the soft, rounded, mobile-first identity of the prototype while behaving like a responsive production SaaS across desktop and mobile web.
+This document defines the visual system and interaction rules for Tía MVP v1. The UI must preserve the soft, rounded, mobile-first identity of the prototype while behaving like a responsive production SaaS across desktop and mobile web.
 
 ## 2. Language and Brand Policy
 
@@ -10,14 +10,14 @@ This document is written in English because technical documentation in this repo
 
 Product rules:
 
-- TIA is designed for a Spanish-speaking audience
+- Tía is designed for a Spanish-speaking audience
 - brand tone is Spanish-first
 - visible navigation labels, product copy, and screen text should remain in Spanish
 - a single screen should not mix English and Spanish labels unless there is a clear product reason
 
 ## 3. Design System Lock
 
-Approved design system: `TIA Internal Mobile CRM System`
+Approved design system: `Tía Internal Mobile CRM System`
 
 Technical base:
 

@@ -2,9 +2,9 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# TIA
+# Tía
 
-TIA is a web-first micro SaaS for content creators and influencer operators. The product must work first as a desktop web app and mobile web experience, with a native mobile app reserved for a later phase.
+Tía is a web-first micro SaaS for content creators and influencer operators. The product must work first as a desktop web app and mobile web experience, with a native mobile app reserved for a later phase.
 
 ## Documentation Language Policy
 
@@ -16,7 +16,7 @@ This repository uses English for:
 - code comments when needed
 - file and section naming conventions
 
-TIA itself is designed for a Spanish-speaking audience. Product copy, brand tone, and user-facing labels should remain in Spanish unless a specific feature requires another language.
+Tía itself is designed for a Spanish-speaking audience. Product copy, brand tone, and user-facing labels should remain in Spanish unless a specific feature requires another language.
 
 ## Repository Direction
 

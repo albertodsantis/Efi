@@ -7,7 +7,7 @@ import { TaskStatus } from '@shared/domain';
 const geminiApiKey = process.env.GEMINI_API_KEY?.trim() || '';
 const ai = geminiApiKey ? new GoogleGenAI({ apiKey: geminiApiKey }) : null;
 
-export default function AIAssistant() {
+export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean }) {
   const { tasks, partners, profile, templates, accentColor, addTask, addPartner, updateTaskStatus, addContact, updatePartner } = useAppContext();
   const isAiAvailable = Boolean(ai);
   const [isOpen, setIsOpen] = useState(false);
@@ -15,7 +15,7 @@ export default function AIAssistant() {
     {
       role: 'model',
       text: isAiAvailable
-        ? '¡Hola! Soy TIA, tu asistente de inteligencia artificial. ¿En qué puedo ayudarte hoy?'
+        ? '¡Hola! Soy Tía, tu asistente de inteligencia artificial. ¿En qué puedo ayudarte hoy?'
         : 'El asistente IA está desactivado en local porque falta GEMINI_API_KEY. Puedes seguir usando el resto de la app con normalidad.',
     }
   ]);
@@ -157,7 +157,7 @@ export default function AIAssistant() {
       chatRef.current = ai.chats.create({
         model: 'gemini-3.1-pro-preview',
         config: {
-          systemInstruction: 'Eres TIA, un asistente de inteligencia artificial integrado en un CRM para creadores de contenido. Tu objetivo es ayudar al usuario a gestionar sus tareas, marcas (partners), contactos y perfil. Puedes consultar la información actual y realizar acciones como añadir tareas o marcas. Sé conciso, amigable y profesional. Responde siempre en español.',
+          systemInstruction: 'Eres Tía, un asistente de inteligencia artificial integrado en un CRM para creadores de contenido. Tu objetivo es ayudar al usuario a gestionar sus tareas, marcas (partners), contactos y perfil. Puedes consultar la información actual y realizar acciones como añadir tareas o marcas. Sé conciso, amigable y profesional. Responde siempre en español.',
           tools: tools,
         },
       });
@@ -256,7 +256,13 @@ export default function AIAssistant() {
   return (
     <>
       {/* Floating Button (Interactive Island) */}
-      <div className={`absolute bottom-[88px] left-1/2 -translate-x-1/2 z-40 transition-all duration-500 ${isOpen ? 'opacity-0 pointer-events-none translate-y-4 scale-90' : 'opacity-100 translate-y-0 scale-100'}`}>
+      <div
+        className={`z-40 transition-all duration-500 ${
+          isDesktop
+            ? 'absolute bottom-8 right-8'
+            : 'fixed bottom-[96px] left-1/2 -translate-x-1/2'
+        } ${isOpen ? 'opacity-0 pointer-events-none translate-y-4 scale-90' : 'opacity-100 translate-y-0 scale-100'}`}
+      >
         <div className="rounded-full" style={{ 
           '--accent-glow': `${accentColor || '#8b5cf6'}60`,
           boxShadow: '0 5px 15px rgba(0,0,0,0.2), 0 0 15px var(--accent-glow)'
@@ -290,14 +296,20 @@ export default function AIAssistant() {
               <div className="absolute inset-0 blur-md z-0" style={{ backgroundColor: accentColor || '#8b5cf6', opacity: 0.4 }} />
             </div>
             
-            <span className="text-xs font-bold tracking-[0.2em] text-white/90 uppercase z-10">TIA</span>
+            <span className="text-xs font-bold tracking-[0.2em] text-white/90 z-10">Tía</span>
           </button>
         </div>
       </div>
 
       {/* Chat Window */}
       {isOpen && (
-        <div className="absolute bottom-[88px] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[380px] h-[500px] max-h-[65vh] bg-white rounded-[2rem] shadow-2xl flex flex-col z-50 overflow-hidden border border-gray-100 animate-in slide-in-from-bottom-8 fade-in duration-300 origin-bottom">
+        <div
+          className={`bg-white rounded-[2rem] shadow-2xl flex flex-col z-50 overflow-hidden border border-gray-100 animate-in slide-in-from-bottom-8 fade-in duration-300 origin-bottom ${
+            isDesktop
+              ? 'absolute bottom-24 right-0 w-[420px] max-w-[calc(100vw-6rem)] h-[560px] max-h-[70vh]'
+              : 'fixed bottom-[96px] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[380px] h-[500px] max-h-[65vh]'
+          }`}
+        >
           {/* Header */}
           <div className="px-5 py-4 text-white flex justify-between items-center relative overflow-hidden" style={{ backgroundColor: accentColor || '#8b5cf6' }}>
             {/* Futuristic background overlay */}
@@ -311,7 +323,7 @@ export default function AIAssistant() {
                 </div>
               </div>
               <div>
-                <h3 className="font-bold text-sm tracking-wider">TIA</h3>
+                <h3 className="font-bold text-sm tracking-wider">Tía</h3>
                 <p className="text-[9px] text-white/90 font-medium uppercase tracking-[0.15em] flex items-center gap-1.5">
                   <span className="w-1 h-1 rounded-full bg-white animate-pulse shadow-[0_0_5px_rgba(255,255,255,0.8)]"></span>
                   Sistema Activo
@@ -340,7 +352,7 @@ export default function AIAssistant() {
               <div className="flex justify-start">
                 <div className="bg-white border border-gray-100 p-4 rounded-2xl rounded-tl-sm shadow-sm flex items-center gap-2 text-gray-400">
                   <Loader2 size={16} className="animate-spin" />
-                  <span className="text-xs font-medium">TIA está pensando...</span>
+                  <span className="text-xs font-medium">Tía está pensando...</span>
                 </div>
               </div>
             )}
@@ -363,7 +375,7 @@ export default function AIAssistant() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-                placeholder="Escribe o habla con TIA..."
+                placeholder="Escribe o habla con Tía..."
                 className="flex-1 bg-transparent border-none focus:outline-none text-sm px-2 text-gray-700 placeholder-gray-400"
               />
               <button 

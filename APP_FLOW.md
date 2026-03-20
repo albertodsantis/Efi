@@ -1,12 +1,12 @@
-# TIA - Application Flow and UX Map
+# Tía - Application Flow and UX Map
 
 ## 1. Purpose
 
-This document defines the main navigation, primary states, and screen transitions for TIA MVP v1. The application remains a responsive web SPA with mobile-first priorities and breakpoint-aware navigation patterns.
+This document defines the main navigation, primary states, and screen transitions for Tía MVP v1. The application remains a responsive web SPA with mobile-first priorities and breakpoint-aware navigation patterns.
 
 ## 2. Language and UX Policy
 
-TIA is designed for Spanish-speaking users.
+Tía is designed for Spanish-speaking users.
 
 Rules:
 
