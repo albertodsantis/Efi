@@ -1,73 +1,130 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { Search, Plus, Building2, Mail, Instagram, ChevronDown, ChevronUp, Send, Edit2, Trash2, X } from 'lucide-react';
+import {
+  Building2,
+  Mail,
+  Instagram,
+  Search,
+  Send,
+  Plus,
+  PencilLine,
+  Trash2,
+  ChevronDown,
+  MessageSquare,
+  Users,
+} from 'lucide-react';
 import { Contact, Partner } from '@shared/domain';
 import OverlayModal from '../components/OverlayModal';
+import {
+  Button,
+  EmptyState,
+  IconButton,
+  MetricCard,
+  ModalPanel,
+  ScreenHeader,
+  StatusBadge,
+  SurfaceCard,
+  cx,
+} from '../components/ui';
 
 const PARTNER_STATUSES = [
   'Prospecto',
-  'En Negociación',
+  'En Negociaci\u00f3n',
   'Activo',
   'Inactivo',
   'On Hold',
-  'Relación Culminada',
+  'Relaci\u00f3n Culminada',
 ] as const;
 
-const PARTNER_STATUS_LABELS: Record<string, string> = {
+const STATUS_LABELS: Record<Partner['status'], string> = {
   Prospecto: 'Prospecto',
-  'En NegociaciÃ³n': 'En negociacion',
+  'En Negociaci\u00f3n': 'En negociación',
   Activo: 'Activo',
   Inactivo: 'Inactivo',
   'On Hold': 'En pausa',
-  'RelaciÃ³n Culminada': 'Relacion cerrada',
+  'Relaci\u00f3n Culminada': 'Relación cerrada',
 };
 
-const modalPanelClass =
-  'bg-white dark:bg-slate-800 w-full sm:w-[90%] sm:rounded-[2.5rem] rounded-t-[2.5rem] p-8 pt-10 shadow-2xl';
+const STATUS_TONES: Record<Partner['status'], React.ComponentProps<typeof StatusBadge>['tone']> = {
+  Prospecto: 'info',
+  'En Negociaci\u00f3n': 'warning',
+  Activo: 'success',
+  Inactivo: 'neutral',
+  'On Hold': 'warning',
+  'Relaci\u00f3n Culminada': 'danger',
+};
+
 const fieldClass =
-  'w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 dark:text-slate-100';
+  'w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 transition-all focus:outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-100 dark:focus:bg-slate-800';
+const selectClass =
+  'appearance-none rounded-2xl border border-slate-200 bg-white/85 px-4 py-3 text-sm font-bold text-slate-700 shadow-sm focus:outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100';
+const modalClass =
+  'bg-white dark:bg-slate-800 w-full sm:w-[90%] sm:rounded-[2.5rem] rounded-t-[2.5rem] p-6 sm:p-8 shadow-2xl';
+
+const statusLabel = (status: Partner['status']) => STATUS_LABELS[status] ?? status;
+const statusTone = (status: Partner['status']) => STATUS_TONES[status] ?? 'neutral';
 
 export default function Directory() {
-  const { partners, accentColor, templates, profile, addContact, updateContact, deleteContact, updatePartner, addPartner, tasks } = useAppContext();
+  const {
+    partners,
+    accentColor,
+    templates,
+    profile,
+    addContact,
+    updateContact,
+    deleteContact,
+    updatePartner,
+    addPartner,
+    tasks,
+  } = useAppContext();
   const [search, setSearch] = useState('');
-  const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [composingTo, setComposingTo] = useState<{ contact: Contact, partner: Partner } | null>(null);
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+  const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(partners[0]?.id ?? null);
+  const [composingTo, setComposingTo] = useState<{ contact: Contact; partner: Partner } | null>(null);
+  const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [messagePreview, setMessagePreview] = useState({ subject: '', body: '' });
-  
   const [isAddingPartner, setIsAddingPartner] = useState(false);
   const [addingContactTo, setAddingContactTo] = useState<string | null>(null);
-  const [editingContact, setEditingContact] = useState<{ partnerId: string, contact: Contact } | null>(null);
-  const [newContact, setNewContact] = useState({ name: '', role: '', email: '', ig: '' });
+  const [editingContact, setEditingContact] = useState<{ partnerId: string; contact: Contact } | null>(null);
   const [newPartner, setNewPartner] = useState({ name: '', status: 'Prospecto' as Partner['status'] });
+  const [newContact, setNewContact] = useState({ name: '', role: '', email: '', ig: '' });
 
-  const filteredPartners = partners.filter((partner) => {
+  const filteredPartners = useMemo(() => {
     const query = search.toLowerCase().trim();
-    if (!query) {
-      return true;
+    if (!query) return partners;
+    return partners.filter((partner) => {
+      const partnerMatch = partner.name.toLowerCase().includes(query);
+      const contactMatch = partner.contacts.some((contact) =>
+        [contact.name, contact.role, contact.email, contact.ig]
+          .filter(Boolean)
+          .some((value) => value.toLowerCase().includes(query)),
+      );
+      return partnerMatch || contactMatch;
+    });
+  }, [partners, search]);
+
+  const activePartner = useMemo(() => {
+    if (filteredPartners.length === 0) return null;
+    return filteredPartners.find((partner) => partner.id === selectedPartnerId) ?? filteredPartners[0];
+  }, [filteredPartners, selectedPartnerId]);
+
+  const activePartnerTasks = useMemo(() => {
+    if (!activePartner) return [];
+    return tasks.filter((task) => task.partnerId === activePartner.id);
+  }, [activePartner, tasks]);
+
+  const openTasks = activePartnerTasks.filter((task) => task.status !== 'Cobro');
+  const totalContacts = partners.reduce((sum, partner) => sum + partner.contacts.length, 0);
+  const activePartners = partners.filter((partner) => partner.status === 'Activo').length;
+
+  useEffect(() => {
+    if (filteredPartners.length === 0) {
+      setSelectedPartnerId(null);
+      return;
     }
-
-    const partnerMatch = partner.name.toLowerCase().includes(query);
-    const contactMatch = partner.contacts.some((contact) =>
-      [contact.name, contact.email, contact.ig, contact.role]
-        .filter(Boolean)
-        .some((value) => value.toLowerCase().includes(query)),
-    );
-
-    return partnerMatch || contactMatch;
-  });
-
-  const getStatusColor = (status: string) => {
-    switch(status) {
-      case 'Prospecto': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400';
-      case 'Activo': return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400';
-      case 'En Negociación': return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400';
-      case 'Inactivo': return 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300';
-      case 'On Hold': return 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300';
-      case 'Relación Culminada': return 'bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400';
-      default: return 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300';
+    if (!selectedPartnerId || !filteredPartners.some((partner) => partner.id === selectedPartnerId)) {
+      setSelectedPartnerId(filteredPartners[0].id);
     }
-  };
+  }, [filteredPartners, selectedPartnerId]);
 
   const closeComposer = () => {
     setComposingTo(null);
@@ -77,27 +134,26 @@ export default function Directory() {
 
   const handleTemplateSelect = (templateId: string) => {
     setSelectedTemplateId(templateId);
-    const template = templates.find(t => t.id === templateId);
-    if (template && composingTo) {
-      // Find the most relevant task for this partner (e.g., first one not completed)
-      const partnerTasks = tasks.filter(t => t.partnerId === composingTo.partner.id && t.status !== 'Cobro');
-      const relevantTask = partnerTasks.length > 0 ? partnerTasks[0] : null;
-      const deliverableText = relevantTask ? `${relevantTask.title} (${relevantTask.description})` : '[Entregable no especificado]';
-
-      const replaceVars = (text: string) => {
-        return text
-          .replace(/{{brandName}}/g, composingTo.partner.name)
-          .replace(/{{contactName}}/g, composingTo.contact.name.split(' ')[0])
-          .replace(/{{creatorName}}/g, profile.name)
-          .replace(/{{deliverable}}/g, deliverableText);
-      };
-      setMessagePreview({
-        subject: replaceVars(template.subject),
-        body: replaceVars(template.body)
-      });
-    } else {
+    const template = templates.find((item) => item.id === templateId);
+    if (!template || !composingTo) {
       setMessagePreview({ subject: '', body: '' });
+      return;
     }
+
+    const partnerTasks = tasks.filter((task) => task.partnerId === composingTo.partner.id && task.status !== 'Cobro');
+    const relevantTask = partnerTasks.length > 0 ? partnerTasks[0] : null;
+    const deliverable = relevantTask ? `${relevantTask.title} (${relevantTask.description})` : '[Entregable no especificado]';
+    const replaceVars = (text: string) =>
+      text
+        .replace(/{{brandName}}/g, composingTo.partner.name)
+        .replace(/{{contactName}}/g, composingTo.contact.name.split(' ')[0])
+        .replace(/{{creatorName}}/g, profile.name)
+        .replace(/{{deliverable}}/g, deliverable);
+
+    setMessagePreview({
+      subject: replaceVars(template.subject),
+      body: replaceVars(template.body),
+    });
   };
 
   const handleSend = () => {
@@ -107,29 +163,29 @@ export default function Directory() {
     closeComposer();
   };
 
-  const handleAddPartner = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const partnerId = await addPartner({ name: newPartner.name.trim(), status: newPartner.status, contacts: [] });
-    setExpandedId(partnerId);
+  const handleAddPartner = async (event: React.FormEvent) => {
+    event.preventDefault();
+    const name = newPartner.name.trim();
+    if (!name) return;
+    const partnerId = await addPartner({ name, status: newPartner.status, contacts: [] });
+    setSelectedPartnerId(partnerId);
     setIsAddingPartner(false);
     setNewPartner({ name: '', status: 'Prospecto' });
   };
 
-  const handleAddContact = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (addingContactTo) {
-      await addContact(addingContactTo, newContact);
-      setAddingContactTo(null);
-      setNewContact({ name: '', role: '', email: '', ig: '' });
-    }
+  const handleAddContact = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!addingContactTo) return;
+    await addContact(addingContactTo, newContact);
+    setAddingContactTo(null);
+    setNewContact({ name: '', role: '', email: '', ig: '' });
   };
 
-  const handleEditContact = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (editingContact) {
-      await updateContact(editingContact.partnerId, editingContact.contact.id, editingContact.contact);
-      setEditingContact(null);
-    }
+  const handleEditContact = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!editingContact) return;
+    await updateContact(editingContact.partnerId, editingContact.contact.id, editingContact.contact);
+    setEditingContact(null);
   };
 
   const handleDeleteContact = async (partnerId: string, contactId: string) => {
@@ -137,311 +193,349 @@ export default function Directory() {
   };
 
   return (
-    <div className="p-6 lg:px-8 lg:py-8 flex flex-col h-full animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <div className="mb-6 mt-2 flex items-start justify-between gap-4 lg:mb-8 lg:mt-0">
-        <div className="lg:hidden">
-          <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">
-            Relaciones comerciales
-          </p>
-          <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900 dark:text-slate-100">Directorio</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-            Centraliza marcas, contactos y mensajes para mover conversaciones sin perder contexto.
-          </p>
-        </div>
-        <button
-          onClick={() => setIsAddingPartner(true)}
-          aria-label="Anadir marca"
-          className="w-12 h-12 rounded-full flex items-center justify-center text-white shadow-[0_8px_30px_rgb(0,0,0,0.12)] transition-transform active:scale-95"
-          style={{ backgroundColor: accentColor }}
-        >
-          <Plus size={28} />
-        </button>
-      </div>
-
-      <div className="relative mb-6 lg:max-w-xl">
-        <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={20} />
-        <input
-          type="text"
-          placeholder="Buscar marcas o contactos"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          className="w-full bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl border border-white/60 dark:border-slate-700/60 rounded-[2rem] pl-14 pr-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:border-transparent shadow-[0_8px_30px_rgb(0,0,0,0.03)] transition-all placeholder:text-slate-400 text-slate-800 dark:text-slate-100"
-          style={{ '--tw-ring-color': accentColor } as any}
+    <div className="flex h-full flex-col space-y-6 p-6 animate-in fade-in slide-in-from-bottom-4 duration-500 lg:px-8 lg:py-8">
+      <div className="hidden lg:block">
+        <ScreenHeader
+          eyebrow="Relaciones comerciales"
+          title="Directorio"
+          description="Centraliza marcas, contactos y mensajes para mover conversaciones sin perder contexto."
+          actions={
+            <Button accentColor={accentColor} onClick={() => setIsAddingPartner(true)}>
+              <Plus size={16} />
+              Añadir marca
+            </Button>
+          }
         />
       </div>
 
-      <div className="grid gap-4 xl:grid-cols-2 2xl:grid-cols-3 flex-1 overflow-y-auto pb-4 hide-scrollbar auto-rows-max">
-        {filteredPartners.map(partner => {
-          const isExpanded = expandedId === partner.id;
-          return (
-            <div key={partner.id} className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.03)] border border-white/60 dark:border-slate-700/60 overflow-hidden transition-all">
-              <button
-                type="button"
-                aria-expanded={isExpanded}
-                className="w-full p-5 flex items-center justify-between cursor-pointer text-left active:bg-slate-50/50 dark:active:bg-slate-700/50"
-                onClick={() => setExpandedId(isExpanded ? null : partner.id)}
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-14 h-14 rounded-[1.25rem] bg-slate-50 dark:bg-slate-700 border border-slate-100 dark:border-slate-600 flex items-center justify-center text-slate-400 dark:text-slate-500 shrink-0">
-                    <Building2 size={24} />
+      <div className="lg:hidden flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">
+            Relaciones comerciales
+          </p>
+          <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-900 dark:text-slate-100">
+            Directorio
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+            Centraliza marcas, contactos y mensajes para mover conversaciones sin perder contexto.
+          </p>
+        </div>
+        <Button accentColor={accentColor} onClick={() => setIsAddingPartner(true)} className="shrink-0 px-4">
+          <Plus size={16} />
+          Añadir
+        </Button>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[minmax(320px,0.92fr)_minmax(0,1.08fr)]">
+        <div className="space-y-4">
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            <MetricCard icon={Building2} label="Marcas" value={String(partners.length)} helper="Partners guardados en el workspace" accentColor={accentColor} />
+            <MetricCard icon={Users} label="Activos" value={String(activePartners)} helper="Marcas con estado activo" accentColor={accentColor} />
+            <MetricCard icon={Mail} label="Contactos" value={String(totalContacts)} helper="Contactos disponibles para outreach" accentColor={accentColor} className="sm:col-span-2 xl:col-span-1" />
+          </div>
+
+          <SurfaceCard className="p-4 sm:p-5">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={20} />
+              <input
+                type="text"
+                placeholder="Buscar marcas o contactos"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                className="w-full rounded-[2rem] border border-white/70 bg-white/85 py-4 pl-14 pr-5 text-[15px] font-medium text-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.03)] transition-all placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 dark:border-slate-700/60 dark:bg-slate-900/55 dark:text-slate-100"
+                style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+              />
+            </div>
+          </SurfaceCard>
+
+          <SurfaceCard className="p-3 sm:p-4">
+            <div className="mb-3 flex items-center justify-between px-2 pt-1">
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">Lista</p>
+                <h2 className="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">Marcas y contactos</h2>
+              </div>
+              <StatusBadge tone="neutral">{filteredPartners.length} resultados</StatusBadge>
+            </div>
+
+            <div className="space-y-2">
+              {filteredPartners.map((partner) => {
+                const isActive = activePartner?.id === partner.id;
+                return (
+                  <button
+                    key={partner.id}
+                    type="button"
+                    onClick={() => setSelectedPartnerId(partner.id)}
+                    className={cx(
+                      'w-full rounded-[1.75rem] border px-4 py-4 text-left transition-all',
+                      isActive
+                        ? 'border-transparent bg-slate-900 text-white shadow-[0_20px_40px_-24px_rgba(15,23,42,0.45)] dark:bg-slate-100 dark:text-slate-900'
+                        : 'border-slate-100 bg-white/80 text-slate-900 hover:bg-slate-50 dark:border-slate-700/60 dark:bg-slate-900/40 dark:text-slate-100 dark:hover:bg-slate-800/70',
+                    )}
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-3">
+                          <div className={cx('flex h-11 w-11 items-center justify-center rounded-2xl text-sm font-black', isActive ? 'bg-white/15 text-white dark:bg-slate-900/10 dark:text-slate-900' : 'bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-400')}>
+                            <Building2 size={20} />
+                          </div>
+                          <div className="min-w-0">
+                            <h3 className="truncate text-base font-bold leading-tight">{partner.name}</h3>
+                            <p className={cx('mt-1 text-xs font-medium', isActive ? 'text-white/70 dark:text-slate-700' : 'text-slate-500 dark:text-slate-400')}>
+                              {partner.contacts.length} contactos
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 flex-col items-end gap-2">
+                        <StatusBadge tone={statusTone(partner.status)}>{statusLabel(partner.status)}</StatusBadge>
+                        <ChevronDown size={18} className={cx('transition-transform', isActive ? 'rotate-180 text-white/80 dark:text-slate-700' : 'text-slate-400 dark:text-slate-500')} />
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+
+              {filteredPartners.length === 0 && (
+                <EmptyState
+                  icon={Building2}
+                  title="No hay resultados"
+                  description="Prueba con otro termino o crea una nueva marca para empezar."
+                  className="border-dashed"
+                  action={
+                    <Button accentColor={accentColor} onClick={() => setIsAddingPartner(true)}>
+                      <Plus size={16} />
+                      Añadir marca
+                    </Button>
+                  }
+                />
+              )}
+            </div>
+          </SurfaceCard>
+        </div>
+
+        <div className="space-y-4">
+          <SurfaceCard className="p-5 sm:p-6 lg:sticky lg:top-6">
+            {activePartner ? (
+              <>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">Detalle</p>
+                    <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100">{activePartner.name}</h2>
+                    <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                      Gestiona estado, contactos y conversaciones sin salir de este panel.
+                    </p>
                   </div>
-                  <div>
-                    <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg leading-tight">{partner.name}</h3>
+                  <div className="flex flex-col items-start gap-2 sm:items-end">
+                    <StatusBadge tone={statusTone(activePartner.status)}>{statusLabel(activePartner.status)}</StatusBadge>
                     <select
-                      value={partner.status}
-                      onChange={(e) => void updatePartner(partner.id, { status: e.target.value as any })}
-                      onClick={(e) => e.stopPropagation()}
-                      aria-label={`Cambiar estado de ${partner.name}`}
-                      className={`text-[11px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-xl mt-1.5 inline-block appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 dark:focus:ring-offset-slate-800 ${getStatusColor(partner.status)}`}
-                      style={{ '--tw-ring-color': accentColor } as any}
+                      value={activePartner.status}
+                      onChange={(event) => void updatePartner(activePartner.id, { status: event.target.value as Partner['status'] })}
+                      className={selectClass}
+                      style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                      aria-label={`Cambiar estado de ${activePartner.name}`}
                     >
                       {PARTNER_STATUSES.map((status) => (
                         <option key={status} value={status}>
-                          {PARTNER_STATUS_LABELS[status]}
+                          {statusLabel(status as Partner['status'])}
                         </option>
                       ))}
                     </select>
                   </div>
                 </div>
-                <div className="text-slate-400 dark:text-slate-500 shrink-0 ml-2">
-                  {isExpanded ? <ChevronUp size={24} /> : <ChevronDown size={24} />}
-                </div>
-              </button>
 
-              {isExpanded && (
-                <div className="px-5 pb-5 pt-2 border-t border-slate-100/50 dark:border-slate-700/50 bg-slate-50/30 dark:bg-slate-900/30">
-                  <h4 className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-4 mt-2">Contactos</h4>
-                  {partner.contacts.length > 0 ? (
-                    <div className="space-y-3">
-                      {partner.contacts.map(contact => (
-                        <div key={contact.id} className="bg-white dark:bg-slate-800 p-5 rounded-[1.5rem] border border-slate-100 dark:border-slate-700 shadow-sm">
-                          <div className="flex justify-between items-start mb-3">
-                            <div>
-                              <p className="font-bold text-[15px] text-slate-800 dark:text-slate-100">{contact.name}</p>
-                              <p className="text-[13px] text-slate-500 dark:text-slate-400 font-medium mt-0.5">{contact.role}</p>
-                            </div>
-                            <div className="flex gap-1.5">
-                              <button 
-                                onClick={() => setEditingContact({ partnerId: partner.id, contact })}
-                                aria-label={`Editar contacto ${contact.name}`}
-                                className="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
-                              >
-                                <Edit2 size={16} />
-                              </button>
-                              <button 
-                                onClick={() => handleDeleteContact(partner.id, contact.id)}
-                                aria-label={`Eliminar contacto ${contact.name}`}
-                                className="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-700 flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-rose-500 hover:bg-rose-900/30 transition-colors"
-                              >
-                                <Trash2 size={16} />
-                              </button>
-                              <button 
-                                onClick={() => setComposingTo({ contact, partner })}
-                                aria-label={`Redactar mensaje para ${contact.name}`}
-                                className="w-9 h-9 rounded-full bg-slate-50 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors"
-                              >
-                                <Send size={16} />
-                              </button>
-                            </div>
-                          </div>
-                          <div className="flex gap-4 mt-4 pt-4 border-t border-slate-50 dark:border-slate-700">
-                            <a href={`mailto:${contact.email}`} className="flex items-center gap-2 text-[13px] font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors">
-                              <Mail size={16} /> Email
-                            </a>
-                            <a href={`https://instagram.com/${contact.ig.replace('@','')}`} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-[13px] font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors">
-                              <Instagram size={16} /> {contact.ig}
-                            </a>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-[15px] text-slate-400 dark:text-slate-500 font-medium italic py-3">Aun no hay contactos registrados.</p>
-                  )}
-                  <button 
-                    onClick={() => setAddingContactTo(partner.id)}
-                    className="w-full mt-4 py-4 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-[1.5rem] text-[13px] font-bold text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-300 transition-colors active:scale-[0.98]"
-                  >
-                    + Anadir contacto
-                  </button>
+                <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                  <div className="rounded-[1.5rem] border border-slate-100 bg-slate-50/90 px-4 py-4 dark:border-slate-700 dark:bg-slate-900/40">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Contactos</p>
+                    <p className="mt-2 text-xl font-black text-slate-900 dark:text-slate-100">{activePartner.contacts.length}</p>
+                  </div>
+                  <div className="rounded-[1.5rem] border border-slate-100 bg-slate-50/90 px-4 py-4 dark:border-slate-700 dark:bg-slate-900/40">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Tareas</p>
+                    <p className="mt-2 text-xl font-black text-slate-900 dark:text-slate-100">{activePartnerTasks.length}</p>
+                  </div>
+                  <div className="rounded-[1.5rem] border border-slate-100 bg-slate-50/90 px-4 py-4 dark:border-slate-700 dark:bg-slate-900/40">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Abiertas</p>
+                    <p className="mt-2 text-xl font-black text-slate-900 dark:text-slate-100">{openTasks.length}</p>
+                  </div>
                 </div>
-              )}
-            </div>
-          );
-        })}
-        {filteredPartners.length === 0 && (
-          <div className="text-center py-12 text-slate-400 dark:text-slate-500">
-            <p className="font-medium text-[15px]">No hay resultados.</p>
-          </div>
-        )}
+              </>
+            ) : (
+              <EmptyState icon={Building2} title="Selecciona una marca" description="Usa la lista de la izquierda para abrir el detalle de un partner." />
+            )}
+          </SurfaceCard>
+
+          {activePartner ? (
+            <SurfaceCard className="p-5 sm:p-6">
+              <div className="mb-5 flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">Contactos</p>
+                  <h3 className="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">Red de la marca</h3>
+                </div>
+                <Button accentColor={accentColor} onClick={() => setAddingContactTo(activePartner.id)}>
+                  <Plus size={16} />
+                  Añadir contacto
+                </Button>
+              </div>
+
+              <div className="space-y-3">
+                {activePartner.contacts.length > 0 ? (
+                  activePartner.contacts.map((contact) => (
+                    <div
+                      key={contact.id}
+                      className="rounded-[1.75rem] border border-slate-100 bg-white/80 p-4 shadow-[0_10px_30px_-24px_rgba(15,23,42,0.18)] dark:border-slate-700/60 dark:bg-slate-900/40"
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="min-w-0">
+                          <p className="text-base font-bold text-slate-900 dark:text-slate-100">{contact.name}</p>
+                          <p className="mt-1 text-sm font-medium text-slate-500 dark:text-slate-400">{contact.role}</p>
+                        </div>
+                        <div className="flex shrink-0 gap-2">
+                          <IconButton icon={PencilLine} label={`Editar contacto ${contact.name}`} onClick={() => setEditingContact({ partnerId: activePartner.id, contact })} className="bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-300" />
+                          <IconButton icon={Trash2} label={`Eliminar contacto ${contact.name}`} onClick={() => void handleDeleteContact(activePartner.id, contact.id)} tone="danger" />
+                          <IconButton icon={Send} label={`Redactar mensaje para ${contact.name}`} onClick={() => setComposingTo({ contact, partner: activePartner })} tone="primary" accentColor={accentColor} />
+                        </div>
+                      </div>
+
+                      <div className="mt-4 flex flex-wrap gap-3 border-t border-slate-100 pt-4 dark:border-slate-700/60">
+                        <a href={`mailto:${contact.email}`} className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">
+                          <Mail size={16} /> Email
+                        </a>
+                        <a href={`https://instagram.com/${contact.ig.replace('@', '')}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm font-bold text-slate-500 transition-colors hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100">
+                          <Instagram size={16} /> {contact.ig}
+                        </a>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <EmptyState
+                    icon={MessageSquare}
+                    title="Aún no hay contactos"
+                    description="Añade el primer contacto para empezar a redactar mensajes y hacer seguimiento."
+                    action={
+                      <Button accentColor={accentColor} onClick={() => setAddingContactTo(activePartner.id)}>
+                        <Plus size={16} />
+                        Añadir contacto
+                      </Button>
+                    }
+                  />
+                )}
+              </div>
+            </SurfaceCard>
+          ) : null}
+        </div>
       </div>
 
       {isAddingPartner && (
         <OverlayModal tone="slate" onClose={() => setIsAddingPartner(false)}>
-          <div className={modalPanelClass}>
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Nueva marca</h2>
-              <button onClick={() => setIsAddingPartner(false)} aria-label="Cerrar modal" className="text-slate-400 dark:text-slate-500 p-2.5 bg-slate-100 dark:bg-slate-700 rounded-full active:scale-90 transition-transform hover:bg-slate-200 dark:hover:bg-slate-600"><X size={20} /></button>
-            </div>
+          <ModalPanel title="Nueva marca" description="Añade un partner para empezar a ordenar contactos y conversaciones." onClose={() => setIsAddingPartner(false)} size="sm">
             <form onSubmit={handleAddPartner} className="space-y-5">
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Nombre</label>
-                <input
-                  required
-                  value={newPartner.name}
-                  onChange={(e) => setNewPartner({ ...newPartner, name: e.target.value })}
-                  className={fieldClass}
-                  style={{ '--tw-ring-color': accentColor } as any}
-                  placeholder="Ej. Nike, Samsung, Zara"
-                />
+                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Nombre</label>
+                <input required value={newPartner.name} onChange={(event) => setNewPartner({ ...newPartner, name: event.target.value })} className={fieldClass} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="Ej. Nike, Samsung, Zara" />
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Estado</label>
-                <select
-                  value={newPartner.status}
-                  onChange={(e) => setNewPartner({ ...newPartner, status: e.target.value as Partner['status'] })}
-                  className={fieldClass}
-                  style={{ '--tw-ring-color': accentColor } as any}
-                >
+                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Estado</label>
+                <select value={newPartner.status} onChange={(event) => setNewPartner({ ...newPartner, status: event.target.value as Partner['status'] })} className={cx(fieldClass, 'appearance-none')} style={{ '--tw-ring-color': accentColor } as React.CSSProperties}>
                   {PARTNER_STATUSES.map((status) => (
                     <option key={status} value={status}>
-                      {PARTNER_STATUS_LABELS[status]}
+                      {statusLabel(status as Partner['status'])}
                     </option>
                   ))}
                 </select>
               </div>
-              <button type="submit" className="w-full text-white font-bold py-4 rounded-[1.5rem] mt-6 transition-opacity hover:opacity-90 active:scale-[0.98] shadow-md text-[15px]" style={{ backgroundColor: accentColor }}>
-                Crear marca
-              </button>
+              <Button type="submit" accentColor={accentColor} className="w-full">Crear marca</Button>
             </form>
-          </div>
+          </ModalPanel>
         </OverlayModal>
       )}
 
       {composingTo && (
         <OverlayModal tone="slate" onClose={closeComposer}>
-          <div className={modalPanelClass}>
-            <div className="flex justify-between items-center mb-8">
-              <div>
-                <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Mensaje para {composingTo.contact.name}</h2>
-                <p className="text-[13px] text-slate-500 dark:text-slate-400 font-medium mt-1">{composingTo.partner.name}</p>
-              </div>
-              <button onClick={closeComposer} aria-label="Cerrar modal" className="text-slate-400 dark:text-slate-500 p-2.5 bg-slate-100 dark:bg-slate-700 rounded-full active:scale-90 transition-transform hover:bg-slate-200 dark:hover:bg-slate-600"><X size={20} /></button>
-            </div>
-            
+          <ModalPanel title={`Mensaje para ${composingTo.contact.name}`} description={composingTo.partner.name} onClose={closeComposer} size="lg">
             <div className="space-y-5">
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Usar plantilla</label>
-                <select 
-                  value={selectedTemplateId} 
-                  onChange={e => handleTemplateSelect(e.target.value)}
-                  className={fieldClass}
-                  style={{ '--tw-ring-color': accentColor } as any}
-                >
+                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Usar plantilla</label>
+                <select value={selectedTemplateId} onChange={(event) => handleTemplateSelect(event.target.value)} className={cx(fieldClass, 'appearance-none')} style={{ '--tw-ring-color': accentColor } as React.CSSProperties}>
                   <option value="">Selecciona una plantilla</option>
-                  {templates.map(t => (
-                    <option key={t.id} value={t.id}>{t.name}</option>
+                  {templates.map((template) => (
+                    <option key={template.id} value={template.id}>
+                      {template.name}
+                    </option>
                   ))}
                 </select>
               </div>
 
-              {selectedTemplateId && (
+              {selectedTemplateId ? (
                 <>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Asunto</label>
-                    <input 
-                      value={messagePreview.subject} 
-                      onChange={e => setMessagePreview({...messagePreview, subject: e.target.value})}
-                      className={fieldClass}
-                      style={{ '--tw-ring-color': accentColor } as any} 
-                    />
+                    <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Asunto</label>
+                    <input value={messagePreview.subject} onChange={(event) => setMessagePreview({ ...messagePreview, subject: event.target.value })} className={fieldClass} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Mensaje</label>
-                    <textarea 
-                      value={messagePreview.body} 
-                      onChange={e => setMessagePreview({...messagePreview, body: e.target.value})}
-                      className={`${fieldClass} min-h-[160px]`}
-                      style={{ '--tw-ring-color': accentColor } as any} 
-                    />
+                    <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Mensaje</label>
+                    <textarea value={messagePreview.body} onChange={(event) => setMessagePreview({ ...messagePreview, body: event.target.value })} className={cx(fieldClass, 'min-h-[180px]')} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} />
                   </div>
-                  <button 
-                    onClick={handleSend}
-                    className="w-full text-white font-bold py-4 rounded-[1.5rem] mt-4 transition-opacity hover:opacity-90 active:scale-[0.98] shadow-md flex items-center justify-center gap-2 text-[15px]" 
-                    style={{ backgroundColor: accentColor }}
-                  >
-                    <Send size={20} />
+                  <Button onClick={handleSend} accentColor={accentColor} className="w-full">
+                    <Send size={18} />
                     Abrir en correo
-                  </button>
+                  </Button>
                 </>
+              ) : (
+                <EmptyState icon={MessageSquare} title="Elige una plantilla" description="Selecciona una plantilla para previsualizar asunto y mensaje antes de abrir el correo." className="border-dashed" />
               )}
             </div>
-          </div>
+          </ModalPanel>
         </OverlayModal>
       )}
 
-      {/* Add Contact Modal */}
       {addingContactTo && (
         <OverlayModal tone="slate" onClose={() => setAddingContactTo(null)}>
-          <div className={modalPanelClass}>
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Nuevo contacto</h2>
-              <button onClick={() => setAddingContactTo(null)} aria-label="Cerrar modal" className="text-slate-400 dark:text-slate-500 p-2.5 bg-slate-100 dark:bg-slate-700 rounded-full active:scale-90 transition-transform hover:bg-slate-200 dark:hover:bg-slate-600"><X size={20} /></button>
-            </div>
+          <ModalPanel title="Nuevo contacto" description="Guarda la persona clave para esta marca." onClose={() => setAddingContactTo(null)} size="sm">
             <form onSubmit={handleAddContact} className="space-y-5">
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Nombre</label>
-                <input required value={newContact.name} onChange={e => setNewContact({...newContact, name: e.target.value})} className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 dark:text-slate-100" style={{ '--tw-ring-color': accentColor } as any} placeholder="e.g. Juan Pérez" />
+                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Nombre</label>
+                <input required value={newContact.name} onChange={(event) => setNewContact({ ...newContact, name: event.target.value })} className={fieldClass} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="Juan Perez" />
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Rol</label>
-                <input required value={newContact.role} onChange={e => setNewContact({...newContact, role: e.target.value})} className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 dark:text-slate-100" style={{ '--tw-ring-color': accentColor } as any} placeholder="e.g. PR Manager" />
+                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Rol</label>
+                <input required value={newContact.role} onChange={(event) => setNewContact({ ...newContact, role: event.target.value })} className={fieldClass} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="PR Manager" />
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Email</label>
-                <input type="email" required value={newContact.email} onChange={e => setNewContact({...newContact, email: e.target.value})} className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 dark:text-slate-100" style={{ '--tw-ring-color': accentColor } as any} placeholder="juan@brand.com" />
+                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Email</label>
+                <input type="email" required value={newContact.email} onChange={(event) => setNewContact({ ...newContact, email: event.target.value })} className={fieldClass} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="juan@brand.com" />
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Instagram</label>
-                <input value={newContact.ig} onChange={e => setNewContact({...newContact, ig: e.target.value})} className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 dark:text-slate-100" style={{ '--tw-ring-color': accentColor } as any} placeholder="@juanperez" />
+                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Instagram</label>
+                <input value={newContact.ig} onChange={(event) => setNewContact({ ...newContact, ig: event.target.value })} className={fieldClass} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="@juanperez" />
               </div>
-              <button type="submit" className="w-full text-white font-bold py-4 rounded-[1.5rem] mt-6 transition-opacity hover:opacity-90 active:scale-[0.98] shadow-md text-[15px]" style={{ backgroundColor: accentColor }}>
-                Guardar contacto
-              </button>
+              <Button type="submit" accentColor={accentColor} className="w-full">Guardar contacto</Button>
             </form>
-          </div>
+          </ModalPanel>
         </OverlayModal>
       )}
-      {/* Edit Contact Modal */}
+
       {editingContact && (
         <OverlayModal tone="slate" onClose={() => setEditingContact(null)}>
-          <div className={modalPanelClass}>
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Editar contacto</h2>
-              <button onClick={() => setEditingContact(null)} aria-label="Cerrar modal" className="text-slate-400 dark:text-slate-500 p-2.5 bg-slate-100 dark:bg-slate-700 rounded-full active:scale-90 transition-transform hover:bg-slate-200 dark:hover:bg-slate-600"><X size={20} /></button>
-            </div>
+          <ModalPanel title="Editar contacto" description="Ajusta nombre, rol y medios de contacto." onClose={() => setEditingContact(null)} size="sm">
             <form onSubmit={handleEditContact} className="space-y-5">
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Nombre</label>
-                <input required value={editingContact.contact.name} onChange={e => setEditingContact({...editingContact, contact: {...editingContact.contact, name: e.target.value}})} className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 dark:text-slate-100" style={{ '--tw-ring-color': accentColor } as any} placeholder="e.g. Juan Pérez" />
+                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Nombre</label>
+                <input required value={editingContact.contact.name} onChange={(event) => setEditingContact({ ...editingContact, contact: { ...editingContact.contact, name: event.target.value } })} className={fieldClass} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="Juan Perez" />
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Rol</label>
-                <input required value={editingContact.contact.role} onChange={e => setEditingContact({...editingContact, contact: {...editingContact.contact, role: e.target.value}})} className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 dark:text-slate-100" style={{ '--tw-ring-color': accentColor } as any} placeholder="e.g. PR Manager" />
+                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Rol</label>
+                <input required value={editingContact.contact.role} onChange={(event) => setEditingContact({ ...editingContact, contact: { ...editingContact.contact, role: event.target.value } })} className={fieldClass} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="PR Manager" />
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Email</label>
-                <input required type="email" value={editingContact.contact.email} onChange={e => setEditingContact({...editingContact, contact: {...editingContact.contact, email: e.target.value}})} className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 dark:text-slate-100" style={{ '--tw-ring-color': accentColor } as any} placeholder="juan@example.com" />
+                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Email</label>
+                <input required type="email" value={editingContact.contact.email} onChange={(event) => setEditingContact({ ...editingContact, contact: { ...editingContact.contact, email: event.target.value } })} className={fieldClass} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="juan@example.com" />
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Instagram</label>
-                <input required value={editingContact.contact.ig} onChange={e => setEditingContact({...editingContact, contact: {...editingContact.contact, ig: e.target.value}})} className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 dark:text-slate-100" style={{ '--tw-ring-color': accentColor } as any} placeholder="@juanperez" />
+                <label className="mb-2 block text-xs font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">Instagram</label>
+                <input required value={editingContact.contact.ig} onChange={(event) => setEditingContact({ ...editingContact, contact: { ...editingContact.contact, ig: event.target.value } })} className={fieldClass} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="@juanperez" />
               </div>
-              <button type="submit" className="w-full text-white font-bold py-4 rounded-[1.5rem] mt-6 transition-opacity hover:opacity-90 active:scale-[0.98] shadow-md text-[15px]" style={{ backgroundColor: accentColor }}>
-                Guardar cambios
-              </button>
+              <Button type="submit" accentColor={accentColor} className="w-full">Guardar cambios</Button>
             </form>
-          </div>
+          </ModalPanel>
         </OverlayModal>
       )}
     </div>

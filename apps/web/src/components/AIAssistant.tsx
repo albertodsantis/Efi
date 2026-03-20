@@ -1,34 +1,45 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { useAppContext } from '../context/AppContext';
+import React, { useEffect, useRef, useState } from 'react';
 import { GoogleGenAI, Type, FunctionDeclaration } from '@google/genai';
-import { MessageSquare, X, Send, Mic, MicOff, Loader2, Bot, Sparkles } from 'lucide-react';
+import { Loader2, MessageSquare, Mic, MicOff, Send, Sparkles, X } from 'lucide-react';
 import { TaskStatus } from '@shared/domain';
+import { useAppContext } from '../context/AppContext';
 
 const geminiApiKey = process.env.GEMINI_API_KEY?.trim() || '';
 const ai = geminiApiKey ? new GoogleGenAI({ apiKey: geminiApiKey }) : null;
+const REVIEW_STATUS = `En Revisi${'\u00f3'}n` as TaskStatus;
 
 export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean }) {
-  const { tasks, partners, profile, templates, accentColor, addTask, addPartner, updateTaskStatus, addContact, updatePartner } = useAppContext();
+  const {
+    tasks,
+    partners,
+    profile,
+    templates,
+    accentColor,
+    addTask,
+    addPartner,
+    updateTaskStatus,
+    addContact,
+    updatePartner,
+  } = useAppContext();
   const isAiAvailable = Boolean(ai);
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<{ role: 'user' | 'model', text: string }[]>([
+  const [messages, setMessages] = useState<{ role: 'user' | 'model'; text: string }[]>([
     {
       role: 'model',
       text: isAiAvailable
         ? '¡Hola! Soy Tía, tu asistente de inteligencia artificial. ¿En qué puedo ayudarte hoy?'
         : 'El asistente IA está desactivado en local porque falta GEMINI_API_KEY. Puedes seguir usando el resto de la app con normalidad.',
-    }
+    },
   ]);
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+  const chatRef = useRef<any>(null);
 
   useEffect(() => {
-    if (messagesEndRef.current) {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   useEffect(() => {
@@ -41,7 +52,7 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
 
       recognitionRef.current.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
-        setInput(prev => prev + (prev ? ' ' : '') + transcript);
+        setInput((prev) => prev + (prev ? ' ' : '') + transcript);
         setIsListening(false);
       };
 
@@ -56,6 +67,109 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
     }
   }, []);
 
+  useEffect(() => {
+    if (!ai || chatRef.current) {
+      return;
+    }
+
+    const tools: { functionDeclarations: FunctionDeclaration[] }[] = [
+      {
+        functionDeclarations: [
+          {
+            name: 'get_app_data',
+            description: 'Obtiene los datos actuales de la aplicación para responder preguntas sobre tareas, marcas, contactos, perfil y plantillas.',
+            parameters: {
+              type: Type.OBJECT,
+              properties: {},
+            },
+          },
+          {
+            name: 'add_task',
+            description: 'Añade una nueva tarea al pipeline.',
+            parameters: {
+              type: Type.OBJECT,
+              properties: {
+                title: { type: Type.STRING, description: 'Título de la tarea' },
+                description: { type: Type.STRING, description: 'Descripción de la tarea' },
+                partnerName: { type: Type.STRING, description: 'Nombre de la marca o partner' },
+                value: { type: Type.NUMBER, description: 'Valor monetario de la tarea' },
+                dueDate: { type: Type.STRING, description: 'Fecha de entrega en formato YYYY-MM-DD' },
+              },
+              required: ['title', 'partnerName', 'value', 'dueDate'],
+            },
+          },
+          {
+            name: 'update_task_status',
+            description: 'Actualiza el estado de una tarea existente.',
+            parameters: {
+              type: Type.OBJECT,
+              properties: {
+                taskId: { type: Type.STRING, description: 'ID de la tarea a actualizar' },
+                status: {
+                  type: Type.STRING,
+                  description: 'Nuevo estado: Pendiente, En Progreso, En Revisión o Completada.',
+                },
+              },
+              required: ['taskId', 'status'],
+            },
+          },
+          {
+            name: 'add_partner',
+            description: 'Añade una nueva marca o partner al directorio.',
+            parameters: {
+              type: Type.OBJECT,
+              properties: {
+                name: { type: Type.STRING, description: 'Nombre de la marca' },
+                status: { type: Type.STRING, description: 'Estado inicial de la marca' },
+              },
+              required: ['name'],
+            },
+          },
+          {
+            name: 'add_contact',
+            description: 'Añade un nuevo contacto a una marca o partner existente.',
+            parameters: {
+              type: Type.OBJECT,
+              properties: {
+                partnerName: { type: Type.STRING, description: 'Nombre de la marca' },
+                name: { type: Type.STRING, description: 'Nombre del contacto' },
+                role: { type: Type.STRING, description: 'Rol o cargo del contacto' },
+                email: { type: Type.STRING, description: 'Correo electrónico del contacto' },
+                ig: { type: Type.STRING, description: 'Usuario de Instagram del contacto sin @' },
+              },
+              required: ['partnerName', 'name'],
+            },
+          },
+          {
+            name: 'update_partner_status',
+            description: 'Actualiza el estado de una marca o partner existente.',
+            parameters: {
+              type: Type.OBJECT,
+              properties: {
+                partnerName: { type: Type.STRING, description: 'Nombre de la marca a actualizar' },
+                status: { type: Type.STRING, description: 'Nuevo estado de la marca' },
+              },
+              required: ['partnerName', 'status'],
+            },
+          },
+        ],
+      },
+    ];
+
+    try {
+      chatRef.current = ai.chats.create({
+        model: 'gemini-3.1-pro-preview',
+        config: {
+          systemInstruction:
+            'Eres Tía, un asistente de inteligencia artificial integrado en un CRM para creadores de contenido. Tu objetivo es ayudar al usuario a gestionar sus tareas, marcas, contactos, plantillas y perfil. Sé concisa, útil, amable y profesional. Responde siempre en español.',
+          tools,
+        },
+      });
+    } catch (error) {
+      console.error('Error initializing Gemini chat:', error);
+    }
+  }, [accentColor]);
+
   const toggleListening = () => {
     if (isListening) {
       recognitionRef.current?.stop();
@@ -65,112 +179,11 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
     }
   };
 
-  const tools: { functionDeclarations: FunctionDeclaration[] }[] = [
-    {
-      functionDeclarations: [
-        {
-          name: 'get_app_data',
-          description: 'Obtiene todos los datos actuales de la aplicación (tareas, marcas/partners, perfil, plantillas). Úsalo para responder preguntas sobre la información almacenada.',
-          parameters: {
-            type: Type.OBJECT,
-            properties: {},
-          },
-        },
-        {
-          name: 'add_task',
-          description: 'Añade una nueva tarea al pipeline.',
-          parameters: {
-            type: Type.OBJECT,
-            properties: {
-              title: { type: Type.STRING, description: 'Título de la tarea' },
-              description: { type: Type.STRING, description: 'Descripción de la tarea' },
-              partnerName: { type: Type.STRING, description: 'Nombre de la marca o partner' },
-              value: { type: Type.NUMBER, description: 'Valor monetario de la tarea' },
-              dueDate: { type: Type.STRING, description: 'Fecha de entrega en formato YYYY-MM-DD' },
-            },
-            required: ['title', 'partnerName', 'value', 'dueDate'],
-          },
-        },
-        {
-          name: 'update_task_status',
-          description: 'Actualiza el estado de una tarea existente.',
-          parameters: {
-            type: Type.OBJECT,
-            properties: {
-              taskId: { type: Type.STRING, description: 'ID de la tarea a actualizar' },
-              status: { type: Type.STRING, description: 'Nuevo estado (Pendiente, En Progreso, En Revisión, Completada)' },
-            },
-            required: ['taskId', 'status'],
-          },
-        },
-        {
-          name: 'add_partner',
-          description: 'Añade una nueva marca o partner al directorio.',
-          parameters: {
-            type: Type.OBJECT,
-            properties: {
-              name: { type: Type.STRING, description: 'Nombre de la marca' },
-              status: { type: Type.STRING, description: 'Estado de la marca (Prospecto, Activo, En Negociación, Inactivo)' },
-            },
-            required: ['name'],
-          },
-        },
-        {
-          name: 'add_contact',
-          description: 'Añade un nuevo contacto a una marca o partner existente.',
-          parameters: {
-            type: Type.OBJECT,
-            properties: {
-              partnerName: { type: Type.STRING, description: 'Nombre de la marca a la que pertenece el contacto' },
-              name: { type: Type.STRING, description: 'Nombre del contacto' },
-              role: { type: Type.STRING, description: 'Rol o cargo del contacto' },
-              email: { type: Type.STRING, description: 'Correo electrónico del contacto' },
-              ig: { type: Type.STRING, description: 'Usuario de Instagram del contacto (sin @)' },
-            },
-            required: ['partnerName', 'name'],
-          },
-        },
-        {
-          name: 'update_partner_status',
-          description: 'Actualiza el estado de una marca o partner existente.',
-          parameters: {
-            type: Type.OBJECT,
-            properties: {
-              partnerName: { type: Type.STRING, description: 'Nombre de la marca a actualizar' },
-              status: { type: Type.STRING, description: 'Nuevo estado (Prospecto, Activo, En Negociación, Inactivo, On Hold, Relación Culminada)' },
-            },
-            required: ['partnerName', 'status'],
-          },
-        },
-      ],
-    },
-  ];
-
-  const chatRef = useRef<any>(null);
-
-  useEffect(() => {
-    if (!ai || chatRef.current) {
-      return;
-    }
-
-    try {
-      chatRef.current = ai.chats.create({
-        model: 'gemini-3.1-pro-preview',
-        config: {
-          systemInstruction: 'Eres Tía, un asistente de inteligencia artificial integrado en un CRM para creadores de contenido. Tu objetivo es ayudar al usuario a gestionar sus tareas, marcas (partners), contactos y perfil. Puedes consultar la información actual y realizar acciones como añadir tareas o marcas. Sé conciso, amigable y profesional. Responde siempre en español.',
-          tools: tools,
-        },
-      });
-    } catch (error) {
-      console.error('Error initializing Gemini chat:', error);
-    }
-  }, []);
-
   const handleSend = async () => {
     if (!input.trim()) return;
 
     if (!chatRef.current) {
-      setMessages(prev => [
+      setMessages((prev) => [
         ...prev,
         {
           role: 'model',
@@ -182,12 +195,11 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
 
     const userMessage = input.trim();
     setInput('');
-    setMessages(prev => [...prev, { role: 'user', text: userMessage }]);
+    setMessages((prev) => [...prev, { role: 'user', text: userMessage }]);
     setIsProcessing(true);
 
     try {
       let response = await chatRef.current.sendMessage({ message: userMessage });
-      
       let functionCalls = response.functionCalls;
       let functionResponses: any[] = [];
 
@@ -197,41 +209,66 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
             functionResponses.push({
               functionResponse: {
                 name: call.name,
-                response: { result: { tasks, partners, profile, templates } }
-              }
+                response: { result: { tasks, partners, profile, templates } },
+              },
             });
           } else if (call.name === 'add_task') {
             const { title, description, partnerName, value, dueDate } = call.args as any;
-            let partnerId = partners.find(p => p.name.toLowerCase() === partnerName.toLowerCase())?.id;
+            let partnerId = partners.find((partner) => partner.name.toLowerCase() === partnerName.toLowerCase())?.id;
+
             if (!partnerId) {
               partnerId = await addPartner({ name: partnerName, status: 'Prospecto', contacts: [] });
             }
-            await addTask({ title, description: description || '', partnerId, value: Number(value), dueDate, status: 'Pendiente' });
-            functionResponses.push({ functionResponse: { name: call.name, response: { result: 'Tarea añadida con éxito' } } });
+
+            await addTask({
+              title,
+              description: description || '',
+              partnerId,
+              value: Number(value),
+              dueDate,
+              status: 'Pendiente',
+            });
+
+            functionResponses.push({
+              functionResponse: { name: call.name, response: { result: 'Tarea añadida con éxito.' } },
+            });
           } else if (call.name === 'update_task_status') {
             const { taskId, status } = call.args as any;
             await updateTaskStatus(taskId, status as TaskStatus);
-            functionResponses.push({ functionResponse: { name: call.name, response: { result: 'Estado actualizado' } } });
+            functionResponses.push({
+              functionResponse: { name: call.name, response: { result: 'Estado actualizado.' } },
+            });
           } else if (call.name === 'add_partner') {
             const { name, status } = call.args as any;
             await addPartner({ name, status: status || 'Prospecto', contacts: [] });
-            functionResponses.push({ functionResponse: { name: call.name, response: { result: 'Marca añadida con éxito' } } });
+            functionResponses.push({
+              functionResponse: { name: call.name, response: { result: 'Marca añadida con éxito.' } },
+            });
           } else if (call.name === 'add_contact') {
             const { partnerName, name, role, email, ig } = call.args as any;
-            let partnerId = partners.find(p => p.name.toLowerCase() === partnerName.toLowerCase())?.id;
+            let partnerId = partners.find((partner) => partner.name.toLowerCase() === partnerName.toLowerCase())?.id;
+
             if (!partnerId) {
               partnerId = await addPartner({ name: partnerName, status: 'Prospecto', contacts: [] });
             }
+
             await addContact(partnerId, { name, role: role || '', email: email || '', ig: ig || '' });
-            functionResponses.push({ functionResponse: { name: call.name, response: { result: 'Contacto añadido con éxito' } } });
+            functionResponses.push({
+              functionResponse: { name: call.name, response: { result: 'Contacto añadido con éxito.' } },
+            });
           } else if (call.name === 'update_partner_status') {
             const { partnerName, status } = call.args as any;
-            const partner = partners.find(p => p.name.toLowerCase() === partnerName.toLowerCase());
+            const partner = partners.find((item) => item.name.toLowerCase() === partnerName.toLowerCase());
+
             if (partner) {
               await updatePartner(partner.id, { status: status as any });
-              functionResponses.push({ functionResponse: { name: call.name, response: { result: 'Estado de la marca actualizado con éxito' } } });
+              functionResponses.push({
+                functionResponse: { name: call.name, response: { result: 'Estado de la marca actualizado con éxito.' } },
+              });
             } else {
-              functionResponses.push({ functionResponse: { name: call.name, response: { error: 'Marca no encontrada' } } });
+              functionResponses.push({
+                functionResponse: { name: call.name, response: { error: 'Marca no encontrada.' } },
+              });
             }
           }
         }
@@ -242,12 +279,14 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
       }
 
       if (response.text) {
-        setMessages(prev => [...prev, { role: 'model', text: response.text || '' }]);
+        setMessages((prev) => [...prev, { role: 'model', text: response.text || '' }]);
       }
-
     } catch (error) {
       console.error('Error calling Gemini:', error);
-      setMessages(prev => [...prev, { role: 'model', text: 'Lo siento, ha ocurrido un error al procesar tu solicitud.' }]);
+      setMessages((prev) => [
+        ...prev,
+        { role: 'model', text: 'Lo siento, ha ocurrido un error al procesar tu solicitud.' },
+      ]);
     } finally {
       setIsProcessing(false);
     }
@@ -255,133 +294,120 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
 
   return (
     <>
-      {/* Floating Button (Interactive Island) */}
       <div
-        className={`z-40 transition-all duration-500 ${
-          isDesktop
-            ? 'absolute bottom-8 right-8'
-            : 'fixed bottom-[96px] left-1/2 -translate-x-1/2'
-        } ${isOpen ? 'opacity-0 pointer-events-none translate-y-4 scale-90' : 'opacity-100 translate-y-0 scale-100'}`}
+        className={`z-40 transition-all duration-300 ${
+          isDesktop ? 'absolute bottom-8 right-8' : 'fixed bottom-[96px] left-1/2 -translate-x-1/2'
+        } ${isOpen ? 'pointer-events-none translate-y-4 scale-95 opacity-0' : 'translate-y-0 scale-100 opacity-100'}`}
       >
-        <div className="rounded-full" style={{ 
-          '--accent-glow': `${accentColor || '#8b5cf6'}60`,
-          boxShadow: '0 5px 15px rgba(0,0,0,0.2), 0 0 15px var(--accent-glow)'
-        } as React.CSSProperties}>
-          <button
-            id="tia-assistant-btn"
-            onClick={() => setIsOpen(true)}
-            disabled={!isAiAvailable}
-            className="relative h-11 pl-1.5 pr-5 rounded-full flex items-center gap-2.5 text-white transition-all duration-500 hover:scale-105 active:scale-95 group overflow-hidden"
-            style={{
-              background: 'rgba(15, 23, 42, 0.35)',
-              backdropFilter: 'blur(16px)',
-              WebkitBackdropFilter: 'blur(16px)',
-              opacity: isAiAvailable ? 1 : 0.6,
-              cursor: isAiAvailable ? 'pointer' : 'not-allowed',
-            }}
+        <button
+          id="tia-assistant-btn"
+          type="button"
+          onClick={() => setIsOpen(true)}
+          disabled={!isAiAvailable}
+          className="group flex h-12 items-center gap-2.5 rounded-full border border-white/60 bg-slate-900/92 px-3 pr-4 text-white shadow-[0_16px_40px_-18px_rgba(15,23,42,0.55)] backdrop-blur-xl transition-all hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700/60"
+        >
+          <div
+            className="flex h-8 w-8 items-center justify-center rounded-full"
+            style={{ backgroundColor: accentColor || '#8b5cf6' }}
           >
-            <div className="absolute top-1/2 left-1/2 w-[250%] aspect-square -translate-x-1/2 -translate-y-1/2 animate-[spin_4s_linear_infinite] opacity-80" style={{ background: `conic-gradient(from 0deg, transparent, ${accentColor || '#8b5cf6'}, transparent)` }} />
-            <div className="absolute inset-[1px] bg-slate-900/80 rounded-full z-0" />
-            
-            {/* Shimmer overlay */}
-            <div className="absolute inset-0 z-20 overflow-hidden rounded-full pointer-events-none">
-              <div className="absolute inset-y-0 left-0 w-1/2 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer" />
-            </div>
-            
-            {/* Glowing orb */}
-            <div className="relative w-8 h-8 rounded-full flex items-center justify-center overflow-hidden shadow-inner z-10">
-              <div className="absolute inset-[2px] rounded-full flex items-center justify-center z-10">
-                <Sparkles size={14} style={{ color: accentColor || '#8b5cf6' }} />
-              </div>
-              <div className="absolute inset-0 blur-md z-0" style={{ backgroundColor: accentColor || '#8b5cf6', opacity: 0.4 }} />
-            </div>
-            
-            <span className="text-xs font-bold tracking-[0.2em] text-white/90 z-10">Tía</span>
-          </button>
-        </div>
+            <Sparkles size={14} />
+          </div>
+          <div className="text-left">
+            <p className="text-[11px] font-bold tracking-[0.16em] text-white/70 uppercase">Asistente</p>
+            <p className="text-sm font-bold">Tía</p>
+          </div>
+        </button>
       </div>
 
-      {/* Chat Window */}
-      {isOpen && (
+      {isOpen ? (
         <div
-          className={`bg-white rounded-[2rem] shadow-2xl flex flex-col z-50 overflow-hidden border border-gray-100 animate-in slide-in-from-bottom-8 fade-in duration-300 origin-bottom ${
+          className={`z-50 flex flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-2xl animate-in fade-in slide-in-from-bottom-8 duration-300 dark:border-slate-700 dark:bg-slate-900 ${
             isDesktop
-              ? 'absolute bottom-24 right-0 w-[420px] max-w-[calc(100vw-6rem)] h-[560px] max-h-[70vh]'
-              : 'fixed bottom-[96px] left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-[380px] h-[500px] max-h-[65vh]'
+              ? 'absolute bottom-24 right-0 h-[560px] w-[420px] max-w-[calc(100vw-6rem)] max-h-[72vh]'
+              : 'fixed bottom-[96px] left-1/2 h-[520px] max-h-[68vh] w-[calc(100%-1.5rem)] max-w-[390px] -translate-x-1/2'
           }`}
         >
-          {/* Header */}
-          <div className="px-5 py-4 text-white flex justify-between items-center relative overflow-hidden" style={{ backgroundColor: accentColor || '#8b5cf6' }}>
-            {/* Futuristic background overlay */}
-            <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at 80% 20%, white 0%, transparent 50%)' }} />
-            
-            <div className="flex items-center gap-3 relative z-10">
-              <div className="relative w-9 h-9 rounded-full bg-white/20 flex items-center justify-center overflow-hidden backdrop-blur-sm border border-white/30 shadow-sm">
-                <div className="absolute inset-0 animate-[spin_4s_linear_infinite] opacity-60" style={{ background: `conic-gradient(from 0deg, transparent, white, transparent)` }} />
-                <div className="absolute inset-[2px] rounded-full flex items-center justify-center" style={{ backgroundColor: accentColor || '#8b5cf6' }}>
-                  <Sparkles size={16} className="text-white" />
-                </div>
+          <div
+            className="flex items-center justify-between gap-4 border-b border-white/15 px-5 py-4 text-white"
+            style={{
+              background: `linear-gradient(135deg, ${accentColor || '#8b5cf6'}, ${accentColor || '#8b5cf6'}cc)`,
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/20">
+                <Sparkles size={16} />
               </div>
               <div>
-                <h3 className="font-bold text-sm tracking-wider">Tía</h3>
-                <p className="text-[9px] text-white/90 font-medium uppercase tracking-[0.15em] flex items-center gap-1.5">
-                  <span className="w-1 h-1 rounded-full bg-white animate-pulse shadow-[0_0_5px_rgba(255,255,255,0.8)]"></span>
-                  Sistema Activo
-                </p>
+                <h3 className="text-sm font-bold tracking-wide">Tía</h3>
+                <p className="text-[11px] text-white/80">Asistente integrada del workspace</p>
               </div>
             </div>
-            <button onClick={() => setIsOpen(false)} className="p-2 hover:bg-white/20 rounded-full transition-colors relative z-10">
+            <button
+              type="button"
+              onClick={() => setIsOpen(false)}
+              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 transition-colors hover:bg-white/25"
+            >
               <X size={18} />
             </button>
           </div>
 
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-gray-50/50">
-            {messages.map((msg, idx) => (
-              <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                <div className={`max-w-[85%] p-3.5 rounded-2xl text-sm ${
-                  msg.role === 'user' 
-                    ? 'bg-gray-900 text-white rounded-tr-sm' 
-                    : 'bg-white border border-gray-100 text-gray-800 rounded-tl-sm shadow-sm'
-                }`}>
-                  {msg.text}
+          <div className="flex-1 space-y-4 overflow-y-auto bg-slate-50/80 p-5 dark:bg-slate-950/40">
+            {messages.map((message, index) => (
+              <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div
+                  className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-6 ${
+                    message.role === 'user'
+                      ? 'rounded-tr-sm bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
+                      : 'rounded-tl-sm border border-slate-200 bg-white text-slate-800 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100'
+                  }`}
+                >
+                  {message.text}
                 </div>
               </div>
             ))}
-            {isProcessing && (
+
+            {isProcessing ? (
               <div className="flex justify-start">
-                <div className="bg-white border border-gray-100 p-4 rounded-2xl rounded-tl-sm shadow-sm flex items-center gap-2 text-gray-400">
+                <div className="flex items-center gap-2 rounded-2xl rounded-tl-sm border border-slate-200 bg-white px-4 py-3 text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
                   <Loader2 size={16} className="animate-spin" />
-                  <span className="text-xs font-medium">Tía está pensando...</span>
+                  <span className="text-xs font-medium">Tía está pensando…</span>
                 </div>
               </div>
-            )}
+            ) : null}
+
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input */}
-          <div className="p-4 bg-white border-t border-gray-100">
-            <div className="flex items-center gap-2 bg-gray-50 rounded-full p-1.5 border border-gray-200 focus-within:border-gray-300 focus-within:bg-white transition-colors">
-              {('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) && (
-                <button 
+          <div className="border-t border-slate-100 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+            <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 p-1.5 focus-within:border-slate-300 focus-within:bg-white dark:border-slate-700 dark:bg-slate-950/50 dark:focus-within:bg-slate-900">
+              {'SpeechRecognition' in window || 'webkitSpeechRecognition' in window ? (
+                <button
+                  type="button"
                   onClick={toggleListening}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${isListening ? 'bg-rose-100 text-rose-600' : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'}`}
+                  className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
+                    isListening
+                      ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300'
+                      : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300'
+                  }`}
                 >
                   {isListening ? <Mic size={18} className="animate-pulse" /> : <MicOff size={18} />}
                 </button>
-              )}
+              ) : null}
+
               <input
                 type="text"
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+                onChange={(event) => setInput(event.target.value)}
+                onKeyDown={(event) => event.key === 'Enter' && void handleSend()}
                 placeholder="Escribe o habla con Tía..."
-                className="flex-1 bg-transparent border-none focus:outline-none text-sm px-2 text-gray-700 placeholder-gray-400"
+                className="flex-1 border-none bg-transparent px-2 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none dark:text-slate-100 dark:placeholder:text-slate-500"
               />
-              <button 
-                onClick={handleSend}
+
+              <button
+                type="button"
+                onClick={() => void handleSend()}
                 disabled={!input.trim() || isProcessing}
-                className="w-10 h-10 rounded-full flex items-center justify-center text-white transition-transform active:scale-95 disabled:opacity-50 disabled:active:scale-100"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-white transition-transform active:scale-95 disabled:opacity-50"
                 style={{ backgroundColor: accentColor || '#8b5cf6' }}
               >
                 <Send size={16} className="ml-0.5" />
@@ -389,7 +415,7 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
             </div>
           </div>
         </div>
-      )}
+      ) : null}
     </>
   );
 }

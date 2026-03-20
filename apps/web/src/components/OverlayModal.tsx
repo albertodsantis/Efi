@@ -16,7 +16,7 @@ export default function OverlayModal({
 
   return createPortal(
     <div
-      className={`fixed inset-0 z-[120] flex items-end justify-center px-0 sm:px-6 backdrop-blur-sm sm:items-center ${
+      className={`fixed inset-0 z-[120] flex items-end justify-center px-0 sm:px-6 backdrop-blur-md animate-in fade-in duration-200 sm:items-center ${
         tone === 'slate' ? 'bg-slate-900/40' : 'bg-black/40 dark:bg-black/60'
       }`}
       onClick={() => onClose?.()}
