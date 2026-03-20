@@ -1,14 +1,14 @@
 {
-  "name": "react-example",
+  "name": "tia",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx server.ts",
-    "start": "node dist/server.cjs",
-    "build": "vite build && tsx build-server.ts",
-    "preview": "vite preview",
-    "clean": "rm -rf dist",
+    "dev": "tsx apps/api/src/server.ts",
+    "start": "node apps/api/dist/server.cjs",
+    "build": "vite build --config apps/web/vite.config.ts && tsx apps/api/build.ts",
+    "preview": "vite preview --config apps/web/vite.config.ts",
+    "clean": "node -e \"const fs=require('fs');['apps/api/dist','apps/web/dist'].forEach((target)=>fs.rmSync(target,{recursive:true,force:true}))\"",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
@@ -35,7 +35,6 @@
     "esbuild": "^0.27.4",
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
-    "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "typescript": "~5.8.2"
   }
 }

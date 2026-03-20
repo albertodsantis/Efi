@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-This document locks the approved technical stack for taking TIA from the current prototype to a production-ready MVP. Any framework, runtime, or infrastructure change requires an explicit update to this file.
+This document locks the approved technical stack for taking TIA from the current prototype to a production-ready micro SaaS baseline.
 
 ## 2. Language and Product Context
 
@@ -18,20 +18,41 @@ Product context still matters:
 ## 3. Stack Principles
 
 - preserve the current React + TypeScript + Express baseline
-- avoid unnecessary rewrites
-- move secrets and sensitive integrations to the backend
-- introduce real persistence without turning the project into microservices
+- optimize for a web-first micro SaaS, not a native-mobile-first build
+- keep the backend as the source of truth for business state
+- extract shared contracts that can later serve a native mobile app
+- avoid unnecessary rewrites and avoid microservices for MVP
 
-## 4. Approved Frontend
+## 4. Approved Repository Topology
 
-### 4.1 Runtime and Language
+The approved source layout is:
+
+```text
+apps/
+  api/
+  web/
+
+packages/
+  shared/
+```
+
+Rules:
+
+- `apps/web` owns browser delivery for desktop and mobile web
+- `apps/api` owns auth, business rules, persistence access, and integrations
+- `packages/shared` owns shared types, contracts, and pure utilities
+- `apps/mobile` is not approved yet as an active runtime
+
+## 5. Approved Frontend
+
+### 5.1 Runtime and Language
 
 - TypeScript `5.8.2`
 - React `19.0.0`
 - React DOM `19.0.0`
 - Vite `6.2.0`
 
-### 4.2 Styling and UI
+### 5.2 Styling and UI
 
 - Tailwind CSS `4.1.14`
 - `@tailwindcss/vite` `4.1.14`
@@ -41,60 +62,77 @@ Product context still matters:
 - `react-joyride` `2.9.3`
 - `motion` `12.23.24`
 
-### 4.3 Frontend Conventions
+### 5.3 Frontend Conventions
 
-- mobile-first SPA architecture
+- responsive SPA architecture
+- web-first delivery with strong mobile web support
 - remote data consumed through REST
-- no API keys in the client bundle
-- local state reserved for ephemeral UI state
-- business state should originate from a persistent backend
+- no secrets in the client bundle
+- local state reserved for UI state and temporary optimistic state
+- business state should originate from the backend
 
-## 5. Approved Backend
+## 6. Approved Backend
 
-### 5.1 Runtime and Framework
+### 6.1 Runtime and Framework
 
-- Node.js `20 LTS`
+- Node.js `20 LTS` target for deployment
 - Express `4.21.2`
 - `express-session` `1.19.0` as the temporary HTTP session layer until auth is revisited
 - `dotenv` `17.2.3` for local development
 - `googleapis` `171.4.0`
 
-### 5.2 Build and Tooling
+### 6.2 Build and Tooling
 
 - `tsx` `4.21.0` for development
-- `esbuild` `0.27.4` for the server bundle
+- `esbuild` `0.27.4` for the backend bundle
 - server build target: `node20`
 
-## 6. Approved External Integrations
+## 7. Approved Shared Layer
+
+The shared layer may contain:
+
+- domain types
+- request and response contracts
+- validation schemas
+- pure utilities
+
+The shared layer must not depend on:
+
+- React
+- Express
+- browser globals
+- Node-only runtime behavior unless explicitly isolated
+
+## 8. Approved External Integrations
 
 - Google OAuth 2.0 for app sign-in
 - Google Calendar API for deliverable synchronization
 
 Rules:
 
-- any production AI integration must run server-side
+- production AI integrations must run server-side
 - `@google/genai` `1.29.0` is allowed only for prototype or controlled beta work
 - direct browser-side production consumption is not approved
 
-## 7. Approved Persistence and Infrastructure
+## 9. Approved Persistence and Infrastructure
 
-### 7.1 Database
+### 9.1 Database
 
 - PostgreSQL `16`
 
-### 7.2 Hosting
+### 9.2 Hosting
 
-- web application: Render Web Service or equivalent persistent Node hosting
+- web application: served by the backend deployment during MVP, or split into dedicated web hosting later if needed
+- backend: persistent Node hosting
 - database: Neon PostgreSQL or equivalent managed PostgreSQL provider
-- static assets: served by the same backend deployment during the MVP
 
-### 7.3 CI/CD
+### 9.3 CI/CD
 
 - GitHub Actions as the official pipeline
 - automatic preview deployment on every pull request
 - production deployment only from a protected branch
 
-## 8. Approved Architecture
+## 10. Approved Architecture
 
 The system is defined as a `modular monolith`.
 
@@ -111,33 +149,33 @@ Approved modules:
 
 Microservices are not approved for MVP v1.
 
-## 9. Mandatory Technical Policies
+## 11. Mandatory Technical Policies
 
-- do not store OAuth tokens in volatile memory as the final solution
-- do not hardcode secrets
-- do not use demo seed data as the primary production source
 - every new API must live under `/api/v1`
 - every mutation must be validated on the backend
 - every authenticated endpoint must require an application user
+- critical business logic must not live only in the frontend
+- the repository must stay ready for a future second client without prematurely creating it
 
-## 10. Notes on the Current Repository
+## 12. Notes on the Current Repository
 
 The current repository already contains:
 
 - React + Vite + Tailwind
-- unified Express server
+- an Express backend
 - basic Google Calendar OAuth
-- application state held in client memory
-- Gemini assistant running in the browser
+- application state still held primarily in client memory
+- a prototype-era AI assistant implementation
 
 Required migration work to match the canonical stack:
 
+- keep moving frontend and backend code into the approved topology
+- extract shared domain contracts
 - introduce a real database
 - introduce real app authentication
-- move sensitive integrations to the server
-- replace demo state with REST fetches and mutations
+- replace demo state with backend-driven data
 
-## 11. Versions Confirmed From the Repository
+## 13. Versions Confirmed From the Repository
 
 Versions verified from `package.json` and `package-lock.json`:
 

@@ -4,7 +4,7 @@
 
 # TIA
 
-TIA is a mobile-first operational CRM for content creators and influencers. It helps a creator manage deliverables, brand relationships, contacts, and calendar coordination from a single workspace.
+TIA is a web-first micro SaaS for content creators and influencer operators. The product must work first as a desktop web app and mobile web experience, with a native mobile app reserved for a later phase.
 
 ## Documentation Language Policy
 
@@ -18,17 +18,37 @@ This repository uses English for:
 
 TIA itself is designed for a Spanish-speaking audience. Product copy, brand tone, and user-facing labels should remain in Spanish unless a specific feature requires another language.
 
-## Product Context
+## Repository Direction
 
-TIA started as an experiment in Google AI Studio. The current repository continues that work as a standalone product codebase with a broader direction and fewer assumptions about the final AI provider.
+The repository is now aligned to a `web-first`, `API-first`, and `shared-domain-first` strategy.
 
-The current codebase still contains prototype-era decisions:
+That means:
 
-- some product state still lives only in the client
-- Google Calendar integration exists in an experimental form
-- the current AI assistant implementation still reflects Gemini-based prototype work
+- the web application is the primary product client
+- mobile web quality is required from the same web codebase
+- backend APIs become the source of truth for product state
+- native mobile is a later channel, not the current implementation driver
 
-Those details describe the current implementation, not the final product direction.
+See [REPOSITORY_STRATEGY.md](./REPOSITORY_STRATEGY.md) for the canonical repository direction.
+
+## Current Repository Shape
+
+```text
+apps/
+  api/
+  web/
+
+packages/
+  shared/
+```
+
+Current responsibilities:
+
+- `apps/web`: responsive React application for desktop and mobile browsers
+- `apps/api`: Express-based backend and integration layer
+- `packages/shared`: reusable domain types and API contracts
+
+The repository is still in transition from prototype decisions. Some product state still lives in the client and will be moved behind API contracts over time.
 
 ## Local Development
 
@@ -40,14 +60,20 @@ Setup:
 
 1. Install dependencies with `npm install`.
 2. If you want to test external integrations, create a local environment file from `.env.example`.
-3. Start the app with `npm run dev`.
+3. Start the unified local app with `npm run dev`.
+
+Useful scripts:
+
+- `npm run dev`: runs the local application through the API server
+- `npm run build`: builds the web app and backend bundle
+- `npm run lint`: runs the TypeScript checks
 
 ## Environment Variables
 
-Current environment variables reflect the prototype and transition state of the project:
+Current environment variables reflect the transition from prototype to micro SaaS baseline:
 
 - `GEMINI_API_KEY`
-  Used only by the current inherited Gemini-based assistant implementation.
+  Optional. Used only by the inherited Gemini-based assistant implementation.
 - `GOOGLE_CLIENT_ID`
   Required for local Google OAuth and Calendar integration.
 - `GOOGLE_CLIENT_SECRET`
@@ -55,13 +81,19 @@ Current environment variables reflect the prototype and transition state of the 
 - `APP_URL`
   Base application URL used for OAuth callbacks. Example: `http://localhost:3000`.
 
-If the project moves to a different AI provider later, this documentation should be updated to reflect that decision.
-
 ## Current Runtime Shape
 
-- Frontend: React + TypeScript + Vite
-- Backend: Express
-- Styling: Tailwind CSS
-- External integration: Google Calendar via Google OAuth
+- frontend: React + TypeScript + Vite
+- backend: Express
+- styling: Tailwind CSS
+- external integration: Google Calendar via Google OAuth
 
-See the rest of the Markdown canon for the approved product, flow, stack, backend structure, implementation plan, and frontend guidelines.
+## Canonical Documents
+
+- [PRD.md](./PRD.md)
+- [APP_FLOW.md](./APP_FLOW.md)
+- [TECH_STACK.md](./TECH_STACK.md)
+- [BACKEND_STRUCTURE.md](./BACKEND_STRUCTURE.md)
+- [FRONTEND_GUIDELINES.md](./FRONTEND_GUIDELINES.md)
+- [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md)
+- [REPOSITORY_STRATEGY.md](./REPOSITORY_STRATEGY.md)

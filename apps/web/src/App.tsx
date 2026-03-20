@@ -16,7 +16,55 @@ import OnboardingTour from './components/OnboardingTour';
 
 const MainLayout = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
-  const { accentColor } = useAppContext();
+  const {
+    accentColor,
+    isBootstrapping,
+    bootstrapError,
+    actionError,
+    dismissActionError,
+    refreshAppData,
+  } = useAppContext();
+
+  if (isBootstrapping) {
+    return (
+      <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex items-center justify-center px-6">
+        <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-[2rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] p-8 text-center">
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500 mb-3">
+            TIA
+          </p>
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">
+            Cargando workspace
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Estamos trayendo tus datos desde el backend.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (bootstrapError) {
+    return (
+      <div className="min-h-screen bg-slate-100 dark:bg-slate-900 flex items-center justify-center px-6">
+        <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-[2rem] shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] p-8 text-center">
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-rose-500 mb-3">
+            Error
+          </p>
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">
+            No pudimos cargar la app
+          </h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">{bootstrapError}</p>
+          <button
+            onClick={() => void refreshAppData()}
+            className="w-full py-3 rounded-2xl font-bold text-white"
+            style={{ backgroundColor: accentColor }}
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const tabs = [
     { id: 'dashboard', icon: Home, label: 'Inicio' },
@@ -38,6 +86,24 @@ const MainLayout = () => {
 
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto pb-28 hide-scrollbar relative z-10">
+          {actionError && (
+            <div className="px-6 pt-6">
+              <div className="rounded-[1.5rem] border border-rose-200/80 bg-rose-50/90 dark:border-rose-500/20 dark:bg-rose-500/10 px-4 py-3 flex items-start gap-3">
+                <div className="flex-1">
+                  <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-rose-500 mb-1">
+                    Accion no completada
+                  </p>
+                  <p className="text-sm text-rose-700 dark:text-rose-200">{actionError}</p>
+                </div>
+                <button
+                  onClick={dismissActionError}
+                  className="text-xs font-bold uppercase tracking-wider text-rose-500"
+                >
+                  Cerrar
+                </button>
+              </div>
+            </div>
+          )}
           {activeTab === 'dashboard' && <Dashboard />}
           {activeTab === 'pipeline' && <Pipeline />}
           {activeTab === 'directory' && <Directory />}
@@ -73,11 +139,21 @@ const MainLayout = () => {
   );
 };
 
+const AppShell = () => {
+  const { isBootstrapping, bootstrapError } = useAppContext();
+
+  return (
+    <>
+      {!isBootstrapping && !bootstrapError && <OnboardingTour />}
+      <MainLayout />
+    </>
+  );
+};
+
 export default function App() {
   return (
     <AppProvider>
-      <OnboardingTour />
-      <MainLayout />
+      <AppShell />
     </AppProvider>
   );
 }

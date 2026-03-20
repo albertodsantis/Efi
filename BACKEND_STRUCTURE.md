@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-This document defines the backend architecture, data model, and API contract for MVP v1. The approved backend is a modular monolith with a REST API and PostgreSQL.
+This document defines the backend architecture, data model, and API contract for MVP v1. The approved backend is a modular monolith with a REST API and PostgreSQL, designed to serve the web app first and future client surfaces later.
 
 ## 2. Language and Audience Context
 
@@ -13,6 +13,11 @@ Product-facing behavior still follows these rules:
 - TIA serves Spanish-speaking users
 - visible UI text remains in Spanish
 - backend contracts and engineering documentation remain in English
+
+Repository strategy still applies:
+
+- the backend is the system of record for desktop web, mobile web, and future native clients
+- backend contracts must not assume a single long-term client surface
 
 ## 3. Approved Architecture
 
@@ -36,6 +41,10 @@ Canonical modules:
 - templates
 - settings
 - integrations/google-calendar
+
+Client rule:
+
+- the backend must remain usable by the current web client and by a later mobile app without redesigning the domain model
 
 ## 4. Canonical Database
 
@@ -199,6 +208,12 @@ users 1---N oauth_connections
 ## 6. Canonical API Endpoints
 
 Required base path: `/api/v1`
+
+API contract rules:
+
+- endpoints must remain client-agnostic
+- response contracts must be stable enough to support both web and future native clients
+- web-session flows are acceptable for MVP web delivery, but auth design must not make future native support unnecessarily expensive
 
 ### 6.1 Auth
 

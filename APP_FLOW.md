@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-This document defines the main navigation, primary states, and screen transitions for TIA MVP v1. The application remains a mobile-first SPA with a persistent shell and modal or sheet patterns for secondary actions.
+This document defines the main navigation, primary states, and screen transitions for TIA MVP v1. The application remains a responsive web SPA with mobile-first priorities and breakpoint-aware navigation patterns.
 
 ## 2. Language and UX Policy
 
@@ -58,7 +58,12 @@ Logged Out
        -> Settings
 ```
 
-Primary navigation is a persistent bottom tab bar:
+Primary navigation uses breakpoint-aware patterns:
+
+- narrow screens: bottom tab bar
+- wide screens: top navigation, rail, or sidebar
+
+Primary sections remain:
 
 - Inicio
 - Pipeline

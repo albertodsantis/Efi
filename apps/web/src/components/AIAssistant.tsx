@@ -2,15 +2,22 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { GoogleGenAI, Type, FunctionDeclaration } from '@google/genai';
 import { MessageSquare, X, Send, Mic, MicOff, Loader2, Bot, Sparkles } from 'lucide-react';
-import { TaskStatus } from '../types';
+import { TaskStatus } from '@shared/domain';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const geminiApiKey = process.env.GEMINI_API_KEY?.trim() || '';
+const ai = geminiApiKey ? new GoogleGenAI({ apiKey: geminiApiKey }) : null;
 
 export default function AIAssistant() {
   const { tasks, partners, profile, templates, accentColor, addTask, addPartner, updateTaskStatus, addContact, updatePartner } = useAppContext();
+  const isAiAvailable = Boolean(ai);
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<{ role: 'user' | 'model', text: string }[]>([
-    { role: 'model', text: '¡Hola! Soy TIA, tu asistente de inteligencia artificial. ¿En qué puedo ayudarte hoy?' }
+    {
+      role: 'model',
+      text: isAiAvailable
+        ? '¡Hola! Soy TIA, tu asistente de inteligencia artificial. ¿En qué puedo ayudarte hoy?'
+        : 'El asistente IA está desactivado en local porque falta GEMINI_API_KEY. Puedes seguir usando el resto de la app con normalidad.',
+    }
   ]);
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
@@ -142,7 +149,11 @@ export default function AIAssistant() {
   const chatRef = useRef<any>(null);
 
   useEffect(() => {
-    if (!chatRef.current) {
+    if (!ai || chatRef.current) {
+      return;
+    }
+
+    try {
       chatRef.current = ai.chats.create({
         model: 'gemini-3.1-pro-preview',
         config: {
@@ -150,11 +161,24 @@ export default function AIAssistant() {
           tools: tools,
         },
       });
+    } catch (error) {
+      console.error('Error initializing Gemini chat:', error);
     }
   }, []);
 
   const handleSend = async () => {
-    if (!input.trim() || !chatRef.current) return;
+    if (!input.trim()) return;
+
+    if (!chatRef.current) {
+      setMessages(prev => [
+        ...prev,
+        {
+          role: 'model',
+          text: 'El asistente IA no está disponible todavía. Configura GEMINI_API_KEY para activarlo.',
+        },
+      ]);
+      return;
+    }
 
     const userMessage = input.trim();
     setInput('');
@@ -180,31 +204,31 @@ export default function AIAssistant() {
             const { title, description, partnerName, value, dueDate } = call.args as any;
             let partnerId = partners.find(p => p.name.toLowerCase() === partnerName.toLowerCase())?.id;
             if (!partnerId) {
-              partnerId = addPartner({ name: partnerName, status: 'Prospecto', contacts: [] });
+              partnerId = await addPartner({ name: partnerName, status: 'Prospecto', contacts: [] });
             }
-            addTask({ title, description: description || '', partnerId, value: Number(value), dueDate, status: 'Pendiente' });
+            await addTask({ title, description: description || '', partnerId, value: Number(value), dueDate, status: 'Pendiente' });
             functionResponses.push({ functionResponse: { name: call.name, response: { result: 'Tarea añadida con éxito' } } });
           } else if (call.name === 'update_task_status') {
             const { taskId, status } = call.args as any;
-            updateTaskStatus(taskId, status as TaskStatus);
+            await updateTaskStatus(taskId, status as TaskStatus);
             functionResponses.push({ functionResponse: { name: call.name, response: { result: 'Estado actualizado' } } });
           } else if (call.name === 'add_partner') {
             const { name, status } = call.args as any;
-            addPartner({ name, status: status || 'Prospecto', contacts: [] });
+            await addPartner({ name, status: status || 'Prospecto', contacts: [] });
             functionResponses.push({ functionResponse: { name: call.name, response: { result: 'Marca añadida con éxito' } } });
           } else if (call.name === 'add_contact') {
             const { partnerName, name, role, email, ig } = call.args as any;
             let partnerId = partners.find(p => p.name.toLowerCase() === partnerName.toLowerCase())?.id;
             if (!partnerId) {
-              partnerId = addPartner({ name: partnerName, status: 'Prospecto', contacts: [] });
+              partnerId = await addPartner({ name: partnerName, status: 'Prospecto', contacts: [] });
             }
-            addContact(partnerId, { name, role: role || '', email: email || '', ig: ig || '' });
+            await addContact(partnerId, { name, role: role || '', email: email || '', ig: ig || '' });
             functionResponses.push({ functionResponse: { name: call.name, response: { result: 'Contacto añadido con éxito' } } });
           } else if (call.name === 'update_partner_status') {
             const { partnerName, status } = call.args as any;
             const partner = partners.find(p => p.name.toLowerCase() === partnerName.toLowerCase());
             if (partner) {
-              updatePartner(partner.id, { status: status as any });
+              await updatePartner(partner.id, { status: status as any });
               functionResponses.push({ functionResponse: { name: call.name, response: { result: 'Estado de la marca actualizado con éxito' } } });
             } else {
               functionResponses.push({ functionResponse: { name: call.name, response: { error: 'Marca no encontrada' } } });
@@ -240,11 +264,14 @@ export default function AIAssistant() {
           <button
             id="tia-assistant-btn"
             onClick={() => setIsOpen(true)}
+            disabled={!isAiAvailable}
             className="relative h-11 pl-1.5 pr-5 rounded-full flex items-center gap-2.5 text-white transition-all duration-500 hover:scale-105 active:scale-95 group overflow-hidden"
             style={{
               background: 'rgba(15, 23, 42, 0.35)',
               backdropFilter: 'blur(16px)',
               WebkitBackdropFilter: 'blur(16px)',
+              opacity: isAiAvailable ? 1 : 0.6,
+              cursor: isAiAvailable ? 'pointer' : 'not-allowed',
             }}
           >
             <div className="absolute top-1/2 left-1/2 w-[250%] aspect-square -translate-x-1/2 -translate-y-1/2 animate-[spin_4s_linear_infinite] opacity-80" style={{ background: `conic-gradient(from 0deg, transparent, ${accentColor || '#8b5cf6'}, transparent)` }} />

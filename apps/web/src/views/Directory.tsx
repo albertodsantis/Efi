@@ -1,21 +1,46 @@
 import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { Search, Plus, Building2, Mail, Instagram, ChevronDown, ChevronUp, Send, Edit2, Trash2, X } from 'lucide-react';
-import { Contact, Partner } from '../types';
+import { Contact, Partner } from '@shared/domain';
+
+const PARTNER_STATUSES = [
+  'Prospecto',
+  'En Negociación',
+  'Activo',
+  'Inactivo',
+  'On Hold',
+  'Relación Culminada',
+] as const;
 
 export default function Directory() {
-  const { partners, accentColor, templates, profile, addContact, updateContact, deleteContact, updatePartner, tasks } = useAppContext();
+  const { partners, accentColor, templates, profile, addContact, updateContact, deleteContact, updatePartner, addPartner, tasks } = useAppContext();
   const [search, setSearch] = useState('');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [composingTo, setComposingTo] = useState<{ contact: Contact, partner: Partner } | null>(null);
   const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
   const [messagePreview, setMessagePreview] = useState({ subject: '', body: '' });
   
+  const [isAddingPartner, setIsAddingPartner] = useState(false);
   const [addingContactTo, setAddingContactTo] = useState<string | null>(null);
   const [editingContact, setEditingContact] = useState<{ partnerId: string, contact: Contact } | null>(null);
   const [newContact, setNewContact] = useState({ name: '', role: '', email: '', ig: '' });
+  const [newPartner, setNewPartner] = useState({ name: '', status: 'Prospecto' as Partner['status'] });
 
-  const filteredPartners = partners.filter(p => p.name.toLowerCase().includes(search.toLowerCase()));
+  const filteredPartners = partners.filter((partner) => {
+    const query = search.toLowerCase().trim();
+    if (!query) {
+      return true;
+    }
+
+    const partnerMatch = partner.name.toLowerCase().includes(query);
+    const contactMatch = partner.contacts.some((contact) =>
+      [contact.name, contact.email, contact.ig, contact.role]
+        .filter(Boolean)
+        .some((value) => value.toLowerCase().includes(query)),
+    );
+
+    return partnerMatch || contactMatch;
+  });
 
   const getStatusColor = (status: string) => {
     switch(status) {
@@ -63,25 +88,33 @@ export default function Directory() {
     setMessagePreview({ subject: '', body: '' });
   };
 
-  const handleAddContact = (e: React.FormEvent) => {
+  const handleAddPartner = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const partnerId = await addPartner({ name: newPartner.name, status: newPartner.status, contacts: [] });
+    setExpandedId(partnerId);
+    setIsAddingPartner(false);
+    setNewPartner({ name: '', status: 'Prospecto' });
+  };
+
+  const handleAddContact = async (e: React.FormEvent) => {
     e.preventDefault();
     if (addingContactTo) {
-      addContact(addingContactTo, newContact);
+      await addContact(addingContactTo, newContact);
       setAddingContactTo(null);
       setNewContact({ name: '', role: '', email: '', ig: '' });
     }
   };
 
-  const handleEditContact = (e: React.FormEvent) => {
+  const handleEditContact = async (e: React.FormEvent) => {
     e.preventDefault();
     if (editingContact) {
-      updateContact(editingContact.partnerId, editingContact.contact.id, editingContact.contact);
+      await updateContact(editingContact.partnerId, editingContact.contact.id, editingContact.contact);
       setEditingContact(null);
     }
   };
 
-  const handleDeleteContact = (partnerId: string, contactId: string) => {
-    deleteContact(partnerId, contactId);
+  const handleDeleteContact = async (partnerId: string, contactId: string) => {
+    await deleteContact(partnerId, contactId);
   };
 
   return (
@@ -89,6 +122,7 @@ export default function Directory() {
       <div className="flex justify-between items-center mb-6 mt-4">
         <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Directory</h1>
         <button
+          onClick={() => setIsAddingPartner(true)}
           className="w-12 h-12 rounded-full flex items-center justify-center text-white shadow-[0_8px_30px_rgb(0,0,0,0.12)] transition-transform active:scale-95"
           style={{ backgroundColor: accentColor }}
         >
@@ -125,17 +159,16 @@ export default function Directory() {
                     <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg leading-tight">{partner.name}</h3>
                     <select
                       value={partner.status}
-                      onChange={(e) => updatePartner(partner.id, { status: e.target.value as any })}
+                      onChange={(e) => void updatePartner(partner.id, { status: e.target.value as any })}
                       onClick={(e) => e.stopPropagation()}
                       className={`text-[11px] font-bold uppercase tracking-widest px-3 py-1.5 rounded-xl mt-1.5 inline-block appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 dark:focus:ring-offset-slate-800 ${getStatusColor(partner.status)}`}
                       style={{ '--tw-ring-color': accentColor } as any}
                     >
-                      <option value="Prospecto">Prospecto</option>
-                      <option value="En Negociación">En Negociación</option>
-                      <option value="Activo">Activo</option>
-                      <option value="Inactivo">Inactivo</option>
-                      <option value="On Hold">On Hold</option>
-                      <option value="Relación Culminada">Relación Culminada</option>
+                      {PARTNER_STATUSES.map((status) => (
+                        <option key={status} value={status}>
+                          {status}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -208,6 +241,48 @@ export default function Directory() {
           </div>
         )}
       </div>
+
+      {isAddingPartner && (
+        <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center">
+          <div className="bg-white dark:bg-slate-800 w-full sm:w-[90%] sm:rounded-[2.5rem] rounded-t-[2.5rem] p-8 animate-in slide-in-from-bottom-full duration-300 shadow-2xl">
+            <div className="flex justify-between items-center mb-8">
+              <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">Nueva Marca</h2>
+              <button onClick={() => setIsAddingPartner(false)} className="text-slate-400 dark:text-slate-500 p-2.5 bg-slate-100 dark:bg-slate-700 rounded-full active:scale-90 transition-transform hover:bg-slate-200 dark:hover:bg-slate-600"><X size={20} /></button>
+            </div>
+            <form onSubmit={handleAddPartner} className="space-y-5">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Nombre</label>
+                <input
+                  required
+                  value={newPartner.name}
+                  onChange={(e) => setNewPartner({ ...newPartner, name: e.target.value })}
+                  className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 dark:text-slate-100"
+                  style={{ '--tw-ring-color': accentColor } as any}
+                  placeholder="Ej. Nike, Samsung, Zara"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2.5">Estado</label>
+                <select
+                  value={newPartner.status}
+                  onChange={(e) => setNewPartner({ ...newPartner, status: e.target.value as Partner['status'] })}
+                  className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-[1.5rem] px-5 py-4 text-[15px] font-medium focus:outline-none focus:ring-2 focus:bg-white dark:focus:bg-slate-800 transition-all text-slate-800 dark:text-slate-100"
+                  style={{ '--tw-ring-color': accentColor } as any}
+                >
+                  {PARTNER_STATUSES.map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button type="submit" className="w-full text-white font-bold py-4 rounded-[1.5rem] mt-6 transition-opacity hover:opacity-90 active:scale-[0.98] shadow-md text-[15px]" style={{ backgroundColor: accentColor }}>
+                Crear Marca
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Compose Message Modal */}
       {composingTo && (

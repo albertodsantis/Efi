@@ -1,5 +1,13 @@
 export type TaskStatus = 'Pendiente' | 'En Progreso' | 'En Revisión' | 'Completada' | 'Cobro';
-export type PartnerStatus = 'Prospecto' | 'En Negociación' | 'Activo' | 'Inactivo' | 'On Hold' | 'Relación Culminada';
+export type PartnerStatus =
+  | 'Prospecto'
+  | 'En Negociación'
+  | 'Activo'
+  | 'Inactivo'
+  | 'On Hold'
+  | 'Relación Culminada';
+
+export type AppTheme = 'light' | 'dark';
 
 export interface Contact {
   id: string;
@@ -49,5 +57,5 @@ export interface AppState {
   profile: UserProfile;
   accentColor: string;
   templates: Template[];
-  theme: 'light' | 'dark';
+  theme: AppTheme;
 }

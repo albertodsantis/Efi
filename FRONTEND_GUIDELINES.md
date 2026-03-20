@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-This document defines the visual system and interaction rules for TIA MVP v1. The UI must preserve the soft, rounded, mobile-first identity of the prototype while behaving like a consistent production product.
+This document defines the visual system and interaction rules for TIA MVP v1. The UI must preserve the soft, rounded, mobile-first identity of the prototype while behaving like a responsive production SaaS across desktop and mobile web.
 
 ## 2. Language and Brand Policy
 
@@ -31,7 +31,8 @@ Introducing another full UI system such as Material UI or Ant Design is not appr
 
 Mandatory visual principles:
 
-- mobile-first appearance inside an app-like shell
+- mobile-first visual hierarchy without becoming mobile-only
+- desktop web must feel like a complete SaaS workspace, not a stretched phone mockup
 - large, soft, highly legible cards
 - generous use of rounded corners
 - clear contrast between backgrounds, surfaces, and accent
@@ -104,8 +105,8 @@ Approved grid and spacing:
 Widths:
 
 - main layout is centered
-- mobile shell `max-width`: `448px`
-- desktop preserves the centered shell with surrounding breathing room
+- mobile layouts may use a focused shell-like presentation
+- desktop layouts should use available width deliberately with stronger information hierarchy and reduced wasted space
 
 ## 8. Radius and Shadow
 
@@ -127,12 +128,15 @@ Approved shadows:
 
 ### 9.1 App Shell
 
-- persistent mobile shell container
 - app background with a subtle accent-based gradient
-- fixed bottom navigation
+- shared frame and spacing system across breakpoints
+- navigation pattern may change by breakpoint
+- narrow screens may use bottom navigation
+- wide screens may use top navigation, rail navigation, or sidebar navigation
 
 ### 9.2 Bottom Navigation
 
+- approved only for narrow-screen navigation
 - 5 tabs maximum
 - icon-first on mobile
 - active state shown through accent color and a visual marker
@@ -227,3 +231,4 @@ Before continuing with major new features, the app should expose a reusable libr
 - do not introduce another primary typeface
 - do not use multiple modal patterns for the same action category
 - the customizable accent color must never break legibility or semantic feedback
+- desktop and mobile web must preserve the same core product capabilities even when layout changes

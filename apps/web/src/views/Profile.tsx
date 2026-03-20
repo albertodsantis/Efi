@@ -1,14 +1,42 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { Edit2, Target, Download } from 'lucide-react';
+import { Edit2, Target, Download, X } from 'lucide-react';
 
 export default function Profile() {
   const { profile, accentColor, updateProfile } = useAppContext();
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    name: profile.name,
+    handle: profile.handle,
+    avatar: profile.avatar,
+  });
+
+  const openProfileEditor = () => {
+    setProfileForm({
+      name: profile.name,
+      handle: profile.handle,
+      avatar: profile.avatar,
+    });
+    setIsEditingProfile(true);
+  };
 
   const handleGoalChange = (index: number, value: string) => {
     const newGoals = [...profile.goals] as [string, string, string];
     newGoals[index] = value;
-    updateProfile({ goals: newGoals });
+    void updateProfile({ goals: newGoals });
+  };
+
+  const handleSaveProfile = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setIsSavingProfile(true);
+
+    try {
+      await updateProfile(profileForm);
+      setIsEditingProfile(false);
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
   const handleGenerateMediaKit = () => {
@@ -80,7 +108,10 @@ export default function Profile() {
       <div className="flex flex-col items-center text-center mb-10 mt-6">
         <div className="relative mb-5">
           <img src={profile.avatar} alt="Profile" className="w-32 h-32 rounded-full border-4 border-white shadow-xl object-cover" />
-          <button className="absolute bottom-0 right-0 w-10 h-10 bg-white rounded-full shadow-md border border-gray-100 flex items-center justify-center text-gray-600 hover:text-gray-900 active:scale-95 transition-transform">
+          <button
+            onClick={openProfileEditor}
+            className="absolute bottom-0 right-0 w-10 h-10 bg-white rounded-full shadow-md border border-gray-100 flex items-center justify-center text-gray-600 hover:text-gray-900 active:scale-95 transition-transform"
+          >
             <Edit2 size={18} />
           </button>
         </div>
@@ -122,6 +153,56 @@ export default function Profile() {
         <Download size={20} />
         Generar Media Kit
       </button>
+
+      {isEditingProfile && (
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center">
+          <div className="bg-white dark:bg-slate-800 w-full sm:w-[90%] sm:rounded-3xl rounded-t-[2rem] p-6 shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Editar perfil</h2>
+              <button
+                onClick={() => setIsEditingProfile(false)}
+                className="p-2 rounded-full bg-gray-100 dark:bg-slate-700 text-gray-400 dark:text-slate-400"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <form onSubmit={handleSaveProfile} className="space-y-4">
+              <input
+                required
+                value={profileForm.name}
+                onChange={(event) => setProfileForm({ ...profileForm, name: event.target.value })}
+                className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 px-4 py-3 text-sm font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2"
+                style={{ '--tw-ring-color': accentColor } as any}
+                placeholder="Nombre"
+              />
+              <input
+                required
+                value={profileForm.handle}
+                onChange={(event) => setProfileForm({ ...profileForm, handle: event.target.value })}
+                className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 px-4 py-3 text-sm font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2"
+                style={{ '--tw-ring-color': accentColor } as any}
+                placeholder="@tuusuario"
+              />
+              <input
+                required
+                value={profileForm.avatar}
+                onChange={(event) => setProfileForm({ ...profileForm, avatar: event.target.value })}
+                className="w-full rounded-2xl border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900/50 px-4 py-3 text-sm font-medium text-gray-900 dark:text-white focus:outline-none focus:ring-2"
+                style={{ '--tw-ring-color': accentColor } as any}
+                placeholder="URL del avatar"
+              />
+              <button
+                type="submit"
+                disabled={isSavingProfile}
+                className="w-full py-4 rounded-2xl font-bold text-white disabled:opacity-60"
+                style={{ backgroundColor: accentColor }}
+              >
+                {isSavingProfile ? 'Guardando...' : 'Guardar perfil'}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

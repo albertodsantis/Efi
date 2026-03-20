@@ -18,7 +18,7 @@ export default function Settings() {
     const val = e.target.value.replace('#', '').toUpperCase();
     setHexInput(val);
     if (val.length === 6) {
-      setAccentColor('#' + val);
+      void setAccentColor('#' + val);
     }
   };
 
@@ -34,7 +34,7 @@ export default function Settings() {
       if ('Notification' in window) {
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
-          updateProfile({ notificationsEnabled: true });
+          await updateProfile({ notificationsEnabled: true });
         } else {
           alert('Debes permitir las notificaciones en tu navegador.');
         }
@@ -42,7 +42,7 @@ export default function Settings() {
         alert('Tu navegador no soporta notificaciones.');
       }
     } else {
-      updateProfile({ notificationsEnabled: false });
+      await updateProfile({ notificationsEnabled: false });
     }
   };
 
@@ -71,9 +71,9 @@ export default function Settings() {
     }
   };
 
-  const handleAddTemplate = (e: React.FormEvent) => {
+  const handleAddTemplate = async (e: React.FormEvent) => {
     e.preventDefault();
-    addTemplate(newTemplate);
+    await addTemplate(newTemplate);
     setIsAddingTemplate(false);
     setNewTemplate({ name: '', subject: '', body: '' });
   };
@@ -85,7 +85,7 @@ export default function Settings() {
       <div className="mb-10">
         <h2 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4 ml-2">Tema de la App</h2>
         <div className="bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden custom-color-picker-container">
-          <HexColorPicker color={accentColor} onChange={setAccentColor} />
+          <HexColorPicker color={accentColor} onChange={(color) => void setAccentColor(color)} />
           
           <div className="p-5 pt-0">
             <div className="flex items-center gap-3 mt-5">
@@ -112,7 +112,7 @@ export default function Settings() {
       <div className="mb-10">
         <h2 className="text-[10px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-4 ml-2">Ajustes Generales</h2>
         <div className="bg-white dark:bg-slate-800 rounded-[2rem] shadow-sm border border-gray-100 dark:border-slate-700 overflow-hidden">
-          <div onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="flex items-center justify-between p-5 border-b border-gray-50 dark:border-slate-700/50 active:bg-gray-50 dark:active:bg-slate-700/50 transition-colors cursor-pointer">
+          <div onClick={() => void setTheme(theme === 'dark' ? 'light' : 'dark')} className="flex items-center justify-between p-5 border-b border-gray-50 dark:border-slate-700/50 active:bg-gray-50 dark:active:bg-slate-700/50 transition-colors cursor-pointer">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-2xl bg-gray-50 dark:bg-slate-700 flex items-center justify-center text-gray-500 dark:text-gray-400">
                 {theme === 'dark' ? <Moon size={20} /> : <Sun size={20} />}
@@ -179,7 +179,7 @@ export default function Settings() {
                   <p className="text-xs text-gray-500 dark:text-gray-400 truncate max-w-[200px]">{template.subject}</p>
                 </div>
               </div>
-              <button onClick={() => deleteTemplate(template.id)} className="p-2 text-gray-400 hover:text-rose-500 dark:hover:text-rose-400 transition-colors">
+              <button onClick={() => void deleteTemplate(template.id)} className="p-2 text-gray-400 hover:text-rose-500 dark:hover:text-rose-400 transition-colors">
                 <Trash2 size={16} />
               </button>
             </div>
