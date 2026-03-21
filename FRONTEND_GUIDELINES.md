@@ -75,21 +75,43 @@ Mandatory visual principles:
 
 Approved primary typeface:
 
-- `Nunito`
+- Native system stack
+
+Approved mono typeface:
+
+- `Geist Mono`
 
 Fallbacks:
 
+- `-apple-system`
+- `BlinkMacSystemFont`
+- `"Segoe UI"`
+- `Roboto`
+- `"Helvetica Neue"`
+- `Arial`
 - `ui-sans-serif`
 - `system-ui`
 - `sans-serif`
 
+Core weights:
+
+- `Regular`: 400
+- `Medium`: 500
+- `Semibold`: 600
+- `Bold`: 700
+
+Display weights:
+
+- `Extra Bold`: 800
+- `Black`: 900
+
 Typography scale:
 
-- `H1`: 30px, weight 700, tight tracking
-- `H2`: 24px, weight 700
+- `H1`: 30px, weight 800, tight tracking
+- `H2`: 24px, weight 700 to 800
 - `H3`: 18px, weight 700
 - `Body Large`: 15px, weight 500
-- `Body`: 14px, weight 500
+- `Body`: 13px, weight 400
 - `Caption`: 12px, weight 600
 - `Label / Overline`: 10px to 11px, weight 700, uppercase, wide tracking
 

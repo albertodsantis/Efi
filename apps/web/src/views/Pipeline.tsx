@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Calendar as CalendarIcon,
   CalendarDays,
@@ -28,8 +28,9 @@ import {
   cx,
 } from '../components/ui';
 
-const REVIEW_STATUS = `En Revisi${'\u00f3'}n` as TaskStatus;
+const REVIEW_STATUS = 'En Revisión' as TaskStatus;
 const STATUSES: TaskStatus[] = ['Pendiente', 'En Progreso', REVIEW_STATUS, 'Completada', 'Cobro'];
+const WEEKDAY_LABELS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const EMPTY_FORM = {
   title: '',
   description: '',
@@ -40,7 +41,31 @@ const EMPTY_FORM = {
 };
 
 const fieldClass =
-  'w-full rounded-[1.35rem] border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-medium text-slate-900 transition-all focus:bg-white focus:outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-900/50 dark:text-white dark:focus:bg-slate-800';
+  'w-full rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-medium text-slate-900 transition-all focus:bg-white focus:outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-900/50 dark:text-white dark:focus:bg-slate-800';
+
+const parseIsoDate = (value: string) => {
+  const [year, month, day] = value.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
+const formatIsoDate = (date: Date) => {
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const formatCurrency = (value: number) => `$${value.toLocaleString('es-ES')}`;
+
+const formatTaskDate = (value: string, options?: Intl.DateTimeFormatOptions) =>
+  parseIsoDate(value).toLocaleDateString(
+    'es-ES',
+    options ?? {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    },
+  );
 
 const getStatusTone = (status: TaskStatus): 'warning' | 'info' | 'accent' | 'success' | 'neutral' => {
   if (status === 'Pendiente') return 'warning';
@@ -73,9 +98,12 @@ export default function Pipeline() {
   const [isSyncingDown, setIsSyncingDown] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [isWideDesktopCalendar, setIsWideDesktopCalendar] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth >= 1536,
+  );
 
   const sortedTasks = useMemo(
-    () => [...tasks].sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()),
+    () => [...tasks].sort((a, b) => parseIsoDate(a.dueDate).getTime() - parseIsoDate(b.dueDate).getTime()),
     [tasks],
   );
   const tasksByStatus = useMemo(
@@ -92,14 +120,19 @@ export default function Pipeline() {
 
   const currentStatus = STATUSES[currentStatusIdx];
   const visibleTasks = view === 'kanban' ? tasksByStatus[currentStatus] : sortedTasks;
-  const todayIso = new Date().toISOString().split('T')[0];
-  const selectedDateTasks = selectedDate
-    ? sortedTasks.filter((task) => task.dueDate === selectedDate)
-    : [];
+  const todayIso = formatIsoDate(new Date());
+  const selectedDateTasks = selectedDate ? sortedTasks.filter((task) => task.dueDate === selectedDate) : [];
+  const monthTasks = sortedTasks.filter((task) => {
+    const dueDate = parseIsoDate(task.dueDate);
+    return (
+      dueDate.getMonth() === currentMonth.getMonth() &&
+      dueDate.getFullYear() === currentMonth.getFullYear()
+    );
+  });
   const editingTask = editingTaskId ? sortedTasks.find((task) => task.id === editingTaskId) ?? null : null;
   const syncedTasks = sortedTasks.filter((task) => Boolean(task.gcalEventId)).length;
   const weeklyTasks = sortedTasks.filter((task) => {
-    const dueDate = new Date(task.dueDate);
+    const dueDate = parseIsoDate(task.dueDate);
     const start = new Date();
     start.setHours(0, 0, 0, 0);
     const end = new Date(start);
@@ -109,6 +142,28 @@ export default function Pipeline() {
   const openValue = sortedTasks
     .filter((task) => task.status !== 'Cobro')
     .reduce((sum, task) => sum + task.value, 0);
+  const calendarPanelTasks = selectedDate ? selectedDateTasks : monthTasks;
+  const monthLabel = currentMonth.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+  const calendarPanelLabel = selectedDate
+    ? formatTaskDate(selectedDate, { day: 'numeric', month: 'long', year: 'numeric' })
+    : monthLabel;
+  const calendarPanelSummary =
+    calendarPanelTasks.length === 1
+      ? '1 tarea programada en este bloque de tiempo.'
+      : `${calendarPanelTasks.length} tareas programadas en este bloque de tiempo.`;
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const handleResize = () => {
+      setIsWideDesktopCalendar(window.innerWidth >= 1536);
+    };
+
+    handleResize();
+    window.addEventListener('resize', handleResize);
+
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const resetModal = () => {
     setModalMode(null);
@@ -188,7 +243,11 @@ export default function Pipeline() {
     try {
       await deleteTask(task.id);
       if (editingTaskId === task.id) resetModal();
-      if (selectedDate && selectedDateTasks.filter((item) => item.id !== task.id).length === 0) {
+      if (
+        selectedDate &&
+        task.dueDate === selectedDate &&
+        selectedDateTasks.filter((item) => item.id !== task.id).length === 0
+      ) {
         setSelectedDate(null);
       }
     } finally {
@@ -251,47 +310,169 @@ export default function Pipeline() {
       );
     } catch (error) {
       console.error(error);
-      alert('Error de conexión al sincronizar.');
+      alert('Error de conexión al traer cambios.');
     } finally {
       setIsSyncingDown(false);
     }
   };
 
-  const renderTask = (task: Task) => {
+  const renderTaskCard = (task: Task, variant: 'kanban' | 'calendar' = 'kanban') => {
     const partner = partners.find((item) => item.id === task.partnerId);
+    const isCalendarVariant = variant === 'calendar';
 
     return (
       <div key={task.id}>
         <SurfaceCard tone="inset" className="p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="truncate text-[11px] font-bold tracking-[0.16em] text-slate-400 dark:text-slate-500 uppercase">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="truncate text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
+                {partner?.name || 'Sin marca'}
+              </p>
+              <h3 className="mt-2 text-sm font-bold leading-5 text-slate-900 dark:text-slate-100">
+                {task.title}
+              </h3>
+            </div>
+            <p className="shrink-0 text-sm font-black text-slate-900 dark:text-slate-100">
+              {formatCurrency(task.value)}
+            </p>
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
+            <StatusBadge tone={getStatusTone(task.status)}>{task.status}</StatusBadge>
+            <span className="rounded-[0.8rem] bg-slate-100 px-3 py-1 text-[11px] font-bold tracking-[0.1em] text-slate-500 uppercase dark:bg-slate-800 dark:text-slate-300">
+              {formatTaskDate(task.dueDate, { day: '2-digit', month: 'short' })}
+            </span>
+          </div>
+
+          <p
+            className={cx(
+              'mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400',
+              isCalendarVariant ? 'line-clamp-3' : 'line-clamp-2',
+            )}
+          >
+            {task.description || 'Sin descripción todavía.'}
+          </p>
+
+          <div className="mt-4 space-y-3">
+            <select
+              value={task.status}
+              disabled={updatingTaskId === task.id}
+              onChange={(event) => void changeStatus(task.id, event.target.value as TaskStatus)}
+              className="w-full rounded-[0.95rem] border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-200"
+              style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+            >
+              {STATUSES.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+
+            <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3 dark:border-slate-700/60">
+              <span className="inline-flex min-w-0 items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+                {task.gcalEventId ? (
+                  <CheckCircle2 size={14} className="shrink-0 text-emerald-500" />
+                ) : (
+                  <CalendarIcon size={14} className="shrink-0" />
+                )}
+                <span className="truncate">{task.gcalEventId ? 'Calendar activo' : 'Sin enlace externo'}</span>
+              </span>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void syncTask(task)}
+                  disabled={syncingTaskId === task.id}
+                  className={cx(
+                    'inline-flex h-10 items-center justify-center rounded-[0.8rem] px-3 text-xs font-bold transition-all disabled:opacity-50',
+                    task.gcalEventId
+                      ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300'
+                      : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300',
+                  )}
+                  aria-label={task.gcalEventId ? `Actualizar ${task.title} con Calendar` : `Sincronizar ${task.title}`}
+                >
+                  {syncingTaskId === task.id ? (
+                    <RefreshCw size={14} className="animate-spin" />
+                  ) : task.gcalEventId ? (
+                    <CheckCircle2 size={14} />
+                  ) : (
+                    <CalendarIcon size={14} />
+                  )}
+                </button>
+                <IconButton
+                  icon={PencilLine}
+                  label={`Editar ${task.title}`}
+                  onClick={() => openEdit(task)}
+                  className="h-10 w-10 rounded-[0.8rem]"
+                />
+                <IconButton
+                  icon={Trash2}
+                  label={`Eliminar ${task.title}`}
+                  onClick={() => void removeTask(task)}
+                  disabled={deletingTaskId === task.id}
+                  tone="danger"
+                  className="h-10 w-10 rounded-[0.8rem]"
+                />
+              </div>
+            </div>
+          </div>
+        </SurfaceCard>
+      </div>
+    );
+  };
+
+  const renderListRow = (task: Task) => {
+    const partner = partners.find((item) => item.id === task.partnerId);
+
+    return (
+      <div
+        key={task.id}
+        className="grid gap-4 px-4 py-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(8.5rem,0.7fr)_minmax(8.5rem,0.7fr)_auto] xl:items-center xl:px-5"
+      >
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
               {partner?.name || 'Sin marca'}
             </p>
-            <h3 className="mt-1 text-sm font-bold text-slate-900 dark:text-slate-100">
-              {task.title}
-            </h3>
+            {task.gcalEventId ? (
+              <span className="rounded-[0.75rem] bg-emerald-50 px-2.5 py-1 text-[10px] font-bold tracking-[0.12em] text-emerald-600 uppercase dark:bg-emerald-500/15 dark:text-emerald-300">
+                Calendar
+              </span>
+            ) : null}
           </div>
-          <div className="shrink-0 text-right">
-            <p className="text-sm font-extrabold text-slate-900 dark:text-slate-100">
-              ${task.value.toLocaleString()}
-            </p>
-            <div className="mt-2">
-              <StatusBadge tone={getStatusTone(task.status)}>{task.status}</StatusBadge>
-            </div>
+          <h3 className="mt-2 text-sm font-bold leading-5 text-slate-900 dark:text-slate-100">{task.title}</h3>
+          <p className="mt-1 line-clamp-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+            {task.description || 'Sin descripción todavía.'}
+          </p>
+        </div>
+
+        <div>
+          <p className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
+            Entrega
+          </p>
+          <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
+            {formatTaskDate(task.dueDate)}
+          </p>
+        </div>
+
+        <div>
+          <p className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
+            Valor
+          </p>
+          <p className="mt-2 text-base font-extrabold text-slate-900 dark:text-slate-100">
+            {formatCurrency(task.value)}
+          </p>
+          <div className="mt-2">
+            <StatusBadge tone={getStatusTone(task.status)}>{task.status}</StatusBadge>
           </div>
         </div>
 
-        <p className="mt-3 line-clamp-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-          {task.description || 'Sin descripción todavía.'}
-        </p>
-
-        <div className="mt-4 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
+        <div className="flex flex-col gap-2 xl:items-end">
           <select
             value={task.status}
             disabled={updatingTaskId === task.id}
             onChange={(event) => void changeStatus(task.id, event.target.value as TaskStatus)}
-            className="w-full rounded-[1.2rem] border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-200"
+            className="w-full rounded-[0.95rem] border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 xl:w-[10.5rem] dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-200"
             style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
           >
             {STATUSES.map((status) => (
@@ -301,25 +482,13 @@ export default function Pipeline() {
             ))}
           </select>
 
-          <div className="flex items-center gap-2">
-            <IconButton
-              icon={PencilLine}
-              label={`Editar ${task.title}`}
-              onClick={() => openEdit(task)}
-            />
-            <IconButton
-              icon={Trash2}
-              label={`Eliminar ${task.title}`}
-              onClick={() => void removeTask(task)}
-              disabled={deletingTaskId === task.id}
-              tone="danger"
-            />
+          <div className="flex items-center justify-between gap-2 xl:justify-end">
             <button
               type="button"
               onClick={() => void syncTask(task)}
               disabled={syncingTaskId === task.id}
               className={cx(
-                'inline-flex h-11 items-center gap-2 rounded-[1.2rem] px-3 text-xs font-bold transition-all disabled:opacity-50',
+                'inline-flex h-10 items-center justify-center rounded-[0.8rem] px-3 text-xs font-bold transition-all disabled:opacity-50',
                 task.gcalEventId
                   ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300'
                   : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300',
@@ -332,78 +501,120 @@ export default function Pipeline() {
               ) : (
                 <CalendarIcon size={14} />
               )}
-              <span className="hidden sm:inline">{task.gcalEventId ? 'Sincronizada' : 'Sincronizar'}</span>
             </button>
+            <IconButton
+              icon={PencilLine}
+              label={`Editar ${task.title}`}
+              onClick={() => openEdit(task)}
+              className="h-10 w-10 rounded-[0.8rem]"
+            />
+            <IconButton
+              icon={Trash2}
+              label={`Eliminar ${task.title}`}
+              onClick={() => void removeTask(task)}
+              disabled={deletingTaskId === task.id}
+              tone="danger"
+              className="h-10 w-10 rounded-[0.8rem]"
+            />
           </div>
         </div>
-
-        <div className="mt-4 flex items-center justify-between gap-3 border-t border-slate-100 pt-3 text-xs font-medium text-slate-500 dark:border-slate-700/60 dark:text-slate-400">
-          <div className="flex items-center gap-2">
-            <CalendarDays size={14} />
-            {new Date(task.dueDate).toLocaleDateString('es-ES', {
-              day: '2-digit',
-              month: 'short',
-              year: 'numeric',
-            })}
-          </div>
-          {task.gcalEventId ? <span>Calendar activo</span> : <span>Sin enlace externo</span>}
-        </div>
-        </SurfaceCard>
       </div>
     );
   };
-
-  const monthLabel = currentMonth.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
   const daysInMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0).getDate();
   const firstDay = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1).getDay();
   const blanks = Array.from({ length: firstDay }, (_, index) => (
-    <div key={`empty-${index}`} className="aspect-square" />
+    <div key={`empty-${index}`} className="min-h-[4.5rem] rounded-[0.85rem] sm:min-h-[6.5rem] sm:rounded-[1rem] xl:min-h-[8.5rem]" />
   ));
   const days = Array.from({ length: daysInMonth }, (_, offset) => {
     const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), offset + 1);
-    const iso = date.toISOString().split('T')[0];
+    const iso = formatIsoDate(date);
     const dayTasks = sortedTasks.filter((task) => task.dueDate === iso);
     const isToday = iso === todayIso;
+    const isSelected = iso === selectedDate;
 
     return (
       <button
         key={iso}
         type="button"
-        onClick={() => dayTasks.length > 0 && setSelectedDate(iso)}
+        onClick={() => setSelectedDate(iso)}
         className={cx(
-          'aspect-square rounded-[1.4rem] border p-2 text-left transition-colors',
-          isToday
-            ? 'border-slate-200 bg-slate-50 dark:border-slate-600 dark:bg-slate-700/50'
-            : 'border-transparent hover:border-slate-200 dark:hover:border-slate-700',
-          dayTasks.length > 0 ? 'cursor-pointer' : 'cursor-default',
+          'min-h-[4.5rem] rounded-[0.85rem] border p-2 text-left transition-all sm:min-h-[6.5rem] sm:rounded-[1rem] sm:p-3 xl:min-h-[8.5rem]',
+          isSelected
+            ? 'border-transparent bg-slate-900 text-white shadow-[0_20px_45px_-28px_rgba(15,23,42,0.55)] dark:bg-slate-100 dark:text-slate-900'
+            : isToday
+              ? 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/55'
+              : 'border-transparent bg-white/65 hover:border-slate-200 hover:bg-white dark:bg-slate-900/30 dark:hover:border-slate-700 dark:hover:bg-slate-900/55',
         )}
       >
-        <span
-          className={cx(
-            'inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold',
-            dayTasks.length > 0
-              ? 'text-white'
-              : 'text-slate-400 dark:text-slate-500',
-          )}
-          style={dayTasks.length > 0 ? { backgroundColor: accentColor } : undefined}
-        >
-          {date.getDate()}
-        </span>
-        <div className="mt-2 space-y-1">
-          {dayTasks.slice(0, 3).map((task) => (
+        <div className="flex items-start justify-between gap-2">
+          <span
+            className={cx(
+              'inline-flex h-7 min-w-7 items-center justify-center rounded-[0.75rem] px-2 text-[11px] font-black sm:h-8 sm:min-w-8 sm:text-xs',
+              isSelected
+                ? 'bg-white/18 text-white dark:bg-slate-900/10 dark:text-slate-900'
+                : dayTasks.length > 0
+                  ? 'text-white'
+                  : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300',
+            )}
+            style={!isSelected && dayTasks.length > 0 ? { backgroundColor: accentColor } : undefined}
+          >
+            {date.getDate()}
+          </span>
+          {dayTasks.length > 0 ? (
+            <span
+              className={cx(
+                'rounded-[0.7rem] px-1.5 py-0.5 text-[9px] font-bold tracking-[0.12em] uppercase sm:px-2 sm:py-1 sm:text-[10px]',
+                isSelected
+                  ? 'bg-white/12 text-white dark:bg-slate-900/10 dark:text-slate-900'
+                  : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300',
+              )}
+            >
+              {dayTasks.length}
+            </span>
+          ) : null}
+        </div>
+
+        <div className="mt-2 space-y-1 sm:mt-3 sm:space-y-1.5">
+          {dayTasks.slice(0, 2).map((task) => (
             <div
               key={task.id}
-              className="h-1.5 rounded-full"
-              style={{ backgroundColor: task.gcalEventId ? '#10b981' : accentColor, opacity: 0.8 }}
-            />
+              className={cx(
+                'hidden truncate rounded-[0.7rem] px-2 py-1 text-[11px] font-semibold sm:block',
+                isSelected
+                  ? 'bg-white/12 text-white dark:bg-slate-900/10 dark:text-slate-900'
+                  : 'bg-slate-100/90 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+              )}
+            >
+              {task.title}
+            </div>
           ))}
+
+          {dayTasks.length > 2 ? (
+            <p
+              className={cx(
+                'hidden pt-0.5 text-[11px] font-bold sm:block',
+                isSelected ? 'text-white/80 dark:text-slate-700' : 'text-slate-400 dark:text-slate-500',
+              )}
+            >
+              +{dayTasks.length - 2} más
+            </p>
+          ) : dayTasks.length === 0 ? (
+            <p
+              className={cx(
+                'hidden pt-1 text-[11px] font-medium lg:block',
+                isSelected ? 'text-white/75 dark:text-slate-700' : 'text-slate-400 dark:text-slate-500',
+              )}
+            >
+              Sin tareas
+            </p>
+          ) : null}
         </div>
       </button>
     );
   });
-
   return (
-    <div className="space-y-5 p-4 pb-6 lg:space-y-6 lg:px-8 lg:py-8">
+    <div className="space-y-5 p-4 pb-6 lg:space-y-6 lg:px-8 lg:pt-4 lg:pb-8">
       <ScreenHeader
         mobileOnly
         eyebrow="Pipeline"
@@ -429,7 +640,7 @@ export default function Pipeline() {
         className="px-2"
       />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid gap-3 min-[360px]:grid-cols-2 xl:grid-cols-4">
         <MetricCard
           icon={ListIcon}
           label="Tareas activas"
@@ -454,13 +665,13 @@ export default function Pipeline() {
         <MetricCard
           icon={CheckCircle2}
           label="Valor abierto"
-          value={`$${openValue.toLocaleString()}`}
+          value={formatCurrency(openValue)}
           helper="Importe pendiente de cierre o cobro."
           accentColor={accentColor}
         />
       </div>
 
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
         <SurfaceCard tone="muted" className="p-1.5">
           <div className="grid grid-cols-3 gap-1.5">
             {[
@@ -473,7 +684,7 @@ export default function Pipeline() {
                 type="button"
                 onClick={() => setView(tab.id as typeof view)}
                 className={cx(
-                  'flex items-center justify-center gap-2 rounded-[1.2rem] px-3 py-3 text-sm font-bold transition-all',
+                  'flex items-center justify-center gap-2 rounded-[0.85rem] px-3 py-3 text-sm font-bold transition-all',
                   view === tab.id
                     ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-slate-100'
                     : 'text-slate-500 dark:text-slate-400',
@@ -486,8 +697,8 @@ export default function Pipeline() {
           </div>
         </SurfaceCard>
 
-        <div className="hidden items-center gap-2 lg:flex">
-          <Button tone="secondary" onClick={() => void syncDown()}>
+        <div className="hidden items-center gap-2 xl:flex">
+          <Button tone="secondary" onClick={() => void syncDown()} disabled={isSyncingDown}>
             <DownloadCloud size={16} />
             Actualizar Calendar
           </Button>
@@ -511,7 +722,7 @@ export default function Pipeline() {
                   tone="ghost"
                 />
                 <div className="text-center">
-                  <p className="text-[11px] font-bold tracking-[0.16em] text-slate-400 dark:text-slate-500 uppercase">
+                  <p className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
                     Fase {currentStatusIdx + 1} de {STATUSES.length}
                   </p>
                   <h2 className="mt-1 text-lg font-extrabold" style={{ color: accentColor }}>
@@ -530,60 +741,79 @@ export default function Pipeline() {
 
             <div className="mt-3 space-y-3">
               {visibleTasks.length > 0 ? (
-                visibleTasks.map(renderTask)
+                visibleTasks.map((task) => renderTaskCard(task))
               ) : (
                 <EmptyState
                   icon={Trello}
                   title="No hay tareas en esta fase"
-                  description="Cuando muevas tareas o crees una nueva, aparecerá aquí."
+                  description="Cuando muevas tareas o crees una nueva, aparecerán aquí."
                 />
               )}
             </div>
           </div>
 
-          <div className="hidden gap-4 lg:grid lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-5">
-            {STATUSES.map((status) => {
-              const columnTasks = tasksByStatus[status];
+          <div className="hidden lg:block">
+            <div className="grid gap-4 lg:grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3">
+              {STATUSES.map((status) => {
+                const columnTasks = tasksByStatus[status];
+                const columnValue = columnTasks.reduce((sum, task) => sum + task.value, 0);
 
-              return (
-                <div key={status}>
-                  <SurfaceCard tone="muted" className="p-4 lg:p-5">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <p className="text-[11px] font-bold tracking-[0.16em] text-slate-400 dark:text-slate-500 uppercase">
-                        Fase
-                      </p>
-                      <h2 className="mt-1 text-base font-extrabold" style={{ color: accentColor }}>
-                        {status}
-                      </h2>
-                    </div>
-                    <div className="rounded-[1.1rem] bg-white px-3 py-2 text-xs font-black text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-                      {columnTasks.length}
-                    </div>
-                  </div>
+                return (
+                  <div key={status}>
+                    <SurfaceCard
+                      tone="muted"
+                      className="flex min-w-0 flex-col self-start p-4"
+                    >
+                      <div className="flex items-start justify-between gap-3 border-b border-slate-200/70 pb-4 dark:border-slate-700/60">
+                        <div className="min-w-0">
+                          <p className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
+                            Fase
+                          </p>
+                          <h2 className="mt-1 text-base font-extrabold" style={{ color: accentColor }}>
+                            {status}
+                          </h2>
+                          <p className="mt-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+                            {formatCurrency(columnValue)}
+                          </p>
+                        </div>
+                        <span className="rounded-[0.8rem] bg-white px-3 py-1.5 text-xs font-black text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                          {columnTasks.length}
+                        </span>
+                      </div>
 
-                  <div className="mt-4 space-y-3 max-h-[calc(100vh-22rem)] overflow-y-auto pr-1 hide-scrollbar">
-                    {columnTasks.length > 0 ? (
-                      columnTasks.map(renderTask)
-                    ) : (
-                      <EmptyState
-                        title="Sin tareas en esta fase"
-                        description="Usa la vista completa para arrastrar flujo y mantener el pipeline equilibrado."
-                        className="px-4 py-6"
-                      />
-                    )}
+                      <div className="mt-4 space-y-3">
+                        {columnTasks.length > 0 ? (
+                          columnTasks.map((task) => renderTaskCard(task))
+                        ) : (
+                          <EmptyState
+                            title="Sin tareas en esta fase"
+                            description="Añade una entrega o mueve una tarea para equilibrar el flujo."
+                            className="px-4 py-6"
+                          />
+                        )}
+                      </div>
+                    </SurfaceCard>
                   </div>
-                  </SurfaceCard>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </div>
       ) : null}
 
       {view === 'list' ? (
         sortedTasks.length > 0 ? (
-          <div className="grid gap-3 xl:grid-cols-2 2xl:grid-cols-3">{sortedTasks.map(renderTask)}</div>
+          <SurfaceCard tone="muted" className="overflow-hidden">
+            <div className="hidden grid-cols-[minmax(0,1.45fr)_minmax(8.5rem,0.7fr)_minmax(8.5rem,0.7fr)_auto] gap-4 border-b border-slate-200/70 px-5 py-3 text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase xl:grid dark:border-slate-700/60 dark:text-slate-500">
+              <span>Tarea</span>
+              <span>Entrega</span>
+              <span>Estado</span>
+              <span className="text-right">Acciones</span>
+            </div>
+            <div className="divide-y divide-slate-200/70 dark:divide-slate-700/60">
+              {sortedTasks.map((task) => renderListRow(task))}
+            </div>
+          </SurfaceCard>
         ) : (
           <EmptyState
             icon={ListIcon}
@@ -600,66 +830,112 @@ export default function Pipeline() {
       ) : null}
 
       {view === 'calendar' ? (
-        <SurfaceCard className="p-5 lg:p-6">
-          <div className="mb-5 flex items-center justify-between">
-            <IconButton
-              icon={ChevronLeft}
-              label="Mes anterior"
-              onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}
-              tone="ghost"
-            />
-            <h2 className="text-lg font-extrabold capitalize text-slate-900 dark:text-slate-100">
-              {monthLabel}
-            </h2>
-            <IconButton
-              icon={ChevronRight}
-              label="Mes siguiente"
-              onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}
-              tone="ghost"
-            />
-          </div>
-
-          <div className="mb-3 grid grid-cols-7 gap-1">
-            {['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'].map((day) => (
-              <div
-                key={day}
-                className="py-2 text-center text-[10px] font-bold tracking-[0.14em] text-slate-400 dark:text-slate-500 uppercase"
-              >
-                {day}
+        <div className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_minmax(18rem,22vw)]">
+          <SurfaceCard className="p-5 lg:p-6">
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <IconButton
+                icon={ChevronLeft}
+                label="Mes anterior"
+                onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}
+                tone="ghost"
+              />
+              <div className="text-center">
+                <p className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
+                  Vista mensual
+                </p>
+                <h2 className="mt-1 text-lg font-extrabold capitalize text-slate-900 dark:text-slate-100">
+                  {monthLabel}
+                </h2>
               </div>
-            ))}
-          </div>
-
-          <div className="grid grid-cols-7 gap-1.5">
-            {blanks}
-            {days}
-          </div>
-        </SurfaceCard>
-      ) : null}
-
-      {selectedDate ? (
-        <OverlayModal onClose={() => setSelectedDate(null)}>
-          <ModalPanel
-            title={new Date(selectedDate).toLocaleDateString('es-ES', {
-              day: 'numeric',
-              month: 'long',
-              year: 'numeric',
-            })}
-            description="Estas son las tareas programadas para esta fecha."
-            onClose={() => setSelectedDate(null)}
-            size="lg"
-          >
-            <div className="space-y-3">
-              {selectedDateTasks.length > 0 ? (
-                selectedDateTasks.map(renderTask)
-              ) : (
-                <EmptyState title="No hay tareas para este día" />
-              )}
+              <IconButton
+                icon={ChevronRight}
+                label="Mes siguiente"
+                onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}
+                tone="ghost"
+              />
             </div>
-          </ModalPanel>
-        </OverlayModal>
+
+            <div className="mb-3 grid grid-cols-7 gap-1 sm:gap-2">
+              {WEEKDAY_LABELS.map((day) => (
+                <div
+                  key={day}
+                  className="py-1.5 text-center text-[9px] font-bold tracking-[0.14em] text-slate-400 uppercase dark:text-slate-500 sm:py-2 sm:text-[10px]"
+                >
+                  {day}
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-1 sm:gap-2">
+              {blanks}
+              {days}
+            </div>
+          </SurfaceCard>
+
+          <div className="hidden 2xl:block">
+            <SurfaceCard tone="muted" className="p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
+                    {selectedDate ? 'Agenda del día' : 'Agenda del mes'}
+                  </p>
+                  <h3 className="mt-1 text-lg font-extrabold capitalize text-slate-900 dark:text-slate-100">
+                    {calendarPanelLabel}
+                  </h3>
+                  <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                    {calendarPanelTasks.length > 0
+                      ? calendarPanelSummary
+                      : 'No hay tareas programadas en este bloque de tiempo.'}
+                  </p>
+                </div>
+                {selectedDate ? (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedDate(null)}
+                    className="rounded-[0.8rem] bg-white px-3 py-2 text-xs font-bold text-slate-500 transition-colors hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-white"
+                  >
+                    Ver mes
+                  </button>
+                ) : null}
+              </div>
+
+              <div className="mt-5 space-y-3">
+                {calendarPanelTasks.length > 0 ? (
+                  calendarPanelTasks.map((task) => renderTaskCard(task, 'calendar'))
+                ) : (
+                  <EmptyState
+                    icon={CalendarDays}
+                    title="Sin tareas programadas"
+                    description="Selecciona otro día o crea una nueva entrega para poblar el calendario."
+                    className="px-4 py-6"
+                  />
+                )}
+              </div>
+            </SurfaceCard>
+          </div>
+        </div>
       ) : null}
 
+      {selectedDate && !isWideDesktopCalendar ? (
+        <div className="2xl:hidden">
+          <OverlayModal onClose={() => setSelectedDate(null)}>
+            <ModalPanel
+              title={formatTaskDate(selectedDate, { day: 'numeric', month: 'long', year: 'numeric' })}
+              description="Estas son las tareas programadas para esta fecha."
+              onClose={() => setSelectedDate(null)}
+              size="lg"
+            >
+              <div className="space-y-3">
+                {selectedDateTasks.length > 0 ? (
+                  selectedDateTasks.map((task) => renderTaskCard(task, 'calendar'))
+                ) : (
+                  <EmptyState title="No hay tareas para este día" />
+                )}
+              </div>
+            </ModalPanel>
+          </OverlayModal>
+        </div>
+      ) : null}
       {modalMode ? (
         <OverlayModal onClose={resetModal}>
           <ModalPanel

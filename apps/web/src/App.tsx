@@ -56,7 +56,7 @@ const tabs: Array<{
     id: 'profile',
     label: 'Perfil',
     shortLabel: 'Perfil',
-    description: 'Define identidad, objetivos y material de presentación.',
+    description: 'Define identidad, objetivos y material de presentaci\u00f3n.',
     icon: User,
   },
   {
@@ -122,74 +122,45 @@ const DesktopSidebar = ({
   activeTab,
   onTabChange,
   accentColor,
+  profileAvatar,
   profileName,
   todayLabel,
-  tasksDueToday,
-  activePartners,
 }: {
   activeTab: TabId;
   onTabChange: (tabId: TabId) => void;
   accentColor: string;
+  profileAvatar: string;
   profileName: string;
   todayLabel: string;
-  tasksDueToday: number;
-  activePartners: number;
 }) => (
-  <aside className="hidden lg:flex lg:flex-col lg:gap-5">
-    <SurfaceCard className="p-6">
-      <div
-        className="inline-flex items-center rounded-full px-3 py-1.5 text-[11px] font-bold tracking-[0.18em] text-slate-600 dark:text-slate-200"
-        style={{ backgroundColor: `${accentColor}14` }}
-      >
-        Tía
-      </div>
-      <h1 className="mt-4 text-[2rem] font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
-        Workspace
-      </h1>
-      <p className="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">
-        Opera entregables, partners y seguimientos con una vista clara en web y una
-        experiencia compacta en móvil.
-      </p>
-
-      <div className="mt-6 grid gap-3">
-        <div className="rounded-[1.6rem] border border-slate-200/80 bg-slate-50/90 px-4 py-4 dark:border-slate-700/60 dark:bg-slate-900/55">
-          <p className="text-[11px] font-bold tracking-[0.18em] text-slate-400 dark:text-slate-500 uppercase">
-            Sesión
+  <aside className="hide-scrollbar hidden lg:sticky lg:top-0 lg:flex lg:h-[100dvh] lg:min-h-[100dvh] lg:min-w-0 lg:flex-col lg:gap-4 lg:overflow-y-auto lg:px-4 lg:py-5">
+    <div className="px-1 py-1">
+      <div className="flex items-center gap-3">
+        <img
+          src={profileAvatar}
+          alt={profileName}
+          className="h-11 w-11 rounded-xl border border-white/80 object-cover shadow-sm dark:border-slate-700/60"
+        />
+        <div className="min-w-0">
+          <p className="text-[10px] font-bold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500">
+            {'Sesi\u00f3n'}
           </p>
-          <p className="mt-2 text-base font-bold text-slate-900 dark:text-slate-100">
+          <p className="mt-1 truncate text-sm font-bold text-slate-900 dark:text-slate-100">
             {profileName}
           </p>
-          <div className="mt-3 flex items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
-            <CalendarDays size={14} />
-            <span>{todayLabel}</span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
-          <div className="rounded-[1.4rem] border border-slate-200/80 bg-white/90 px-4 py-4 dark:border-slate-700/60 dark:bg-slate-900/45">
-            <p className="text-[10px] font-bold tracking-[0.16em] text-slate-400 dark:text-slate-500 uppercase">
-              Hoy
-            </p>
-            <p className="mt-2 text-xl font-extrabold text-slate-900 dark:text-slate-100">
-              {tasksDueToday}
-            </p>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">entregas activas</p>
-          </div>
-          <div className="rounded-[1.4rem] border border-slate-200/80 bg-white/90 px-4 py-4 dark:border-slate-700/60 dark:bg-slate-900/45">
-            <p className="text-[10px] font-bold tracking-[0.16em] text-slate-400 dark:text-slate-500 uppercase">
-              Partners
-            </p>
-            <p className="mt-2 text-xl font-extrabold text-slate-900 dark:text-slate-100">
-              {activePartners}
-            </p>
-            <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">cuentas activas</p>
+          <div className="mt-1 flex items-center gap-1.5 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+            <CalendarDays size={13} />
+            <span className="truncate">{todayLabel}</span>
           </div>
         </div>
       </div>
-    </SurfaceCard>
+    </div>
 
-    <SurfaceCard className="p-3">
-      <nav className="space-y-1.5">
+    <SurfaceCard className="p-2.5">
+      <p className="px-3 pb-2 text-[10px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
+        {'Navegaci\u00f3n'}
+      </p>
+      <nav className="space-y-1">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -201,34 +172,28 @@ const DesktopSidebar = ({
               type="button"
               onClick={() => onTabChange(tab.id)}
               className={cx(
-                'w-full rounded-[1.45rem] px-4 py-4 text-left transition-all',
+                'w-full rounded-[1rem] border px-3.5 py-3.5 text-left transition-all',
                 isActive
-                  ? 'shadow-[0_18px_30px_-24px_rgba(15,23,42,0.45)]'
-                  : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/70',
+                  ? 'border-slate-200/80 shadow-[0_16px_28px_-26px_rgba(15,23,42,0.26)] dark:border-slate-700/60'
+                  : 'border-transparent hover:border-slate-200/70 hover:bg-slate-50/80 dark:hover:border-slate-700/60 dark:hover:bg-slate-800/70',
               )}
-              style={
-                isActive
-                  ? {
-                      backgroundColor: `${accentColor}14`,
-                    }
-                  : undefined
-              }
+              style={isActive ? { backgroundColor: `${accentColor}12` } : undefined}
             >
               <div className="flex items-center gap-3">
                 <div
                   className={cx(
-                    'flex h-11 w-11 items-center justify-center rounded-2xl',
+                    'flex h-10 w-10 items-center justify-center rounded-[0.8rem]',
                     isActive
-                      ? 'bg-white/90 dark:bg-slate-900/60'
+                      ? 'bg-white/92 dark:bg-slate-900/62'
                       : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400',
                   )}
                   style={isActive ? { color: accentColor } : undefined}
                 >
-                  <Icon size={20} strokeWidth={isActive ? 2.5 : 2.1} />
+                  <Icon size={18} strokeWidth={isActive ? 2.4 : 2.05} />
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{tab.label}</p>
-                  <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                  <p className="mt-1 text-[12px] leading-5 text-slate-500 dark:text-slate-400">
                     {tab.description}
                   </p>
                 </div>
@@ -251,7 +216,7 @@ const MobileBottomNav = ({
   accentColor: string;
 }) => (
   <div
-    className="fixed left-4 right-4 z-[90] flex justify-between rounded-[2rem] border border-white/55 bg-white/90 px-3 shadow-[0_22px_50px_-20px_rgba(15,23,42,0.34)] backdrop-blur-2xl transition-colors duration-300 dark:border-slate-700/40 dark:bg-slate-800/88 lg:hidden"
+    className="fixed left-4 right-4 z-[90] flex justify-between rounded-[1.35rem] border border-white/55 bg-white/90 px-3 shadow-[0_22px_50px_-20px_rgba(15,23,42,0.34)] backdrop-blur-2xl transition-colors duration-300 dark:border-slate-700/40 dark:bg-slate-800/88 lg:hidden"
     style={{
       bottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)',
       paddingTop: '0.7rem',
@@ -272,7 +237,7 @@ const MobileBottomNav = ({
         >
           <div
             className={cx(
-              'flex w-full max-w-[68px] flex-col items-center gap-1 rounded-[1.4rem] px-2 py-2.5 transition-all',
+              'flex w-full max-w-[68px] flex-col items-center gap-1 rounded-[1rem] px-2 py-2.5 transition-all',
               isActive
                 ? 'shadow-[0_16px_25px_-22px_rgba(15,23,42,0.45)]'
                 : 'text-slate-500 dark:text-slate-400',
@@ -330,7 +295,7 @@ const MainLayout = () => {
       <div className="flex min-h-screen items-center justify-center bg-slate-100 px-6 dark:bg-slate-950">
         <SurfaceCard className="w-full max-w-lg p-8 text-center">
           <p className="text-[11px] font-bold tracking-[0.18em] text-slate-400 dark:text-slate-500 uppercase">
-            Tía
+            {`T\u00eda`}
           </p>
           <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
             Cargando workspace
@@ -355,7 +320,7 @@ const MainLayout = () => {
           <button
             type="button"
             onClick={() => void refreshAppData()}
-            className="mt-6 w-full rounded-[1.5rem] py-3.5 text-sm font-bold text-white"
+            className="mt-6 w-full rounded-[1rem] py-3.5 text-sm font-bold text-white"
             style={{ backgroundColor: accentColor }}
           >
             Reintentar
@@ -369,38 +334,31 @@ const MainLayout = () => {
     <div className="min-h-screen bg-slate-100 font-sans text-slate-900 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100">
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div
-          className="absolute -top-28 right-[-6%] h-80 w-80 rounded-full blur-3xl opacity-60"
+          className="absolute -top-28 right-[-6%] h-80 w-80 rounded-full blur-3xl opacity-55"
           style={{ backgroundColor: `${accentColor}22` }}
         />
         <div className="absolute bottom-0 left-[-4%] h-72 w-72 rounded-full bg-cyan-200/20 blur-3xl dark:bg-cyan-500/10" />
       </div>
 
-      <div className={cx('relative mx-auto min-h-screen', isDesktop ? 'max-w-[1600px] p-6 lg:p-7' : '')}>
-        <div
-          className={cx(
-            isDesktop
-              ? 'grid min-h-[calc(100vh-3.5rem)] grid-cols-[298px_minmax(0,1fr)] gap-5'
-              : 'min-h-screen',
-          )}
-        >
+      <div className="relative min-h-[100dvh] w-full">
+        <div className="min-h-[100dvh] w-full lg:grid lg:grid-cols-[clamp(240px,18vw,300px)_minmax(0,1fr)] lg:items-start">
           {isDesktop ? (
             <DesktopSidebar
               activeTab={activeTab}
               onTabChange={setActiveTab}
               accentColor={accentColor}
+              profileAvatar={profile.avatar}
               profileName={profile.name}
               todayLabel={todayLabel}
-              tasksDueToday={tasksDueToday}
-              activePartners={activePartners}
             />
           ) : null}
 
           <main
             className={cx(
-              'relative overflow-hidden transition-colors duration-300',
+              'relative min-w-0 transition-colors duration-300',
               isDesktop
-                ? 'min-h-[calc(100vh-3.5rem)] rounded-[2.5rem] border border-white/60 bg-white/82 shadow-[0_30px_80px_-32px_rgba(15,23,42,0.28)] dark:border-slate-700/60 dark:bg-slate-900/78'
-                : 'h-[100dvh] bg-white/94 dark:bg-slate-900/96',
+                ? 'flex min-h-[100dvh] flex-col border-l border-slate-200/80 bg-white/86 dark:border-slate-700/60 dark:bg-slate-900/78'
+                : 'flex min-h-[100dvh] flex-col bg-white/94 dark:bg-slate-900/96',
             )}
           >
             <div
@@ -411,9 +369,9 @@ const MainLayout = () => {
             />
 
             {isDesktop ? (
-              <div className="relative z-10 flex items-start justify-between gap-6 px-8 pt-8 pb-3">
-                <div className="max-w-2xl">
-                  <p className="text-[11px] font-bold tracking-[0.18em] text-slate-400 dark:text-slate-500 uppercase">
+              <div className="relative z-10 px-6 pt-7 pb-1 lg:px-8 lg:pt-8">
+                <div className="w-full">
+                  <p className="text-[11px] font-bold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500">
                     Panel de trabajo
                   </p>
                   <h2 className="mt-2 text-[2rem] font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
@@ -423,29 +381,16 @@ const MainLayout = () => {
                     {activeTabConfig.description}
                   </p>
                 </div>
-
-                <div className="hidden items-center gap-4 rounded-[1.6rem] border border-slate-200/70 bg-white/78 px-4 py-3 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/55 xl:flex">
-                  <img
-                    src={profile.avatar}
-                    alt={profile.name}
-                    className="h-12 w-12 rounded-2xl border border-white/80 object-cover dark:border-slate-700/60"
-                  />
-                  <div className="min-w-0">
-                    <p className="text-[11px] font-bold tracking-[0.18em] text-slate-400 dark:text-slate-500 uppercase">
-                      Sesión
-                    </p>
-                    <p className="mt-1 text-sm font-bold text-slate-900 dark:text-slate-100">
-                      {profile.name}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{todayLabel}</p>
-                  </div>
-                </div>
               </div>
             ) : null}
 
-            <div className="relative z-10 flex h-full flex-col">
+            <div className="relative z-10 flex flex-1 flex-col">
               <div
-                className={cx('hide-scrollbar flex-1 overflow-y-auto', isDesktop ? 'pb-8' : '')}
+                className={cx(
+                  isDesktop
+                    ? 'pb-16'
+                    : 'hide-scrollbar flex-1 overflow-y-auto',
+                )}
                 style={
                   isDesktop
                     ? undefined
@@ -457,10 +402,10 @@ const MainLayout = () => {
               >
                 {actionError ? (
                   <div className={cx(isDesktop ? 'px-8 pt-1' : 'px-4 pt-1')}>
-                    <div className="flex items-start gap-3 rounded-[1.6rem] border border-rose-200/80 bg-rose-50/90 px-4 py-3 dark:border-rose-500/20 dark:bg-rose-500/10">
+                    <div className="flex items-start gap-3 rounded-[1rem] border border-rose-200/80 bg-rose-50/90 px-4 py-3 dark:border-rose-500/20 dark:bg-rose-500/10">
                       <div className="flex-1">
                         <p className="text-[11px] font-bold tracking-[0.16em] text-rose-500 uppercase">
-                          Acción no completada
+                          {'Acci\u00f3n no completada'}
                         </p>
                         <p className="mt-1 text-sm text-rose-700 dark:text-rose-200">{actionError}</p>
                       </div>
@@ -475,7 +420,9 @@ const MainLayout = () => {
                   </div>
                 ) : null}
 
-                <div className={isDesktop ? 'w-full' : 'px-0'}>{renderActiveView(activeTab)}</div>
+                <div className={cx('min-w-0', isDesktop ? 'w-full' : 'px-0')}>
+                  {renderActiveView(activeTab)}
+                </div>
               </div>
             </div>
 

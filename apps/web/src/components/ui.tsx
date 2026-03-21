@@ -9,11 +9,11 @@ type SurfaceTone = 'default' | 'muted' | 'inset';
 
 const surfaceToneClasses: Record<SurfaceTone, string> = {
   default:
-    'border border-white/70 bg-white/86 shadow-[0_20px_50px_-24px_rgba(15,23,42,0.22)] dark:border-slate-700/60 dark:bg-slate-800/80',
+    'border border-slate-200/75 bg-white/88 shadow-[0_18px_42px_-30px_rgba(15,23,42,0.16)] dark:border-slate-700/60 dark:bg-slate-800/82',
   muted:
-    'border border-slate-200/70 bg-slate-50/92 shadow-[0_16px_35px_-28px_rgba(15,23,42,0.18)] dark:border-slate-700/60 dark:bg-slate-900/55',
+    'border border-slate-200/80 bg-slate-50/90 shadow-[0_16px_32px_-30px_rgba(15,23,42,0.12)] dark:border-slate-700/60 dark:bg-slate-900/58',
   inset:
-    'border border-slate-100/80 bg-white/92 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/45',
+    'border border-slate-200/75 bg-white/94 shadow-[0_10px_24px_-24px_rgba(15,23,42,0.14)] dark:border-slate-700/60 dark:bg-slate-900/48',
 };
 
 export function SurfaceCard({
@@ -28,7 +28,7 @@ export function SurfaceCard({
   return (
     <section
       className={cx(
-        'rounded-[2rem] backdrop-blur-xl transition-colors duration-300',
+        'rounded-[1.35rem] backdrop-blur-xl transition-colors duration-300',
         surfaceToneClasses[tone],
         className,
       )}
@@ -93,7 +93,7 @@ export function MetricCard({
   return (
     <SurfaceCard tone="inset" className={cx('p-4 sm:p-5', className)}>
       <div
-        className="flex h-11 w-11 items-center justify-center rounded-2xl"
+        className="flex h-11 w-11 items-center justify-center rounded-xl"
         style={{ backgroundColor: `${accentColor}14`, color: accentColor }}
       >
         <Icon size={20} strokeWidth={2.4} />
@@ -136,7 +136,7 @@ export function StatusBadge({
   return (
     <span
       className={cx(
-        'inline-flex items-center rounded-full px-3 py-1 text-[11px] font-bold tracking-[0.12em] uppercase',
+        'inline-flex items-center rounded-[0.8rem] px-3 py-1 text-[11px] font-bold tracking-[0.12em] uppercase',
         badgeToneClasses[tone],
         className,
       )}
@@ -168,7 +168,7 @@ export function EmptyState({
       )}
     >
       {Icon ? (
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-slate-400 dark:bg-slate-800 dark:text-slate-500">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-white text-slate-400 dark:bg-slate-800 dark:text-slate-500">
           <Icon size={22} />
         </div>
       ) : null}
@@ -220,7 +220,7 @@ export function Button({
       onClick={onClick}
       disabled={disabled}
       className={cx(
-        'inline-flex items-center justify-center gap-2 rounded-[1.35rem] px-4 py-3 text-sm font-bold transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50',
+        'inline-flex items-center justify-center gap-2 rounded-[0.95rem] px-4 py-3 text-sm font-bold transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50',
         toneClass,
         className,
       )}
@@ -264,7 +264,7 @@ export function IconButton({
       onClick={onClick}
       disabled={disabled}
       className={cx(
-        'flex h-11 w-11 items-center justify-center rounded-2xl transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50',
+        'flex h-11 w-11 items-center justify-center rounded-xl transition-all active:scale-95 disabled:cursor-not-allowed disabled:opacity-50',
         toneClass,
         className,
       )}
@@ -318,7 +318,7 @@ export function SettingRow({
   const content = (
     <>
       <div className="flex items-center gap-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-50 text-slate-500 dark:bg-slate-700 dark:text-slate-400">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-50 text-slate-500 dark:bg-slate-700 dark:text-slate-400">
           <Icon size={20} />
         </div>
         <div className="min-w-0">
@@ -340,7 +340,7 @@ export function SettingRow({
         type="button"
         onClick={onClick}
         className={cx(
-          'flex w-full items-center justify-between gap-4 rounded-[1.6rem] px-5 py-4 text-left transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-700/35',
+          'flex w-full items-center justify-between gap-4 rounded-[1rem] px-5 py-4 text-left transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-700/35',
           className,
         )}
       >
@@ -350,7 +350,7 @@ export function SettingRow({
   }
 
   return (
-    <div className={cx('flex items-center justify-between gap-4 rounded-[1.6rem] px-5 py-4', className)}>
+    <div className={cx('flex items-center justify-between gap-4 rounded-[1rem] px-5 py-4', className)}>
       {content}
     </div>
   );
@@ -381,7 +381,7 @@ export function ModalPanel({
   return (
     <div
       className={cx(
-        'flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[2.25rem] bg-white shadow-2xl dark:bg-slate-800 sm:rounded-[2.25rem]',
+        'flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[1.5rem] bg-white shadow-2xl dark:bg-slate-800 sm:rounded-[1.35rem]',
         widthClass,
       )}
     >
@@ -401,7 +401,7 @@ export function ModalPanel({
             <button
               type="button"
               onClick={onClose}
-              className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-100 text-slate-400 transition-transform active:scale-95 dark:bg-slate-700 dark:text-slate-400"
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-400 transition-transform active:scale-95 dark:bg-slate-700 dark:text-slate-400"
               aria-label="Cerrar modal"
             >
               <X size={18} />

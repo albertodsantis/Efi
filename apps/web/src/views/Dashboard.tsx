@@ -86,7 +86,7 @@ export default function Dashboard() {
   const firstName = profile.name.split(' ')[0] || profile.name;
 
   return (
-    <div className="space-y-6 p-4 pb-6 lg:space-y-7 lg:px-8 lg:py-8">
+    <div className="space-y-6 p-4 pb-6 lg:px-8 lg:pt-4 lg:pb-8">
       <section className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
         <SurfaceCard className="p-6 lg:p-7">
           <div className="flex items-start justify-between gap-4">
@@ -95,7 +95,7 @@ export default function Dashboard() {
               <h1 className="mt-2 text-[2rem] font-extrabold tracking-tight text-slate-900 dark:text-slate-100 lg:text-[2.4rem]">
                 {firstName}
               </h1>
-              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+              <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-400">
                 Mueve tu semana con foco. Aquí se concentra el valor abierto, lo que vence pronto y
                 el estado real de tus colaboraciones.
               </p>
@@ -105,16 +105,16 @@ export default function Dashboard() {
               <img
                 src={profile.avatar}
                 alt={profile.name}
-                className="ml-auto h-14 w-14 rounded-[1.4rem] border-4 border-white object-cover shadow-sm dark:border-slate-800 lg:h-16 lg:w-16"
+                className="ml-auto h-14 w-14 rounded-[1rem] border-4 border-white object-cover shadow-sm dark:border-slate-800 lg:h-16 lg:w-16"
               />
-              <div className="mt-3 inline-flex items-center gap-2 rounded-full bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-300">
+              <div className="mt-3 inline-flex items-center gap-2 rounded-[0.85rem] bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-300">
                 <CalendarDays size={14} />
                 {today.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
               </div>
             </div>
           </div>
 
-          <div className="mt-6 grid grid-cols-2 gap-3 xl:grid-cols-4">
+          <div className="mt-6 grid gap-3 min-[360px]:grid-cols-2 xl:grid-cols-4">
             <MetricCard
               icon={CircleDollarSign}
               label="Pipeline activo"
@@ -149,7 +149,7 @@ export default function Dashboard() {
         <SurfaceCard tone="muted" className="p-6 lg:p-7">
           <div className="flex items-center gap-3">
             <div
-              className="flex h-12 w-12 items-center justify-center rounded-2xl"
+              className="flex h-12 w-12 items-center justify-center rounded-xl"
               style={{ backgroundColor: `${accentColor}14`, color: accentColor }}
             >
               <TrendingUp size={20} strokeWidth={2.4} />
@@ -165,7 +165,7 @@ export default function Dashboard() {
           </div>
 
           <div className="mt-6 grid gap-3">
-            <div className="rounded-[1.6rem] border border-slate-200/80 bg-white/90 px-4 py-4 dark:border-slate-700/60 dark:bg-slate-900/45">
+            <div className="rounded-[1rem] border border-slate-200/80 bg-white/90 px-4 py-4 dark:border-slate-700/60 dark:bg-slate-900/45">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-bold text-slate-900 dark:text-slate-100">Vencimientos críticos</p>
@@ -179,7 +179,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="rounded-[1.6rem] border border-slate-200/80 bg-white/90 px-4 py-4 dark:border-slate-700/60 dark:bg-slate-900/45">
+            <div className="rounded-[1rem] border border-slate-200/80 bg-white/90 px-4 py-4 dark:border-slate-700/60 dark:bg-slate-900/45">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-bold text-slate-900 dark:text-slate-100">Sincronización</p>
@@ -193,7 +193,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="rounded-[1.6rem] border border-slate-200/80 bg-white/90 px-4 py-4 dark:border-slate-700/60 dark:bg-slate-900/45">
+            <div className="rounded-[1rem] border border-slate-200/80 bg-white/90 px-4 py-4 dark:border-slate-700/60 dark:bg-slate-900/45">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-bold text-slate-900 dark:text-slate-100">Ritmo semanal</p>
@@ -231,10 +231,10 @@ export default function Dashboard() {
                 return (
                   <div
                     key={task.id}
-                    className="flex items-center gap-4 rounded-[1.6rem] border border-slate-100 bg-slate-50/70 px-4 py-4 dark:border-slate-700/60 dark:bg-slate-900/45"
+                    className="flex items-center gap-4 rounded-[1rem] border border-slate-100 bg-slate-50/70 px-4 py-4 dark:border-slate-700/60 dark:bg-slate-900/45"
                   >
                     <div
-                      className="flex h-11 w-11 items-center justify-center rounded-2xl text-sm font-bold"
+                      className="flex h-11 w-11 items-center justify-center rounded-xl text-sm font-bold"
                       style={{ backgroundColor: `${accentColor}12`, color: accentColor }}
                     >
                       {(partner?.name || task.title).charAt(0)}
@@ -319,7 +319,7 @@ export default function Dashboard() {
           </div>
 
           {summary.overdue > 0 ? (
-            <div className="mt-6 rounded-[1.6rem] border border-rose-200/80 bg-rose-50/90 px-4 py-4 dark:border-rose-500/20 dark:bg-rose-500/10">
+            <div className="mt-6 rounded-[1rem] border border-rose-200/80 bg-rose-50/90 px-4 py-4 dark:border-rose-500/20 dark:bg-rose-500/10">
               <div className="flex items-start gap-3">
                 <div className="mt-0.5 text-rose-500">
                   <AlertTriangle size={18} />

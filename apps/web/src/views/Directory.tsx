@@ -21,7 +21,6 @@ import {
   IconButton,
   MetricCard,
   ModalPanel,
-  ScreenHeader,
   StatusBadge,
   SurfaceCard,
   cx,
@@ -55,11 +54,11 @@ const STATUS_TONES: Record<Partner['status'], React.ComponentProps<typeof Status
 };
 
 const fieldClass =
-  'w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 transition-all focus:outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-100 dark:focus:bg-slate-800';
+  'w-full rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-900 transition-all focus:outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-100 dark:focus:bg-slate-800';
 const selectClass =
-  'appearance-none rounded-2xl border border-slate-200 bg-white/85 px-4 py-3 text-sm font-bold text-slate-700 shadow-sm focus:outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100';
+  'appearance-none rounded-[1rem] border border-slate-200 bg-white/85 px-4 py-3 text-sm font-bold text-slate-700 shadow-sm focus:outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-100';
 const modalClass =
-  'bg-white dark:bg-slate-800 w-full sm:w-[90%] sm:rounded-[2.5rem] rounded-t-[2.5rem] p-6 sm:p-8 shadow-2xl';
+  'bg-white dark:bg-slate-800 w-full sm:w-[90%] sm:rounded-[1.35rem] rounded-t-[1.5rem] p-6 sm:p-8 shadow-2xl';
 
 const statusLabel = (status: Partner['status']) => STATUS_LABELS[status] ?? status;
 const statusTone = (status: Partner['status']) => STATUS_TONES[status] ?? 'neutral';
@@ -193,21 +192,7 @@ export default function Directory() {
   };
 
   return (
-    <div className="flex h-full flex-col space-y-6 p-6 animate-in fade-in slide-in-from-bottom-4 duration-500 lg:px-8 lg:py-8">
-      <div className="hidden lg:block">
-        <ScreenHeader
-          eyebrow="Relaciones comerciales"
-          title="Directorio"
-          description="Centraliza marcas, contactos y mensajes para mover conversaciones sin perder contexto."
-          actions={
-            <Button accentColor={accentColor} onClick={() => setIsAddingPartner(true)}>
-              <Plus size={16} />
-              Añadir marca
-            </Button>
-          }
-        />
-      </div>
-
+    <div className="flex flex-col space-y-6 p-6 animate-in fade-in slide-in-from-bottom-4 duration-500 lg:px-8 lg:pt-4 lg:pb-8">
       <div className="lg:hidden flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="text-[11px] font-bold uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">
@@ -226,7 +211,7 @@ export default function Directory() {
         </Button>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(320px,0.92fr)_minmax(0,1.08fr)]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(320px,0.92fr)_minmax(0,1.08fr)]">
         <div className="space-y-4">
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             <MetricCard icon={Building2} label="Marcas" value={String(partners.length)} helper="Partners guardados en el workspace" accentColor={accentColor} />
@@ -242,7 +227,7 @@ export default function Directory() {
                 placeholder="Buscar marcas o contactos"
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                className="w-full rounded-[2rem] border border-white/70 bg-white/85 py-4 pl-14 pr-5 text-[15px] font-medium text-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.03)] transition-all placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 dark:border-slate-700/60 dark:bg-slate-900/55 dark:text-slate-100"
+                className="w-full rounded-[1.2rem] border border-white/70 bg-white/85 py-4 pl-14 pr-5 text-[15px] font-medium text-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.03)] transition-all placeholder:text-slate-400 focus:border-transparent focus:outline-none focus:ring-2 dark:border-slate-700/60 dark:bg-slate-900/55 dark:text-slate-100"
                 style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
               />
             </div>
@@ -266,21 +251,22 @@ export default function Directory() {
                     type="button"
                     onClick={() => setSelectedPartnerId(partner.id)}
                     className={cx(
-                      'w-full rounded-[1.75rem] border px-4 py-4 text-left transition-all',
+                      'w-full rounded-[1rem] border px-4 py-4 text-left transition-all',
                       isActive
-                        ? 'border-transparent bg-slate-900 text-white shadow-[0_20px_40px_-24px_rgba(15,23,42,0.45)] dark:bg-slate-100 dark:text-slate-900'
+                        ? 'border-slate-200/80 text-slate-900 shadow-[0_18px_34px_-26px_rgba(15,23,42,0.2)] dark:border-slate-700/60 dark:text-slate-100'
                         : 'border-slate-100 bg-white/80 text-slate-900 hover:bg-slate-50 dark:border-slate-700/60 dark:bg-slate-900/40 dark:text-slate-100 dark:hover:bg-slate-800/70',
                     )}
+                    style={isActive ? { backgroundColor: `${accentColor}10` } : undefined}
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0">
                         <div className="flex items-center gap-3">
-                          <div className={cx('flex h-11 w-11 items-center justify-center rounded-2xl text-sm font-black', isActive ? 'bg-white/15 text-white dark:bg-slate-900/10 dark:text-slate-900' : 'bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-400')}>
+                          <div className={cx('flex h-11 w-11 items-center justify-center rounded-xl text-sm font-black', isActive ? 'bg-white/85 text-slate-900 dark:bg-slate-900/55 dark:text-slate-100' : 'bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-400')}>
                             <Building2 size={20} />
                           </div>
                           <div className="min-w-0">
                             <h3 className="truncate text-base font-bold leading-tight">{partner.name}</h3>
-                            <p className={cx('mt-1 text-xs font-medium', isActive ? 'text-white/70 dark:text-slate-700' : 'text-slate-500 dark:text-slate-400')}>
+                            <p className={cx('mt-1 text-xs font-medium', isActive ? 'text-slate-600 dark:text-slate-300' : 'text-slate-500 dark:text-slate-400')}>
                               {partner.contacts.length} contactos
                             </p>
                           </div>
@@ -288,7 +274,7 @@ export default function Directory() {
                       </div>
                       <div className="flex shrink-0 flex-col items-end gap-2">
                         <StatusBadge tone={statusTone(partner.status)}>{statusLabel(partner.status)}</StatusBadge>
-                        <ChevronDown size={18} className={cx('transition-transform', isActive ? 'rotate-180 text-white/80 dark:text-slate-700' : 'text-slate-400 dark:text-slate-500')} />
+                        <ChevronDown size={18} className={cx('transition-transform', isActive ? 'rotate-180 text-slate-500 dark:text-slate-300' : 'text-slate-400 dark:text-slate-500')} />
                       </div>
                     </div>
                   </button>
@@ -314,7 +300,7 @@ export default function Directory() {
         </div>
 
         <div className="space-y-4">
-          <SurfaceCard className="p-5 sm:p-6 lg:sticky lg:top-6">
+          <SurfaceCard className="p-5 sm:p-6">
             {activePartner ? (
               <>
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -344,15 +330,15 @@ export default function Directory() {
                 </div>
 
                 <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                  <div className="rounded-[1.5rem] border border-slate-100 bg-slate-50/90 px-4 py-4 dark:border-slate-700 dark:bg-slate-900/40">
+                  <div className="rounded-[1rem] border border-slate-100 bg-slate-50/90 px-4 py-4 dark:border-slate-700 dark:bg-slate-900/40">
                     <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Contactos</p>
                     <p className="mt-2 text-xl font-black text-slate-900 dark:text-slate-100">{activePartner.contacts.length}</p>
                   </div>
-                  <div className="rounded-[1.5rem] border border-slate-100 bg-slate-50/90 px-4 py-4 dark:border-slate-700 dark:bg-slate-900/40">
+                  <div className="rounded-[1rem] border border-slate-100 bg-slate-50/90 px-4 py-4 dark:border-slate-700 dark:bg-slate-900/40">
                     <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Tareas</p>
                     <p className="mt-2 text-xl font-black text-slate-900 dark:text-slate-100">{activePartnerTasks.length}</p>
                   </div>
-                  <div className="rounded-[1.5rem] border border-slate-100 bg-slate-50/90 px-4 py-4 dark:border-slate-700 dark:bg-slate-900/40">
+                  <div className="rounded-[1rem] border border-slate-100 bg-slate-50/90 px-4 py-4 dark:border-slate-700 dark:bg-slate-900/40">
                     <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Abiertas</p>
                     <p className="mt-2 text-xl font-black text-slate-900 dark:text-slate-100">{openTasks.length}</p>
                   </div>
@@ -381,7 +367,7 @@ export default function Directory() {
                   activePartner.contacts.map((contact) => (
                     <div
                       key={contact.id}
-                      className="rounded-[1.75rem] border border-slate-100 bg-white/80 p-4 shadow-[0_10px_30px_-24px_rgba(15,23,42,0.18)] dark:border-slate-700/60 dark:bg-slate-900/40"
+                      className="rounded-[1.1rem] border border-slate-100 bg-white/80 p-4 shadow-[0_10px_30px_-24px_rgba(15,23,42,0.18)] dark:border-slate-700/60 dark:bg-slate-900/40"
                     >
                       <div className="flex items-start justify-between gap-4">
                         <div className="min-w-0">

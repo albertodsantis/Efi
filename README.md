@@ -62,11 +62,43 @@ Setup:
 2. If you want to test external integrations, create a local environment file from `.env.example`.
 3. Start the unified local app with `npm run dev`.
 
+Default local URL:
+
+- `http://127.0.0.1:3000`
+- `http://localhost:3000`
+
+Development notes:
+
+- `npm run dev` starts the Express server and mounts Vite in middleware mode.
+- The base UI can be opened without a local `.env` file.
+- Google OAuth and Calendar integration require the environment variables from `.env.example`.
+- Health check: `GET /api/health` returns `{ "ok": true }` when the local server is healthy.
+
 Useful scripts:
 
 - `npm run dev`: runs the local application through the API server
 - `npm run build`: builds the web app and backend bundle
 - `npm run lint`: runs the TypeScript checks
+
+## Session Restart Checklist
+
+When resuming work in a new editor or agent session, include these points in the first message:
+
+- what feature, bug, or document was last in progress
+- a request to start the project and confirm that the local web app loads
+- whether the session should avoid commits or code changes
+- whether the session should run `npm run lint` after changes
+- whether the session needs Google OAuth or Calendar flows to be tested
+
+Suggested resume prompt:
+
+```text
+We are continuing work on Tía.
+Last time we were working on [topic].
+Start the project, confirm the local web app loads, and share the local URL.
+Today we want to work on [goal].
+Constraints: [no commits / read-only / run lint / test Google OAuth].
+```
 
 ## Environment Variables
 

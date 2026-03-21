@@ -296,7 +296,9 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
     <>
       <div
         className={`z-40 transition-all duration-300 ${
-          isDesktop ? 'absolute bottom-8 right-8' : 'fixed bottom-[96px] left-1/2 -translate-x-1/2'
+          isDesktop
+            ? 'fixed bottom-6 right-4'
+            : 'fixed bottom-[calc(env(safe-area-inset-bottom,0px)+5.5rem)] left-1/2 -translate-x-1/2'
         } ${isOpen ? 'pointer-events-none translate-y-4 scale-95 opacity-0' : 'translate-y-0 scale-100 opacity-100'}`}
       >
         <button
@@ -304,10 +306,10 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
           type="button"
           onClick={() => setIsOpen(true)}
           disabled={!isAiAvailable}
-          className="group flex h-12 items-center gap-2.5 rounded-full border border-white/60 bg-slate-900/92 px-3 pr-4 text-white shadow-[0_16px_40px_-18px_rgba(15,23,42,0.55)] backdrop-blur-xl transition-all hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700/60"
+          className="group flex h-12 items-center gap-2.5 rounded-[1rem] border border-white/60 bg-slate-900/92 px-3 pr-4 text-white shadow-[0_16px_40px_-18px_rgba(15,23,42,0.55)] backdrop-blur-xl transition-all hover:scale-[1.02] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700/60"
         >
           <div
-            className="flex h-8 w-8 items-center justify-center rounded-full"
+            className="flex h-8 w-8 items-center justify-center rounded-[0.8rem]"
             style={{ backgroundColor: accentColor || '#8b5cf6' }}
           >
             <Sparkles size={14} />
@@ -321,10 +323,10 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
 
       {isOpen ? (
         <div
-          className={`z-50 flex flex-col overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-2xl animate-in fade-in slide-in-from-bottom-8 duration-300 dark:border-slate-700 dark:bg-slate-900 ${
+          className={`z-50 flex flex-col overflow-hidden rounded-[1.35rem] border border-slate-200 bg-white shadow-2xl animate-in fade-in slide-in-from-bottom-8 duration-300 dark:border-slate-700 dark:bg-slate-900 ${
             isDesktop
-              ? 'absolute bottom-24 right-0 h-[560px] w-[420px] max-w-[calc(100vw-6rem)] max-h-[72vh]'
-              : 'fixed bottom-[96px] left-1/2 h-[520px] max-h-[68vh] w-[calc(100%-1.5rem)] max-w-[390px] -translate-x-1/2'
+              ? 'fixed bottom-20 right-4 h-[min(560px,calc(100dvh-8rem))] w-[min(420px,calc(100vw-2rem))]'
+              : 'fixed bottom-[calc(env(safe-area-inset-bottom,0px)+5.5rem)] left-1/2 h-[min(520px,calc(100dvh-8rem))] w-[min(390px,calc(100vw-1.5rem))] -translate-x-1/2'
           }`}
         >
           <div
@@ -334,7 +336,7 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
             }}
           >
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white/20">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/20">
                 <Sparkles size={16} />
               </div>
               <div>
@@ -345,7 +347,7 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="flex h-9 w-9 items-center justify-center rounded-full bg-white/15 transition-colors hover:bg-white/25"
+              className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/15 transition-colors hover:bg-white/25"
             >
               <X size={18} />
             </button>
@@ -355,10 +357,10 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
             {messages.map((message, index) => (
               <div key={index} className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                 <div
-                  className={`max-w-[88%] rounded-2xl px-4 py-3 text-sm leading-6 ${
+                  className={`max-w-[88%] rounded-[1rem] px-4 py-3 text-sm leading-6 ${
                     message.role === 'user'
-                      ? 'rounded-tr-sm bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
-                      : 'rounded-tl-sm border border-slate-200 bg-white text-slate-800 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100'
+                      ? 'rounded-tr-[0.35rem] bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'
+                      : 'rounded-tl-[0.35rem] border border-slate-200 bg-white text-slate-800 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100'
                   }`}
                 >
                   {message.text}
@@ -368,7 +370,7 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
 
             {isProcessing ? (
               <div className="flex justify-start">
-                <div className="flex items-center gap-2 rounded-2xl rounded-tl-sm border border-slate-200 bg-white px-4 py-3 text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                <div className="flex items-center gap-2 rounded-[1rem] rounded-tl-[0.35rem] border border-slate-200 bg-white px-4 py-3 text-slate-500 shadow-sm dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
                   <Loader2 size={16} className="animate-spin" />
                   <span className="text-xs font-medium">Tía está pensando…</span>
                 </div>
@@ -379,12 +381,12 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
           </div>
 
           <div className="border-t border-slate-100 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
-            <div className="flex items-center gap-2 rounded-full border border-slate-200 bg-slate-50 p-1.5 focus-within:border-slate-300 focus-within:bg-white dark:border-slate-700 dark:bg-slate-950/50 dark:focus-within:bg-slate-900">
+            <div className="flex items-center gap-2 rounded-[1rem] border border-slate-200 bg-slate-50 p-1.5 focus-within:border-slate-300 focus-within:bg-white dark:border-slate-700 dark:bg-slate-950/50 dark:focus-within:bg-slate-900">
               {'SpeechRecognition' in window || 'webkitSpeechRecognition' in window ? (
                 <button
                   type="button"
                   onClick={toggleListening}
-                  className={`flex h-10 w-10 items-center justify-center rounded-full transition-colors ${
+                  className={`flex h-10 w-10 items-center justify-center rounded-xl transition-colors ${
                     isListening
                       ? 'bg-rose-100 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300'
                       : 'text-slate-400 hover:bg-slate-100 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800 dark:hover:text-slate-300'
@@ -407,7 +409,7 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
                 type="button"
                 onClick={() => void handleSend()}
                 disabled={!input.trim() || isProcessing}
-                className="flex h-10 w-10 items-center justify-center rounded-full text-white transition-transform active:scale-95 disabled:opacity-50"
+                className="flex h-10 w-10 items-center justify-center rounded-xl text-white transition-transform active:scale-95 disabled:opacity-50"
                 style={{ backgroundColor: accentColor || '#8b5cf6' }}
               >
                 <Send size={16} className="ml-0.5" />

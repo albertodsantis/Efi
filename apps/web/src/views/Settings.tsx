@@ -49,7 +49,7 @@ const ACCENT_OPTIONS = [
 ] as const;
 
 const fieldClass =
-  'w-full rounded-[1.35rem] border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-medium text-slate-900 transition-all focus:bg-white focus:outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-900/50 dark:text-white dark:focus:bg-slate-800';
+  'w-full rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-medium text-slate-900 transition-all focus:bg-white focus:outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-900/50 dark:text-white dark:focus:bg-slate-800';
 
 export default function Settings() {
   const {
@@ -132,7 +132,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="space-y-5 p-4 pb-6 lg:space-y-6 lg:px-8 lg:py-8">
+    <div className="space-y-5 p-4 pb-6 lg:space-y-6 lg:px-8 lg:pt-4 lg:pb-8">
       <ScreenHeader
         mobileOnly
         eyebrow="Ajustes"
@@ -159,7 +159,7 @@ export default function Settings() {
             <StatusBadge tone="accent">{activeAccent.name}</StatusBadge>
           </div>
 
-          <div className="mt-5 rounded-[1.8rem] border border-slate-200/80 bg-slate-50/90 p-4 dark:border-slate-700/60 dark:bg-slate-900/45">
+          <div className="mt-5 rounded-[1.1rem] border border-slate-200/80 bg-slate-50/90 p-4 dark:border-slate-700/60 dark:bg-slate-900/45">
             <button
               type="button"
               onClick={() => setIsAccentPaletteOpen((current) => !current)}
@@ -168,7 +168,7 @@ export default function Settings() {
             >
               <div className="flex items-center gap-3">
                 <span
-                  className="block h-11 w-11 rounded-full border-4 border-white shadow-sm dark:border-slate-700"
+                  className="block h-11 w-11 rounded-[0.9rem] border-4 border-white shadow-sm dark:border-slate-700"
                   style={{ backgroundColor: activeAccent.value }}
                 />
                 <div>
@@ -209,7 +209,7 @@ export default function Settings() {
                     >
                       <span
                         className={cx(
-                          'block h-11 w-11 rounded-full border-4 border-white shadow-sm transition-all dark:border-slate-700',
+                          'block h-11 w-11 rounded-[0.9rem] border-4 border-white shadow-sm transition-all dark:border-slate-700',
                           isSelected ? 'scale-110 ring-2 ring-slate-900/20 dark:ring-white/20' : 'hover:scale-105',
                         )}
                         style={{ backgroundColor: option.value }}
@@ -221,7 +221,7 @@ export default function Settings() {
             ) : null}
           </div>
 
-          <div className="mt-4 rounded-[1.8rem] border border-slate-200/80 bg-white/92 p-2 dark:border-slate-700/60 dark:bg-slate-900/45">
+          <div className="mt-4 rounded-[1.1rem] border border-slate-200/80 bg-white/92 p-2 dark:border-slate-700/60 dark:bg-slate-900/45">
             <SettingRow
               icon={theme === 'dark' ? Moon : Sun}
               title="Modo oscuro"
@@ -245,7 +245,7 @@ export default function Settings() {
             </p>
           </div>
 
-          <div className="mt-5 space-y-2 rounded-[1.8rem] border border-slate-200/80 bg-white/92 p-2 dark:border-slate-700/60 dark:bg-slate-900/45">
+          <div className="mt-5 space-y-2 rounded-[1.1rem] border border-slate-200/80 bg-white/92 p-2 dark:border-slate-700/60 dark:bg-slate-900/45">
             <SettingRow
               icon={Bell}
               title="Notificaciones push"
@@ -297,7 +297,7 @@ export default function Settings() {
                 <SurfaceCard tone="inset" className="p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex min-w-0 items-start gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                       <MessageSquare size={18} />
                     </div>
                     <div className="min-w-0">
@@ -313,7 +313,7 @@ export default function Settings() {
                   <button
                     type="button"
                     onClick={() => void deleteTemplate(template.id)}
-                    className="flex h-10 w-10 items-center justify-center rounded-2xl bg-rose-50 text-rose-500 transition-colors hover:bg-rose-100 dark:bg-rose-500/15 dark:text-rose-300 dark:hover:bg-rose-500/20"
+                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-50 text-rose-500 transition-colors hover:bg-rose-100 dark:bg-rose-500/15 dark:text-rose-300 dark:hover:bg-rose-500/20"
                     aria-label={`Eliminar plantilla ${template.name}`}
                   >
                     <Trash2 size={16} />

@@ -1,10 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: "Nunito", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-primary);
   --animate-shimmer: shimmer 3s infinite;
 
   @keyframes shimmer {
@@ -25,6 +24,14 @@
 }
 
 :root {
+  --font-primary: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+  --font-weight-black: 900;
   --surface-app: #f8fafc;
   --surface-card: rgba(255, 255, 255, 0.86);
   --surface-muted: rgba(248, 250, 252, 0.92);
@@ -43,19 +50,37 @@
 html,
 body,
 #root {
+  height: 100%;
   min-height: 100%;
-  scroll-behavior: smooth;
+}
+
+html {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none;
 }
 
 body {
   min-height: 100dvh;
-  font-family: 'Nunito', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-primary);
+  font-size: 13px;
+  font-weight: var(--font-weight-regular);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-tap-highlight-color: transparent;
   background-color: #f8fafc;
-  overscroll-behavior-y: none;
   color: var(--text-primary);
+}
+
+code,
+pre,
+kbd,
+samp {
+  font-family: var(--font-mono);
 }
 
 #root {

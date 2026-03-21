@@ -5,6 +5,9 @@ import { useAppContext } from '../context/AppContext';
 export default function OnboardingTour() {
   const { theme, accentColor } = useAppContext();
   const [run, setRun] = useState(false);
+  const [tooltipWidth, setTooltipWidth] = useState(() =>
+    typeof window === 'undefined' ? 360 : Math.min(window.innerWidth - 64, 384),
+  );
 
   useEffect(() => {
     // Check if the user has already seen the tour
@@ -16,6 +19,21 @@ export default function OnboardingTour() {
       }, 1000);
       return () => clearTimeout(timer);
     }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const syncTooltipWidth = () => {
+      setTooltipWidth(Math.min(window.innerWidth - 64, 384));
+    };
+
+    syncTooltipWidth();
+    window.addEventListener('resize', syncTooltipWidth);
+
+    return () => window.removeEventListener('resize', syncTooltipWidth);
   }, []);
 
   const handleJoyrideCallback = (data: CallBackProps) => {
@@ -65,7 +83,6 @@ export default function OnboardingTour() {
       hideCloseButton
       run={run}
       scrollToFirstStep
-      showProgress
       showSkipButton
       steps={steps}
       locale={{
@@ -73,31 +90,53 @@ export default function OnboardingTour() {
         close: 'Cerrar',
         last: 'Finalizar',
         next: 'Siguiente',
+        nextLabelWithProgress: 'Siguiente',
         skip: 'Saltar',
       }}
       styles={{
         options: {
           zIndex: 10000,
+          width: tooltipWidth,
           primaryColor: accentColor || '#8b5cf6',
           backgroundColor: theme === 'dark' ? '#1e293b' : '#ffffff',
           textColor: theme === 'dark' ? '#f8fafc' : '#1e293b',
           arrowColor: theme === 'dark' ? '#1e293b' : '#ffffff',
         },
+        tooltip: {
+          width: tooltipWidth,
+          maxWidth: 'calc(100vw - 4rem)',
+          borderRadius: '1.25rem',
+          boxSizing: 'border-box',
+        },
         tooltipContainer: {
           textAlign: 'left',
+          padding: '1rem',
+        },
+        tooltipContent: {
+          overflowWrap: 'anywhere',
+        },
+        tooltipFooter: {
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          gap: '0.75rem',
+          justifyContent: 'space-between',
         },
         buttonNext: {
           backgroundColor: accentColor || '#8b5cf6',
           borderRadius: '9999px',
           padding: '8px 16px',
           fontWeight: 'bold',
+          marginLeft: 'auto',
+          maxWidth: '100%',
         },
         buttonBack: {
           color: theme === 'dark' ? '#94a3b8' : '#64748b',
-          marginRight: '8px',
+          marginRight: 0,
         },
         buttonSkip: {
           color: theme === 'dark' ? '#94a3b8' : '#64748b',
+          padding: 0,
         }
       }}
     />

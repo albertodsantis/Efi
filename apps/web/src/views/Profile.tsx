@@ -11,7 +11,7 @@ import {
 } from '../components/ui';
 
 const fieldClass =
-  'w-full rounded-[1.35rem] border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-medium text-slate-900 transition-all focus:bg-white focus:outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-900/50 dark:text-white dark:focus:bg-slate-800';
+  'w-full rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-medium text-slate-900 transition-all focus:bg-white focus:outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-900/50 dark:text-white dark:focus:bg-slate-800';
 
 export default function Profile() {
   const { profile, accentColor, updateProfile } = useAppContext();
@@ -56,18 +56,18 @@ export default function Profile() {
         <head>
           <title>Media Kit - ${profile.name}</title>
           <style>
-            body { font-family: "Nunito", system-ui, sans-serif; color: #1f2937; margin: 0; padding: 40px; background: #f8fafc; }
-            .container { max-width: 54rem; margin: 0 auto; background: white; padding: 40px; border-radius: 28px; box-shadow: 0 20px 60px rgba(15, 23, 42, 0.08); }
+            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 13px; color: #1f2937; margin: 0; padding: 40px; background: #f8fafc; -webkit-font-smoothing: antialiased; }
+            .container { max-width: 54rem; margin: 0 auto; background: white; padding: 40px; border-radius: 18px; box-shadow: 0 20px 60px rgba(15, 23, 42, 0.08); }
             .header { display: flex; align-items: center; gap: 24px; margin-bottom: 32px; }
-            .avatar { width: 120px; height: 120px; border-radius: 28px; object-fit: cover; }
+            .avatar { width: 120px; height: 120px; border-radius: 18px; object-fit: cover; }
             h1 { margin: 0; font-size: 38px; font-weight: 800; letter-spacing: -1px; }
             .handle { color: ${accentColor}; font-size: 20px; font-weight: 700; margin-top: 6px; }
             h2 { font-size: 24px; font-weight: 800; margin-top: 32px; margin-bottom: 18px; }
             .goals { list-style: none; padding: 0; }
-            .goals li { background: #f8fafc; padding: 16px 18px; border-radius: 16px; margin-bottom: 12px; font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 12px; }
+            .goals li { background: #f8fafc; padding: 16px 18px; border-radius: 12px; margin-bottom: 12px; font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 12px; }
             .dot { width: 10px; height: 10px; border-radius: 999px; background: ${accentColor}; }
             .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 32px; }
-            .stat-card { background: #f8fafc; padding: 24px; border-radius: 20px; text-align: center; }
+            .stat-card { background: #f8fafc; padding: 24px; border-radius: 14px; text-align: center; }
             .stat-value { font-size: 32px; font-weight: 800; color: ${accentColor}; }
             .stat-label { font-size: 14px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 8px; }
           </style>
@@ -113,7 +113,7 @@ export default function Profile() {
   };
 
   return (
-    <div className="space-y-5 p-4 pb-6 lg:space-y-6 lg:px-8 lg:py-8">
+    <div className="space-y-5 p-4 pb-6 lg:space-y-6 lg:px-8 lg:pt-4 lg:pb-8">
       <ScreenHeader
         mobileOnly
         eyebrow="Perfil"
@@ -129,7 +129,7 @@ export default function Profile() {
               <img
                 src={profile.avatar}
                 alt={profile.name}
-                className="h-24 w-24 rounded-[2rem] border-4 border-white object-cover shadow-[0_20px_50px_-26px_rgba(15,23,42,0.35)] dark:border-slate-800"
+                className="h-24 w-24 rounded-[1.2rem] border-4 border-white object-cover shadow-[0_20px_50px_-26px_rgba(15,23,42,0.35)] dark:border-slate-800"
               />
               <div className="min-w-0">
                 <p className="text-[11px] font-bold tracking-[0.18em] text-slate-400 dark:text-slate-500 uppercase">
@@ -183,7 +183,7 @@ export default function Profile() {
           <SurfaceCard tone="muted" className="mt-5 p-5">
             <div className="flex items-center gap-3">
               <div
-                className="flex h-12 w-12 items-center justify-center rounded-2xl"
+                className="flex h-12 w-12 items-center justify-center rounded-xl"
                 style={{ backgroundColor: `${accentColor}14`, color: accentColor }}
               >
                 <UserCircle2 size={20} />
@@ -199,7 +199,7 @@ export default function Profile() {
             </div>
 
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-[1.5rem] border border-slate-200/80 bg-white/90 p-4 dark:border-slate-700/60 dark:bg-slate-900/45">
+              <div className="rounded-[1rem] border border-slate-200/80 bg-white/90 p-4 dark:border-slate-700/60 dark:bg-slate-900/45">
                 <p className="text-[11px] font-bold tracking-[0.16em] text-slate-400 dark:text-slate-500 uppercase">
                   Nombre
                 </p>
@@ -207,7 +207,7 @@ export default function Profile() {
                   {profile.name}
                 </p>
               </div>
-              <div className="rounded-[1.5rem] border border-slate-200/80 bg-white/90 p-4 dark:border-slate-700/60 dark:bg-slate-900/45">
+              <div className="rounded-[1rem] border border-slate-200/80 bg-white/90 p-4 dark:border-slate-700/60 dark:bg-slate-900/45">
                 <p className="text-[11px] font-bold tracking-[0.16em] text-slate-400 dark:text-slate-500 uppercase">
                   Handle
                 </p>
@@ -222,7 +222,7 @@ export default function Profile() {
         <SurfaceCard className="p-6 lg:p-7">
           <div className="flex items-center gap-3">
             <div
-              className="flex h-12 w-12 items-center justify-center rounded-2xl"
+              className="flex h-12 w-12 items-center justify-center rounded-xl"
               style={{ backgroundColor: `${accentColor}14`, color: accentColor }}
             >
               <Target size={20} />
@@ -239,10 +239,10 @@ export default function Profile() {
 
           <div className="mt-5 space-y-4">
             {profile.goals.map((goal, index) => (
-              <div key={index} className="rounded-[1.6rem] border border-slate-200/80 bg-slate-50/90 p-4 dark:border-slate-700/60 dark:bg-slate-900/45">
+              <div key={index} className="rounded-[1rem] border border-slate-200/80 bg-slate-50/90 p-4 dark:border-slate-700/60 dark:bg-slate-900/45">
                 <div className="flex items-center gap-3">
                   <div
-                    className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-black text-white"
+                    className="flex h-9 w-9 items-center justify-center rounded-[0.85rem] text-sm font-black text-white"
                     style={{ backgroundColor: accentColor }}
                   >
                     {index + 1}
