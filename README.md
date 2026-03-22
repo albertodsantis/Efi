@@ -31,6 +31,15 @@ That means:
 
 See [REPOSITORY_STRATEGY.md](./REPOSITORY_STRATEGY.md) for the canonical repository direction.
 
+## Design System Authority
+
+The repository now uses a single design authority:
+
+- `design-system/MASTER.md` is the canonical source of truth for the visual system and reusable UI rules
+- `FRONTEND_GUIDELINES.md` translates that master into implementation-facing frontend guidance
+
+If an external design helper such as UI/UX Pro Max is used, its proposals should be treated as inputs to improve Tia, not as a parallel authority. Reusable accepted ideas should be merged into `design-system/MASTER.md`.
+
 ## Current Repository Shape
 
 ```text
@@ -49,6 +58,19 @@ Current responsibilities:
 - `packages/shared`: reusable domain types and API contracts
 
 The repository is still in transition from prototype decisions. Some product state still lives in the client and will be moved behind API contracts over time.
+
+## Current Product Shape
+
+The current app favors a compact operational workspace over heavy dashboard chrome.
+
+Current UX characteristics:
+
+- navigation and section headers are compact and sit inside the scrollable content
+- Inicio is intentionally simplified, with redundant hero text removed
+- Pipeline prioritizes the workspace controls first: Kanban, Lista, Mes, `Nueva tarea`, and `Actualizar Calendar`
+- Pipeline no longer uses a large summary block above the workspace
+- the task status flow is `Pendiente` -> `En Progreso` -> `En Revisión` -> `Completada` -> `Cobrado`
+- the UI reduces nested cards and repeated labels in favor of cleaner grouped layouts
 
 ## Local Development
 
@@ -73,6 +95,17 @@ Development notes:
 - The base UI can be opened without a local `.env` file.
 - Google OAuth and Calendar integration require the environment variables from `.env.example`.
 - Health check: `GET /api/health` returns `{ "ok": true }` when the local server is healthy.
+
+### Local Server Runbook
+
+Use this lightweight flow when a new session needs the app running quickly:
+
+1. Check whether the app is already running by opening `http://127.0.0.1:3000/api/health`.
+2. If the health check does not respond with `{ "ok": true }`, start the app from the repository root with `npm run dev`.
+3. Confirm the app loads at `http://127.0.0.1:3000` or `http://localhost:3000`.
+4. Share the local URL back to the user once the health check and root page both respond successfully.
+
+If the session needs the server to keep running without blocking the terminal, it is acceptable to start `npm run dev` in the background and write logs to local files such as `local-server.out.log` and `local-server.err.log`.
 
 Useful scripts:
 
@@ -122,6 +155,7 @@ Current environment variables reflect the transition from prototype to micro Saa
 
 ## Canonical Documents
 
+- [design-system/MASTER.md](./design-system/MASTER.md)
 - [PRD.md](./PRD.md)
 - [APP_FLOW.md](./APP_FLOW.md)
 - [TECH_STACK.md](./TECH_STACK.md)

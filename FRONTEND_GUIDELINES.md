@@ -1,8 +1,12 @@
-# Tía - Frontend Guidelines
+# Tia - Frontend Guidelines
 
 ## 1. Purpose
 
-This document defines the visual system and interaction rules for Tía MVP v1. The UI must preserve the soft, rounded, mobile-first identity of the prototype while behaving like a responsive production SaaS across desktop and mobile web.
+This document defines the frontend implementation rules for Tia MVP v1.
+
+The canonical design authority lives in `design-system/MASTER.md`.
+
+This file translates that master into implementation-facing guidance for the web app and should not become a second competing design source of truth.
 
 ## 2. Language and Brand Policy
 
@@ -10,14 +14,24 @@ This document is written in English because technical documentation in this repo
 
 Product rules:
 
-- Tía is designed for a Spanish-speaking audience
+- Tia is designed for a Spanish-speaking audience
 - brand tone is Spanish-first
 - visible navigation labels, product copy, and screen text should remain in Spanish
 - a single screen should not mix English and Spanish labels unless there is a clear product reason
 
-## 3. Design System Lock
+## 3. Design Authority
 
-Approved design system: `Tía Internal Mobile CRM System`
+Precedence order:
+
+1. `design-system/MASTER.md`
+2. `FRONTEND_GUIDELINES.md`
+3. implementation details in `apps/web`
+
+Use this document to explain how the frontend should implement the master, not to redefine the master independently.
+
+## 4. Design System Lock
+
+Approved design system: `Tia Internal Mobile CRM System`
 
 Technical base:
 
@@ -27,173 +41,101 @@ Technical base:
 
 Introducing another full UI system such as Material UI or Ant Design is not approved for the MVP.
 
-## 4. Visual Direction
+## 5. Frontend Translation of the Master
 
-Mandatory visual principles:
+The frontend must implement the master with:
 
-- mobile-first visual hierarchy without becoming mobile-only
-- desktop web must feel like a complete SaaS workspace, not a stretched phone mockup
-- large, soft, highly legible cards
-- generous use of rounded corners
-- clear contrast between backgrounds, surfaces, and accent
-- calm, tactile interactions rather than corporate-looking UI
+- CSS tokens for color, typography, radius, and shadow
+- shared app-shell framing across breakpoints
+- reusable primitives before one-off view styling
+- Spanish-first UI copy
+- accent-aware states that preserve contrast
+- compact operational layouts over decorative dashboard chrome
+- the chosen identity direction: `Soft Studio Console`
+- calm surface hierarchy and restrained composition
+- cardless or low-card layouts as the default starting point
 
-## 5. Canonical Palette
+## 6. Token Implementation Rules
 
-### 5.1 Light Base
+The web app should expose the design system through CSS variables and shared primitives.
 
-- `bg-app-light`: `#F8FAFC`
-- `bg-surface-light`: `#FFFFFF`
-- `bg-subtle-light`: `#F8FAFC`
-- `text-primary-light`: `#1E293B`
-- `text-secondary-light`: `#64748B`
-- `border-light`: `#E2E8F0`
+Implementation expectations:
 
-### 5.2 Dark Base
+- `apps/web/src/index.css` owns global tokens and base element behavior
+- `apps/web/src/lib/accent.ts` derives runtime accent variants
+- `apps/web/src/components/ui.tsx` holds reusable UI primitives
+- screen-level files should consume the system instead of redefining it locally
+- if a new token becomes reusable across screens, promote it into the token layer instead of leaving it in a single view
 
-- `bg-app-dark`: `#0F172A`
-- `bg-surface-dark`: `#1E293B`
-- `bg-subtle-dark`: `#334155`
-- `text-primary-dark`: `#F8FAFC`
-- `text-secondary-dark`: `#94A3B8`
-- `border-dark`: `#334155`
+## 7. App Shell Rules
 
-### 5.3 Accent
+The application shell should preserve these behaviors:
 
-- `accent-default`: `#8B5CF6`
-- the user may change the accent color
-- the system must preserve AA contrast on both light and dark surfaces
+- mobile may use bottom navigation
+- desktop may use top navigation, rail navigation, or sidebar navigation
+- section headers should be compact and inside scrollable content
+- desktop should feel intentionally laid out, not like an enlarged phone frame
+- background atmosphere may use subtle accent gradients, but work surfaces must remain highly legible
+- the primary workspace should visually dominate the screen
+- avoid turning the shell into a grid of equally loud panels
+- prefer tonal grouping and spacing before bordered segmentation
 
-### 5.4 Semantic Colors
+## 8. Reusable Component Policy
 
-- `success`: `#10B981`
-- `warning`: `#F59E0B`
-- `danger`: `#F43F5E`
-- `info`: `#3B82F6`
+Before creating a one-off pattern, check whether the need belongs in the shared component layer.
 
-## 6. Typography
+For `Soft Studio Console`, reusable primitives should bias toward:
 
-Approved primary typeface:
+- quiet surfaces
+- strong typography
+- compact controls
+- tactile but restrained interaction feedback
+- low-noise states and separators
 
-- Native system stack
+The minimum required reusable library remains:
 
-Approved mono typeface:
+- `ScreenHeader`
+- `MetricCard`
+- `StatusBadge`
+- `TaskCard`
+- `PartnerCard`
+- `ContactCard`
+- `PrimaryButton`
+- `IconButton`
+- `TextField`
+- `SelectField`
+- `ToggleSwitch`
+- `ModalSheet`
+- `SegmentedControl`
+- `EmptyState`
+- `LoadingState`
+- `ErrorState`
 
-- `Geist Mono`
+## 9. Desktop Scroll Safety
 
-Fallbacks:
+Desktop scrolling is a protected shell behavior in Tia and must not be changed casually.
 
-- `-apple-system`
-- `BlinkMacSystemFont`
-- `"Segoe UI"`
-- `Roboto`
-- `"Helvetica Neue"`
-- `Arial`
-- `ui-sans-serif`
-- `system-ui`
-- `sans-serif`
+Current implementation contract:
 
-Core weights:
+- desktop uses the main workspace panel as the primary vertical scroll container
+- desktop shell wrappers may clip overflow, but the active `main` region must remain scrollable
+- section headers stay inside the same scrollable workspace instead of living outside it
+- mobile continues to use the page scroll model unless a feature explicitly requires a local scroll region
+- the desktop sidebar may forward wheel input into the main workspace only when the sidebar itself cannot consume that scroll
 
-- `Regular`: 400
-- `Medium`: 500
-- `Semibold`: 600
-- `Bold`: 700
+Do not introduce these regressions:
 
-Display weights:
+- do not move desktop back to `window` scroll while keeping shell wrappers height-locked
+- do not add `wheel` interception on the main workspace to synthesize scroll manually unless there is a proven bug and a regression test
+- do not add `overflow: hidden` or viewport-height locks on new desktop wrappers without confirming which element owns scroll
+- do not split header and body into different vertical scroll containers unless the UX explicitly requires it and the keyboard behavior is revalidated
 
-- `Extra Bold`: 800
-- `Black`: 900
+Required regression check after shell changes:
 
-Typography scale:
-
-- `H1`: 30px, weight 800, tight tracking
-- `H2`: 24px, weight 700 to 800
-- `H3`: 18px, weight 700
-- `Body Large`: 15px, weight 500
-- `Body`: 13px, weight 400
-- `Caption`: 12px, weight 600
-- `Label / Overline`: 10px to 11px, weight 700, uppercase, wide tracking
-
-## 7. Spacing and Layout
-
-Approved grid and spacing:
-
-- base unit: `4px`
-- primary scale: `4 / 8 / 12 / 16 / 20 / 24 / 32`
-- mobile screen padding: `24px`
-- primary gap between cards: `16px`
-
-Widths:
-
-- main layout is centered
-- mobile layouts may use a focused shell-like presentation
-- desktop layouts should use available width deliberately with stronger information hierarchy and reduced wasted space
-
-## 8. Radius and Shadow
-
-Approved radii:
-
-- `radius-sm`: `12px`
-- `radius-md`: `16px`
-- `radius-lg`: `24px`
-- `radius-xl`: `32px`
-- `radius-pill`: `9999px`
-
-Approved shadows:
-
-- `shadow-soft`: `0 8px 30px rgba(0,0,0,0.03)`
-- `shadow-medium`: `0 20px 60px rgba(0,0,0,0.08)`
-- `shadow-floating`: `0 8px 30px rgba(0,0,0,0.12)`
-
-## 9. Canonical Components
-
-### 9.1 App Shell
-
-- app background with a subtle accent-based gradient
-- shared frame and spacing system across breakpoints
-- navigation pattern may change by breakpoint
-- narrow screens may use bottom navigation
-- wide screens may use top navigation, rail navigation, or sidebar navigation
-
-### 9.2 Bottom Navigation
-
-- approved only for narrow-screen navigation
-- 5 tabs maximum
-- icon-first on mobile
-- active state shown through accent color and a visual marker
-
-### 9.3 Cards
-
-- metric card
-- task card
-- brand card
-- contact card
-- translucent or blurred surfaces are allowed only if legibility remains strong
-
-### 9.4 Inputs
-
-- minimum touch height of `48px`
-- placeholder remains visible but understated
-- focus is always visible through an accent-based ring
-
-### 9.5 Buttons
-
-- primary: accent background, white text
-- secondary: neutral surface with subtle border
-- destructive: danger semantic color treatment
-- icon button: minimum `40x40`
-
-### 9.6 Modals and Sheets
-
-- on mobile, open from the bottom
-- on desktop, center in the viewport
-- explicit close action is always visible
-
-### 9.7 Badges
-
-- use semantic color by state
-- never rely on color alone; text is always required
+- verify desktop wheel scroll over the main content area
+- verify desktop wheel scroll still works when the pointer is over the left sidebar
+- verify `PageDown`, `PageUp`, `Home`, `End`, and spacebar still move the desktop workspace correctly
+- verify mobile still scrolls normally
 
 ## 10. Component States
 
@@ -226,26 +168,17 @@ Long animations, excessive bounce, or decorative effects that slow the app are n
 - text should not go below 12px except for auxiliary overlines
 - destructive actions require confirmation
 
-## 13. Minimum Required Component Library
+## 13. External Design Inputs
 
-Before continuing with major new features, the app should expose a reusable library containing:
+External proposal sources such as UI/UX Pro Max are approved as design inputs.
 
-- `ScreenHeader`
-- `MetricCard`
-- `StatusBadge`
-- `TaskCard`
-- `PartnerCard`
-- `ContactCard`
-- `PrimaryButton`
-- `IconButton`
-- `TextField`
-- `SelectField`
-- `ToggleSwitch`
-- `ModalSheet`
-- `SegmentedControl`
-- `EmptyState`
-- `LoadingState`
-- `ErrorState`
+Rules for adoption:
+
+- compare new ideas against `design-system/MASTER.md` first
+- merge reusable accepted ideas into the master before repeating them broadly
+- translate external references into Tia-specific language and patterns
+- do not let generated systems create a second token set or an unrelated dashboard aesthetic
+- prefer proposals that improve calmness, credibility, and day-to-day usability over flashy novelty
 
 ## 14. Consistency Rules
 

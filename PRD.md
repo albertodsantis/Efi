@@ -84,11 +84,12 @@ Native mobile apps are explicitly not required for MVP v1.
 
 ### 7.2 Dashboard
 
-Summary view with:
+Concise operational view with:
 
 - total active pipeline value
 - tasks due today
 - upcoming deliverables ordered by date
+- compact headers and reduced chrome
 
 ### 7.3 Task Pipeline
 
@@ -97,15 +98,17 @@ Summary view with:
 - required task statuses:
 - `Pendiente`
 - `En Progreso`
-- `En Revision`
+- `En Revisión`
 - `Completada`
-- `Cobro`
+- `Cobrado`
 - supported views:
-- kanban by phase
+- kanban
 - full list
 - monthly calendar
 - monetary value per task
 - required due date
+- top-level workspace actions for `Nueva tarea` and `Actualizar Calendar`
+- avoid redundant summary blocks above the workspace
 
 ### 7.4 Brand and Contact Directory
 

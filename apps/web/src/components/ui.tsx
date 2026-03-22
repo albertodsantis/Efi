@@ -9,26 +9,28 @@ type SurfaceTone = 'default' | 'muted' | 'inset';
 
 const surfaceToneClasses: Record<SurfaceTone, string> = {
   default:
-    'border border-slate-200/75 bg-white/88 shadow-[0_18px_42px_-30px_rgba(15,23,42,0.16)] dark:border-slate-700/60 dark:bg-slate-800/82',
+    'border bg-[var(--surface-card)] shadow-[var(--shadow-soft)] [border-color:var(--line-soft)]',
   muted:
-    'border border-slate-200/80 bg-slate-50/90 shadow-[0_16px_32px_-30px_rgba(15,23,42,0.12)] dark:border-slate-700/60 dark:bg-slate-900/58',
+    'border bg-[var(--surface-muted)] shadow-[var(--shadow-soft)] [border-color:var(--line-soft)]',
   inset:
-    'border border-slate-200/75 bg-white/94 shadow-[0_10px_24px_-24px_rgba(15,23,42,0.14)] dark:border-slate-700/60 dark:bg-slate-900/48',
+    'border bg-[var(--surface-card-strong)] shadow-[0_16px_34px_-28px_rgba(59,43,34,0.16)] [border-color:var(--line-soft)]',
 };
 
 export function SurfaceCard({
   children,
   className,
   tone = 'default',
+  ...props
 }: {
   children: React.ReactNode;
   className?: string;
   tone?: SurfaceTone;
-}) {
+} & React.HTMLAttributes<HTMLElement>) {
   return (
     <section
+      {...props}
       className={cx(
-        'rounded-[1.35rem] backdrop-blur-xl transition-colors duration-300',
+        'rounded-[1.05rem] backdrop-blur-xl transition-colors duration-300',
         surfaceToneClasses[tone],
         className,
       )}
@@ -57,15 +59,15 @@ export function ScreenHeader({
     <div className={cx('flex items-start justify-between gap-4', mobileOnly && 'lg:hidden', className)}>
       <div className="min-w-0">
         {eyebrow ? (
-          <p className="text-[11px] font-bold tracking-[0.2em] text-slate-400 dark:text-slate-500 uppercase">
+          <p className="text-[11px] font-bold tracking-[0.2em] text-[var(--text-secondary)]/80 uppercase">
             {eyebrow}
           </p>
         ) : null}
-        <h1 className="mt-2 text-[1.95rem] font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
+        <h1 className="mt-2 text-[1.95rem] font-extrabold tracking-tight text-[var(--text-primary)]">
           {title}
         </h1>
         {description ? (
-          <p className="mt-2 max-w-xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+          <p className="mt-2 max-w-xl text-sm leading-6 text-[var(--text-secondary)]">
             {description}
           </p>
         ) : null}
@@ -98,14 +100,14 @@ export function MetricCard({
       >
         <Icon size={20} strokeWidth={2.4} />
       </div>
-      <p className="mt-4 text-[11px] font-bold tracking-[0.18em] text-slate-400 dark:text-slate-500 uppercase">
+      <p className="mt-4 text-[11px] font-bold tracking-[0.18em] text-[var(--text-secondary)]/80 uppercase">
         {label}
       </p>
-      <p className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
+      <p className="mt-1 text-2xl font-extrabold tracking-tight text-[var(--text-primary)]">
         {value}
       </p>
       {helper ? (
-        <p className="mt-2 text-xs font-medium leading-5 text-slate-500 dark:text-slate-400">
+        <p className="mt-2 text-xs font-medium leading-5 text-[var(--text-secondary)]">
           {helper}
         </p>
       ) : null}
@@ -116,7 +118,7 @@ export function MetricCard({
 type BadgeTone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger' | 'info';
 
 const badgeToneClasses: Record<BadgeTone, string> = {
-  neutral: 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+  neutral: 'bg-[var(--surface-muted)] text-[var(--text-secondary)]',
   accent: '',
   success: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300',
   warning: 'bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300',
@@ -176,13 +178,13 @@ export function EmptyState({
       )}
     >
       {Icon ? (
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-white text-slate-400 dark:bg-slate-800 dark:text-slate-500">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--line-soft)] bg-[var(--surface-card-strong)] text-[var(--text-secondary)]">
           <Icon size={22} />
         </div>
       ) : null}
-      <h3 className="mt-4 text-base font-bold text-slate-900 dark:text-slate-100">{title}</h3>
+      <h3 className="mt-4 text-base font-bold text-[var(--text-primary)]">{title}</h3>
       {description ? (
-        <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-slate-500 dark:text-slate-400">
+        <p className="mx-auto mt-2 max-w-sm text-sm leading-6 text-[var(--text-secondary)]">
           {description}
         </p>
       ) : null}
@@ -218,8 +220,8 @@ export function Button({
       : tone === 'danger'
         ? 'bg-rose-50 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300'
         : tone === 'ghost'
-          ? 'bg-transparent text-slate-500 dark:text-slate-400'
-          : 'bg-white text-slate-700 border border-slate-200 dark:bg-slate-800 dark:text-slate-200 dark:border-slate-700';
+          ? 'bg-transparent text-[var(--text-secondary)]'
+          : 'border bg-[var(--surface-card-strong)] text-[var(--text-primary)] [border-color:var(--line-soft)]';
 
   return (
     <button
@@ -254,6 +256,7 @@ export function IconButton({
   tone = 'secondary',
   accentColor,
   className,
+  iconSize = 18,
 }: {
   icon: LucideIcon;
   label: string;
@@ -262,6 +265,7 @@ export function IconButton({
   tone?: ButtonTone;
   accentColor?: string;
   className?: string;
+  iconSize?: number;
 }) {
   const toneClass =
     tone === 'primary'
@@ -269,8 +273,8 @@ export function IconButton({
       : tone === 'danger'
         ? 'bg-rose-50 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300'
         : tone === 'ghost'
-          ? 'bg-transparent text-slate-500 dark:text-slate-400'
-          : 'bg-white text-slate-500 border border-slate-200 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-700';
+          ? 'bg-transparent text-[var(--text-secondary)]'
+          : 'border bg-[var(--surface-card-strong)] text-[var(--text-secondary)] [border-color:var(--line-soft)]';
 
   return (
     <button
@@ -292,7 +296,7 @@ export function IconButton({
           : undefined
       }
     >
-      <Icon size={18} />
+      <Icon size={iconSize} />
     </button>
   );
 }
@@ -300,17 +304,21 @@ export function IconButton({
 export function ToggleSwitch({
   checked,
   accentColor,
+  disabled = false,
 }: {
   checked: boolean;
   accentColor: string;
+  disabled?: boolean;
 }) {
   return (
     <div
       className={cx(
         'relative h-7 w-14 rounded-full shadow-inner transition-colors',
-        checked ? '' : 'bg-slate-200 dark:bg-slate-600',
+        checked ? '' : 'bg-[var(--surface-muted)]',
+        disabled ? 'opacity-55' : '',
       )}
       style={checked ? { backgroundColor: accentColor || 'var(--accent-color)' } : undefined}
+      aria-hidden="true"
     >
       <div
         className={cx(
@@ -340,13 +348,13 @@ export function SettingRow({
   const content = (
     <>
       <div className="flex items-center gap-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-50 text-slate-500 dark:bg-slate-700 dark:text-slate-400">
+        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--surface-muted)] text-[var(--text-secondary)]">
           <Icon size={20} />
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{title}</p>
+          <p className="text-sm font-bold text-[var(--text-primary)]">{title}</p>
           {description ? (
-            <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
+            <p className="mt-1 text-xs leading-5 text-[var(--text-secondary)]">
               {description}
             </p>
           ) : null}
@@ -362,7 +370,7 @@ export function SettingRow({
         type="button"
         onClick={onClick}
         className={cx(
-          'flex w-full items-center justify-between gap-4 rounded-[1rem] px-5 py-4 text-left transition-colors hover:bg-slate-50/80 dark:hover:bg-slate-700/35',
+          'flex w-full items-center justify-between gap-4 rounded-[1rem] px-5 py-4 text-left transition-colors hover:bg-[var(--surface-muted)]/80',
           className,
         )}
       >
@@ -403,18 +411,19 @@ export function ModalPanel({
   return (
     <div
       className={cx(
-        'flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[1.5rem] bg-white shadow-2xl dark:bg-slate-800 sm:rounded-[1.35rem]',
+        'relative flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-[1.5rem] border bg-[var(--surface-card-strong)] shadow-[var(--shadow-medium)] [border-color:var(--line-soft)] sm:rounded-[1.35rem]',
         widthClass,
       )}
     >
-      <div className="border-b border-slate-100 px-5 py-5 dark:border-slate-700/60 sm:px-6">
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[linear-gradient(135deg,var(--accent-soft-strong),transparent_72%)] opacity-70" />
+      <div className="relative border-b px-5 py-5 [border-color:var(--line-soft)] sm:px-6">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <h2 className="text-2xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
+            <h2 className="text-2xl font-extrabold tracking-tight text-[var(--text-primary)]">
               {title}
             </h2>
             {description ? (
-              <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+              <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
                 {description}
               </p>
             ) : null}
@@ -423,7 +432,7 @@ export function ModalPanel({
             <button
               type="button"
               onClick={onClose}
-              className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-400 transition-transform active:scale-95 dark:bg-slate-700 dark:text-slate-400"
+              className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--surface-muted)] text-[var(--text-secondary)] transition-transform active:scale-95"
               aria-label="Cerrar modal"
             >
               <X size={18} />
@@ -431,9 +440,9 @@ export function ModalPanel({
           ) : null}
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto px-5 py-5 sm:px-6">{children}</div>
+      <div className="relative flex-1 overflow-y-auto px-5 py-5 sm:px-6">{children}</div>
       {footer ? (
-        <div className="border-t border-slate-100 px-5 py-4 dark:border-slate-700/60 sm:px-6">
+        <div className="relative border-t px-5 py-4 [border-color:var(--line-soft)] sm:px-6">
           {footer}
         </div>
       ) : null}

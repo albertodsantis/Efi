@@ -1,8 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+﻿import React, { useEffect, useMemo, useState } from 'react';
 import {
   Calendar as CalendarIcon,
   CalendarDays,
   CheckCircle2,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
   DownloadCloud,
@@ -11,18 +12,15 @@ import {
   Plus,
   RefreshCw,
   Trello,
-  Trash2,
 } from 'lucide-react';
-import type { Task, TaskStatus } from '@shared/domain';
+import { getPartnerLookupKey, type Task, type TaskStatus } from '@shared';
 import { useAppContext } from '../context/AppContext';
 import OverlayModal from '../components/OverlayModal';
 import {
   Button,
   EmptyState,
   IconButton,
-  MetricCard,
   ModalPanel,
-  ScreenHeader,
   StatusBadge,
   SurfaceCard,
   cx,
@@ -31,7 +29,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import { formatLocalDateISO, parseLocalDate, startOfLocalDay } from '../lib/date';
 
 const REVIEW_STATUS = 'En Revisión' as TaskStatus;
-const STATUSES: TaskStatus[] = ['Pendiente', 'En Progreso', REVIEW_STATUS, 'Completada', 'Cobro'];
+const STATUSES: TaskStatus[] = ['Pendiente', 'En Progreso', REVIEW_STATUS, 'Completada', 'Cobrado'];
 const WEEKDAY_LABELS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const EMPTY_FORM = {
   title: '',
@@ -43,7 +41,7 @@ const EMPTY_FORM = {
 };
 
 const fieldClass =
-  'w-full rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-medium text-slate-900 transition-all focus:bg-white focus:outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-900/50 dark:text-white dark:focus:bg-slate-800';
+  'w-full rounded-[1rem] border bg-[var(--surface-muted)] px-4 py-3.5 text-sm font-medium text-[var(--text-primary)] transition-all placeholder:text-[var(--text-secondary)] focus:border-transparent focus:bg-[var(--surface-card)] focus:outline-none focus:ring-2 [border-color:var(--line-soft)]';
 
 const formatCurrency = (value: number) => `$${value.toLocaleString('es-ES')}`;
 
@@ -65,13 +63,97 @@ const getStatusTone = (status: TaskStatus): 'warning' | 'info' | 'accent' | 'suc
   return 'neutral';
 };
 
+const getStatusSelectStyle = (status: TaskStatus, accentColor: string): React.CSSProperties => {
+  if (status === 'Pendiente') {
+    return {
+      backgroundColor: 'rgba(245, 158, 11, 0.12)',
+      borderColor: 'rgba(245, 158, 11, 0.32)',
+      color: '#b45309',
+      '--tw-ring-color': 'rgba(245, 158, 11, 0.28)',
+    } as React.CSSProperties;
+  }
+
+  if (status === 'En Progreso') {
+    return {
+      backgroundColor: 'rgba(59, 130, 246, 0.12)',
+      borderColor: 'rgba(59, 130, 246, 0.28)',
+      color: '#1d4ed8',
+      '--tw-ring-color': 'rgba(59, 130, 246, 0.26)',
+    } as React.CSSProperties;
+  }
+
+  if (status === REVIEW_STATUS) {
+    return {
+      backgroundColor: `${accentColor}14`,
+      borderColor: `${accentColor}45`,
+      color: accentColor,
+      '--tw-ring-color': accentColor,
+    } as React.CSSProperties;
+  }
+
+  if (status === 'Completada') {
+    return {
+      backgroundColor: 'rgba(16, 185, 129, 0.12)',
+      borderColor: 'rgba(16, 185, 129, 0.28)',
+      color: '#047857',
+      '--tw-ring-color': 'rgba(16, 185, 129, 0.24)',
+    } as React.CSSProperties;
+  }
+
+  return {
+    backgroundColor: 'rgba(100, 116, 139, 0.12)',
+    borderColor: 'rgba(100, 116, 139, 0.24)',
+    color: '#475569',
+    '--tw-ring-color': 'rgba(100, 116, 139, 0.22)',
+  } as React.CSSProperties;
+};
+
+const getStatusDotStyle = (status: TaskStatus, accentColor: string): React.CSSProperties => {
+  if (status === 'Pendiente') {
+    return { backgroundColor: '#f59e0b' };
+  }
+
+  if (status === 'En Progreso') {
+    return { backgroundColor: '#3b82f6' };
+  }
+
+  if (status === REVIEW_STATUS) {
+    return { backgroundColor: accentColor };
+  }
+
+  if (status === 'Completada') {
+    return { backgroundColor: '#10b981' };
+  }
+
+  return { backgroundColor: '#64748b' };
+};
+
+const getPartnerMatchRank = (partnerName: string, query: string) => {
+  const lookupKey = getPartnerLookupKey(partnerName);
+
+  if (!query) {
+    return 2;
+  }
+
+  if (lookupKey === query) {
+    return 0;
+  }
+
+  if (lookupKey.startsWith(query)) {
+    return 1;
+  }
+
+  return 2;
+};
+
 export default function Pipeline() {
   const {
     tasks,
     partners,
     accentColor,
     addTask,
-    addPartner,
+    findPartnerByName,
+    ensurePartnerByName,
     updateTask,
     updateTaskStatus,
     deleteTask,
@@ -90,6 +172,9 @@ export default function Pipeline() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [taskPendingDeletion, setTaskPendingDeletion] = useState<Task | null>(null);
+  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+  const [dragOverStatus, setDragOverStatus] = useState<TaskStatus | null>(null);
+  const [isPartnerPickerOpen, setIsPartnerPickerOpen] = useState(false);
   const [isWideDesktopCalendar, setIsWideDesktopCalendar] = useState(
     () => typeof window !== 'undefined' && window.innerWidth >= 1536,
   );
@@ -97,6 +182,20 @@ export default function Pipeline() {
   const sortedTasks = useMemo(
     () => [...tasks].sort((a, b) => parseLocalDate(a.dueDate).getTime() - parseLocalDate(b.dueDate).getTime()),
     [tasks],
+  );
+  const listTasks = useMemo(
+    () =>
+      [...sortedTasks].sort((a, b) => {
+        const aIsSettled = a.status === 'Cobrado';
+        const bIsSettled = b.status === 'Cobrado';
+
+        if (aIsSettled !== bIsSettled) {
+          return aIsSettled ? 1 : -1;
+        }
+
+        return parseLocalDate(a.dueDate).getTime() - parseLocalDate(b.dueDate).getTime();
+      }),
+    [sortedTasks],
   );
   const tasksByStatus = useMemo(
     () =>
@@ -122,27 +221,40 @@ export default function Pipeline() {
     );
   });
   const editingTask = editingTaskId ? sortedTasks.find((task) => task.id === editingTaskId) ?? null : null;
-  const syncedTasks = sortedTasks.filter((task) => Boolean(task.gcalEventId)).length;
-  const weeklyTasks = sortedTasks.filter((task) => {
-    const dueDate = parseLocalDate(task.dueDate);
-    const start = startOfLocalDay(new Date());
-    const end = new Date(start);
-    end.setDate(end.getDate() + 6);
-    return dueDate >= start && dueDate <= end;
-  }).length;
-  const openValue = sortedTasks
-    .filter((task) => task.status !== 'Cobro')
-    .reduce((sum, task) => sum + task.value, 0);
   const calendarPanelTasks = selectedDate ? selectedDateTasks : monthTasks;
   const monthLabel = currentMonth.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
   const calendarPanelLabel = selectedDate
     ? formatTaskDate(selectedDate, { day: 'numeric', month: 'long', year: 'numeric' })
     : monthLabel;
+  const partnerInputLookupKey = getPartnerLookupKey(form.partnerName);
+  const selectedPartner = findPartnerByName(form.partnerName);
+  const partnerSuggestions = useMemo(() => {
+    const sortedPartners = [...partners].sort((a, b) => a.name.localeCompare(b.name, 'es-ES'));
+
+    if (!partnerInputLookupKey) {
+      return sortedPartners.slice(0, 6);
+    }
+
+    return sortedPartners
+      .filter((partner) => getPartnerLookupKey(partner.name).includes(partnerInputLookupKey))
+      .sort((a, b) => {
+        const rankDiff =
+          getPartnerMatchRank(a.name, partnerInputLookupKey) - getPartnerMatchRank(b.name, partnerInputLookupKey);
+
+        if (rankDiff !== 0) {
+          return rankDiff;
+        }
+
+        return a.name.localeCompare(b.name, 'es-ES');
+      })
+      .slice(0, 6);
+  }, [partnerInputLookupKey, partners]);
+  const shouldCreatePartnerOnSave = Boolean(form.partnerName.trim()) && !selectedPartner;
+  const shouldShowPartnerSuggestions = isPartnerPickerOpen && partnerSuggestions.length > 0;
   const calendarPanelSummary =
     calendarPanelTasks.length === 1
       ? '1 tarea programada en este bloque de tiempo.'
       : `${calendarPanelTasks.length} tareas programadas en este bloque de tiempo.`;
-
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
 
@@ -160,6 +272,7 @@ export default function Pipeline() {
     setModalMode(null);
     setEditingTaskId(null);
     setForm(EMPTY_FORM);
+    setIsPartnerPickerOpen(false);
   };
 
   const requestTaskDeletion = (task: Task) => {
@@ -169,6 +282,7 @@ export default function Pipeline() {
   const openCreate = () => {
     setEditingTaskId(null);
     setForm({ ...EMPTY_FORM, dueDate: todayIso, status: currentStatus });
+    setIsPartnerPickerOpen(false);
     setModalMode('create');
   };
 
@@ -183,7 +297,13 @@ export default function Pipeline() {
       dueDate: task.dueDate,
       status: task.status,
     });
+    setIsPartnerPickerOpen(false);
     setModalMode('edit');
+  };
+
+  const selectPartnerSuggestion = (partnerName: string) => {
+    setForm((current) => ({ ...current, partnerName }));
+    setIsPartnerPickerOpen(false);
   };
 
   const saveTask = async (event: React.FormEvent) => {
@@ -191,19 +311,12 @@ export default function Pipeline() {
     setIsSubmittingTask(true);
 
     try {
-      const normalizedPartner = form.partnerName.trim();
-      let partnerId = partners.find(
-        (partner) => partner.name.trim().toLowerCase() === normalizedPartner.toLowerCase(),
-      )?.id;
-
-      if (!partnerId) {
-        partnerId = await addPartner({ name: normalizedPartner, status: 'Prospecto', contacts: [] });
-      }
+      const partner = await ensurePartnerByName(form.partnerName);
 
       const payload = {
         title: form.title.trim(),
         description: form.description.trim(),
-        partnerId,
+        partnerId: partner.id,
         status: form.status,
         dueDate: form.dueDate,
         value: Number(form.value) || 0,
@@ -228,6 +341,48 @@ export default function Pipeline() {
       await updateTaskStatus(taskId, status);
     } finally {
       setUpdatingTaskId(null);
+    }
+  };
+
+  const moveTaskToStatus = async (taskId: string, nextStatus: TaskStatus) => {
+    const task = tasks.find((item) => item.id === taskId);
+    if (!task || task.status === nextStatus || updatingTaskId === taskId) return;
+    await changeStatus(taskId, nextStatus);
+  };
+
+  const handleTaskDragStart = (event: React.DragEvent<HTMLDivElement>, task: Task) => {
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', task.id);
+    setDraggedTaskId(task.id);
+    setDragOverStatus(task.status);
+  };
+
+  const handleTaskDragEnd = () => {
+    setDraggedTaskId(null);
+    setDragOverStatus(null);
+  };
+
+  const handleColumnDragOver = (event: React.DragEvent<HTMLElement>, status: TaskStatus) => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+
+    if (dragOverStatus !== status) {
+      setDragOverStatus(status);
+    }
+  };
+
+  const handleColumnDrop = async (event: React.DragEvent<HTMLElement>, status: TaskStatus) => {
+    event.preventDefault();
+
+    const droppedTaskId = draggedTaskId || event.dataTransfer.getData('text/plain');
+
+    try {
+      if (droppedTaskId) {
+        await moveTaskToStatus(droppedTaskId, status);
+      }
+    } finally {
+      setDraggedTaskId(null);
+      setDragOverStatus(null);
     }
   };
 
@@ -317,34 +472,54 @@ export default function Pipeline() {
   const renderTaskCard = (task: Task, variant: 'kanban' | 'calendar' = 'kanban') => {
     const partner = partners.find((item) => item.id === task.partnerId);
     const isCalendarVariant = variant === 'calendar';
+    const isOverdue =
+      startOfLocalDay(parseLocalDate(task.dueDate)) < startOfLocalDay(new Date()) && task.status !== 'Cobrado';
+    const isDragging = draggedTaskId === task.id;
+    const isDraggable =
+      variant === 'kanban' && updatingTaskId !== task.id && syncingTaskId !== task.id && deletingTaskId !== task.id;
 
     return (
-      <div key={task.id}>
-        <SurfaceCard tone="inset" className="p-4">
+      <div
+        key={task.id}
+        draggable={isDraggable}
+        onDragStart={isDraggable ? (event) => handleTaskDragStart(event, task) : undefined}
+        onDragEnd={isDraggable ? handleTaskDragEnd : undefined}
+        className={cx(isDraggable && 'cursor-grab active:cursor-grabbing', isDragging && 'opacity-55')}
+      >
+        <SurfaceCard
+          tone="inset"
+          className={cx(
+            'group border border-transparent p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--line-soft)] hover:shadow-[0_20px_40px_-30px_rgba(59,43,34,0.18)]',
+            isDraggable && 'select-none',
+            isDragging && 'scale-[0.985]',
+          )}
+        >
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <p className="truncate text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
-                {partner?.name || 'Sin marca'}
-              </p>
-              <h3 className="mt-2 text-sm font-bold leading-5 text-slate-900 dark:text-slate-100">
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: accentColor }} />
+                <p className="truncate text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/70 uppercase">
+                  {partner?.name || 'Sin marca'}
+                </p>
+              </div>
+              <h3 className="mt-2 text-sm font-bold leading-5 text-[var(--text-primary)]">
                 {task.title}
               </h3>
             </div>
-            <p className="shrink-0 text-sm font-black text-slate-900 dark:text-slate-100">
+            <p className="shrink-0 text-sm font-black text-[var(--text-primary)]">
               {formatCurrency(task.value)}
             </p>
           </div>
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <StatusBadge tone={getStatusTone(task.status)}>{task.status}</StatusBadge>
-            <span className="rounded-[0.8rem] bg-slate-100 px-3 py-1 text-[11px] font-bold tracking-[0.1em] text-slate-500 uppercase dark:bg-slate-800 dark:text-slate-300">
+            <StatusBadge tone={isOverdue ? 'danger' : 'neutral'}>
               {formatTaskDate(task.dueDate, { day: '2-digit', month: 'short' })}
-            </span>
+            </StatusBadge>
           </div>
 
           <p
             className={cx(
-              'mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400',
+              'mt-3 text-sm leading-6 text-[var(--text-secondary)]',
               isCalendarVariant ? 'line-clamp-3' : 'line-clamp-2',
             )}
           >
@@ -352,22 +527,28 @@ export default function Pipeline() {
           </p>
 
           <div className="mt-4 space-y-3">
-            <select
-              value={task.status}
-              disabled={updatingTaskId === task.id}
-              onChange={(event) => void changeStatus(task.id, event.target.value as TaskStatus)}
-              className="w-full rounded-[0.95rem] border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-200"
-              style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-            >
-              {STATUSES.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={task.status}
+                disabled={updatingTaskId === task.id}
+                onChange={(event) => void changeStatus(task.id, event.target.value as TaskStatus)}
+                className="w-full appearance-none rounded-[0.8rem] border bg-[var(--surface-card-strong)] px-3 py-2.5 pr-10 text-sm font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2"
+                style={getStatusSelectStyle(task.status, accentColor)}
+              >
+                {STATUSES.map((status) => (
+                  <option key={status} value={status}>
+                    {status}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown
+                size={16}
+                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]/70"
+              />
+            </div>
 
-            <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3 dark:border-slate-700/60">
-              <span className="inline-flex min-w-0 items-center gap-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+            <div className="flex items-center justify-between gap-3 border-t pt-3 [border-color:var(--line-soft)]">
+              <span className="inline-flex min-w-0 items-center gap-2 text-xs font-medium text-[var(--text-secondary)]">
                 {task.gcalEventId ? (
                   <CheckCircle2 size={14} className="shrink-0 text-emerald-500" />
                 ) : (
@@ -382,10 +563,10 @@ export default function Pipeline() {
                   onClick={() => void syncTask(task)}
                   disabled={syncingTaskId === task.id}
                   className={cx(
-                    'inline-flex h-10 items-center justify-center rounded-[0.8rem] px-3 text-xs font-bold transition-all disabled:opacity-50',
+                    'inline-flex h-10 items-center justify-center rounded-[0.8rem] border px-3 text-xs font-bold transition-all disabled:opacity-50 [border-color:var(--line-soft)]',
                     task.gcalEventId
-                      ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300'
-                      : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300',
+                      ? 'bg-emerald-50/70 text-emerald-700'
+                      : 'bg-[var(--surface-card)] text-[var(--text-secondary)]',
                   )}
                   aria-label={task.gcalEventId ? `Actualizar ${task.title} con Calendar` : `Sincronizar ${task.title}`}
                 >
@@ -401,15 +582,9 @@ export default function Pipeline() {
                   icon={PencilLine}
                   label={`Editar ${task.title}`}
                   onClick={() => openEdit(task)}
-                  className="h-10 w-10 rounded-[0.8rem]"
-                />
-                <IconButton
-                  icon={Trash2}
-                  label={`Eliminar ${task.title}`}
-                  onClick={() => requestTaskDeletion(task)}
-                  disabled={deletingTaskId === task.id}
-                  tone="danger"
-                  className="h-10 w-10 rounded-[0.8rem]"
+                  tone="ghost"
+                  className="h-10 w-8 rounded-[0.45rem]"
+                  iconSize={16}
                 />
               </div>
             </div>
@@ -421,15 +596,17 @@ export default function Pipeline() {
 
   const renderListRow = (task: Task) => {
     const partner = partners.find((item) => item.id === task.partnerId);
+    const isOverdue =
+      startOfLocalDay(parseLocalDate(task.dueDate)) < startOfLocalDay(new Date()) && task.status !== 'Cobrado';
 
     return (
       <div
         key={task.id}
-        className="grid gap-4 px-4 py-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(8.5rem,0.7fr)_minmax(8.5rem,0.7fr)_auto] xl:items-center xl:px-5"
+        className="grid gap-4 px-4 py-4 transition-all duration-200 hover:-translate-y-0.5 hover:bg-[var(--surface-muted)]/70 xl:grid-cols-[minmax(0,1.5fr)_minmax(8rem,0.7fr)_minmax(7.5rem,0.65fr)_minmax(11rem,0.9fr)] xl:items-start xl:px-5"
       >
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <p className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
+            <p className="text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/70 uppercase">
               {partner?.name || 'Sin marca'}
             </p>
             {task.gcalEventId ? (
@@ -438,62 +615,57 @@ export default function Pipeline() {
               </span>
             ) : null}
           </div>
-          <h3 className="mt-2 text-sm font-bold leading-5 text-slate-900 dark:text-slate-100">{task.title}</h3>
-          <p className="mt-1 line-clamp-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+          <h3 className="mt-2 text-sm font-bold leading-5 text-[var(--text-primary)]">{task.title}</h3>
+          <p className="mt-1 line-clamp-2 text-sm leading-6 text-[var(--text-secondary)]">
             {task.description || 'Sin descripción todavía.'}
           </p>
         </div>
 
-        <div>
-          <p className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
-            Entrega
-          </p>
-          <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-            {formatTaskDate(task.dueDate)}
-          </p>
+        <div className="xl:pt-[1.55rem]">
+          <StatusBadge tone={isOverdue ? 'danger' : 'neutral'}>{formatTaskDate(task.dueDate)}</StatusBadge>
         </div>
 
-        <div>
-          <p className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
-            Valor
-          </p>
-          <p className="mt-2 text-base font-extrabold text-slate-900 dark:text-slate-100">
+        <div className="xl:pt-[1.3rem]">
+          <p className="text-base font-extrabold text-[var(--text-primary)]">
             {formatCurrency(task.value)}
           </p>
-          <div className="mt-2">
-            <StatusBadge tone={getStatusTone(task.status)}>{task.status}</StatusBadge>
-          </div>
         </div>
 
-        <div className="flex flex-col gap-2 xl:items-end">
-          <select
-            value={task.status}
-            disabled={updatingTaskId === task.id}
-            onChange={(event) => void changeStatus(task.id, event.target.value as TaskStatus)}
-            className="w-full rounded-[0.95rem] border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm font-bold text-slate-700 focus:outline-none focus:ring-2 xl:w-[10.5rem] dark:border-slate-700 dark:bg-slate-900/50 dark:text-slate-200"
-            style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-          >
-            {STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {status}
-              </option>
-            ))}
-          </select>
-
-          <div className="flex items-center justify-between gap-2 xl:justify-end">
-            <button
-              type="button"
-              onClick={() => void syncTask(task)}
-              disabled={syncingTaskId === task.id}
-              className={cx(
-                'inline-flex h-10 items-center justify-center rounded-[0.8rem] px-3 text-xs font-bold transition-all disabled:opacity-50',
-                task.gcalEventId
-                  ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300'
-                  : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300',
-              )}
+        <div className="flex flex-col gap-2 xl:items-start">
+          <div className="relative w-full xl:w-[10.5rem]">
+            <select
+              value={task.status}
+              disabled={updatingTaskId === task.id}
+              onChange={(event) => void changeStatus(task.id, event.target.value as TaskStatus)}
+              className="w-full appearance-none rounded-[0.8rem] border bg-[var(--surface-card-strong)] px-3 py-2.5 pr-10 text-sm font-bold text-[var(--text-primary)] focus:outline-none focus:ring-2"
+              style={getStatusSelectStyle(task.status, accentColor)}
             >
-              {syncingTaskId === task.id ? (
-                <RefreshCw size={14} className="animate-spin" />
+              {STATUSES.map((status) => (
+                <option key={status} value={status}>
+                  {status}
+                </option>
+              ))}
+            </select>
+            <ChevronDown
+              size={16}
+              className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]/70"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => void syncTask(task)}
+                  disabled={syncingTaskId === task.id}
+                  className={cx(
+                    'inline-flex h-10 items-center justify-center rounded-[0.8rem] border px-3 text-xs font-bold transition-all disabled:opacity-50 [border-color:var(--line-soft)]',
+                    task.gcalEventId
+                      ? 'bg-emerald-50/70 text-emerald-700'
+                      : 'bg-[var(--surface-card)] text-[var(--text-secondary)]',
+                  )}
+                >
+                  {syncingTaskId === task.id ? (
+                    <RefreshCw size={14} className="animate-spin" />
               ) : task.gcalEventId ? (
                 <CheckCircle2 size={14} />
               ) : (
@@ -504,15 +676,9 @@ export default function Pipeline() {
               icon={PencilLine}
               label={`Editar ${task.title}`}
               onClick={() => openEdit(task)}
-              className="h-10 w-10 rounded-[0.8rem]"
-            />
-            <IconButton
-              icon={Trash2}
-              label={`Eliminar ${task.title}`}
-              onClick={() => requestTaskDeletion(task)}
-              disabled={deletingTaskId === task.id}
-              tone="danger"
-              className="h-10 w-10 rounded-[0.8rem]"
+              tone="ghost"
+              className="h-10 w-8 rounded-[0.45rem]"
+              iconSize={16}
             />
           </div>
         </div>
@@ -539,21 +705,22 @@ export default function Pipeline() {
         className={cx(
           'min-h-[4.5rem] rounded-[0.85rem] border p-2 text-left transition-all sm:min-h-[6.5rem] sm:rounded-[1rem] sm:p-3 xl:min-h-[8.5rem]',
           isSelected
-            ? 'border-transparent bg-slate-900 text-white shadow-[0_20px_45px_-28px_rgba(15,23,42,0.55)] dark:bg-slate-100 dark:text-slate-900'
+            ? 'border-transparent shadow-[0_20px_45px_-28px_rgba(15,23,42,0.55)]'
             : isToday
-              ? 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-900/55'
-              : 'border-transparent bg-white/65 hover:border-slate-200 hover:bg-white dark:bg-slate-900/30 dark:hover:border-slate-700 dark:hover:bg-slate-900/55',
+              ? 'border-[var(--line-soft)] bg-[var(--surface-muted)]'
+              : 'border-transparent bg-[var(--surface-card)]/70 hover:border-[var(--line-soft)] hover:bg-[var(--surface-card)]',
         )}
+        style={isSelected ? { backgroundColor: 'var(--accent-color)', color: 'var(--accent-foreground)' } : undefined}
       >
         <div className="flex items-start justify-between gap-2">
           <span
             className={cx(
               'inline-flex h-7 min-w-7 items-center justify-center rounded-[0.75rem] px-2 text-[11px] font-black sm:h-8 sm:min-w-8 sm:text-xs',
               isSelected
-                ? 'bg-white/18 text-white dark:bg-slate-900/10 dark:text-slate-900'
+                ? 'bg-white/18 text-inherit'
                 : dayTasks.length > 0
-                  ? ''
-                  : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300',
+                  ? 'text-[var(--text-primary)]'
+                  : 'bg-[var(--surface-muted)] text-[var(--text-secondary)]',
             )}
             style={
               !isSelected && dayTasks.length > 0
@@ -568,8 +735,8 @@ export default function Pipeline() {
               className={cx(
                 'rounded-[0.7rem] px-1.5 py-0.5 text-[9px] font-bold tracking-[0.12em] uppercase sm:px-2 sm:py-1 sm:text-[10px]',
                 isSelected
-                  ? 'bg-white/12 text-white dark:bg-slate-900/10 dark:text-slate-900'
-                  : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-300',
+                  ? 'bg-white/12 text-inherit'
+                  : 'bg-[var(--surface-muted)] text-[var(--text-secondary)]',
               )}
             >
               {dayTasks.length}
@@ -584,8 +751,8 @@ export default function Pipeline() {
               className={cx(
                 'hidden truncate rounded-[0.7rem] px-2 py-1 text-[11px] font-semibold sm:block',
                 isSelected
-                  ? 'bg-white/12 text-white dark:bg-slate-900/10 dark:text-slate-900'
-                  : 'bg-slate-100/90 text-slate-600 dark:bg-slate-800 dark:text-slate-300',
+                  ? 'bg-white/12 text-inherit'
+                  : 'bg-[var(--surface-muted)]/90 text-[var(--text-secondary)]',
               )}
             >
               {task.title}
@@ -593,22 +760,22 @@ export default function Pipeline() {
           ))}
 
           {dayTasks.length > 2 ? (
-            <p
-              className={cx(
-                'hidden pt-0.5 text-[11px] font-bold sm:block',
-                isSelected ? 'text-white/80 dark:text-slate-700' : 'text-slate-400 dark:text-slate-500',
-              )}
-            >
-              +{dayTasks.length - 2} más
+              <p
+                className={cx(
+                  'hidden pt-0.5 text-[11px] font-bold sm:block',
+                  isSelected ? 'text-inherit opacity-80' : 'text-[var(--text-secondary)]/70',
+                )}
+              >
+                +{dayTasks.length - 2} más
             </p>
           ) : dayTasks.length === 0 ? (
-            <p
-              className={cx(
-                'hidden pt-1 text-[11px] font-medium lg:block',
-                isSelected ? 'text-white/75 dark:text-slate-700' : 'text-slate-400 dark:text-slate-500',
-              )}
-            >
-              Sin tareas
+              <p
+                className={cx(
+                  'hidden pt-1 text-[11px] font-medium lg:block',
+                  isSelected ? 'text-inherit opacity-75' : 'text-[var(--text-secondary)]/70',
+                )}
+              >
+                Sin tareas
             </p>
           ) : null}
         </div>
@@ -616,104 +783,54 @@ export default function Pipeline() {
     );
   });
   return (
-    <div className="space-y-5 p-4 pb-6 lg:space-y-6 lg:px-8 lg:pt-4 lg:pb-8">
-      <ScreenHeader
-        mobileOnly
-        eyebrow="Pipeline"
-        title="Pipeline"
-        description="Sigue entregables, mueve fases y revisa sincronizaciones sin perder el control de la semana."
-        actions={
-          <div className="flex gap-2">
-            <IconButton
-              icon={DownloadCloud}
-              label="Traer cambios desde Google Calendar"
+    <div className="space-y-5 p-4 pb-6 animate-in fade-in slide-in-from-bottom-4 duration-500 lg:space-y-6 lg:px-8 lg:pt-4 lg:pb-8">
+      <section>
+        <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
+          <div className="rounded-[1.2rem] border bg-[var(--surface-muted)] p-1.5 [border-color:var(--line-soft)]">
+            <div className="grid grid-cols-3 gap-1.5">
+              {[
+                { id: 'kanban', icon: Trello, label: 'Kanban' },
+                { id: 'list', icon: ListIcon, label: 'Lista' },
+                { id: 'calendar', icon: CalendarIcon, label: 'Mes' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setView(tab.id as typeof view)}
+                  className={cx(
+                    'flex items-center justify-center gap-2 rounded-[0.9rem] px-3 py-3 text-sm font-bold transition-all',
+                    view === tab.id
+                      ? 'bg-[var(--surface-card-strong)] text-[var(--text-primary)] shadow-[var(--shadow-soft)]'
+                      : 'text-[var(--text-secondary)]',
+                  )}
+                >
+                  <tab.icon size={18} />
+                  <span className="hidden sm:inline">{tab.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-2 xl:justify-end">
+            <Button
+              tone="secondary"
               onClick={() => void syncDown()}
               disabled={isSyncingDown}
-            />
-            <IconButton
-              icon={Plus}
-              label="Crear nueva tarea"
-              onClick={openCreate}
-              tone="primary"
-              accentColor={accentColor}
-            />
+              className="flex-1 sm:flex-none"
+            >
+              <DownloadCloud size={16} />
+              Actualizar Calendar
+            </Button>
+            <Button accentColor={accentColor} onClick={openCreate} className="flex-1 sm:flex-none">
+              <Plus size={16} />
+              Nueva tarea
+            </Button>
           </div>
-        }
-        className="px-2"
-      />
-
-      <div className="grid gap-3 min-[360px]:grid-cols-2 xl:grid-cols-4">
-        <MetricCard
-          icon={ListIcon}
-          label="Tareas activas"
-          value={`${sortedTasks.length}`}
-          helper="Volumen total visible en este pipeline."
-          accentColor={accentColor}
-        />
-        <MetricCard
-          icon={CalendarDays}
-          label="Esta semana"
-          value={`${weeklyTasks}`}
-          helper="Entregas previstas para los próximos 7 días."
-          accentColor={accentColor}
-        />
-        <MetricCard
-          icon={CalendarIcon}
-          label="Sincronizadas"
-          value={`${syncedTasks}`}
-          helper="Tareas vinculadas con Google Calendar."
-          accentColor={accentColor}
-        />
-        <MetricCard
-          icon={CheckCircle2}
-          label="Valor abierto"
-          value={formatCurrency(openValue)}
-          helper="Importe pendiente de cierre o cobro."
-          accentColor={accentColor}
-        />
-      </div>
-
-      <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
-        <SurfaceCard tone="muted" className="p-1.5">
-          <div className="grid grid-cols-3 gap-1.5">
-            {[
-              { id: 'kanban', icon: Trello, label: 'Kanban' },
-              { id: 'list', icon: ListIcon, label: 'Lista' },
-              { id: 'calendar', icon: CalendarIcon, label: 'Mes' },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setView(tab.id as typeof view)}
-                className={cx(
-                  'flex items-center justify-center gap-2 rounded-[0.85rem] px-3 py-3 text-sm font-bold transition-all',
-                  view === tab.id
-                    ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-slate-100'
-                    : 'text-slate-500 dark:text-slate-400',
-                )}
-              >
-                <tab.icon size={18} />
-                <span className="hidden sm:inline">{tab.label}</span>
-              </button>
-            ))}
-          </div>
-        </SurfaceCard>
-
-        <div className="hidden items-center gap-2 xl:flex">
-          <Button tone="secondary" onClick={() => void syncDown()} disabled={isSyncingDown}>
-            <DownloadCloud size={16} />
-            Actualizar Calendar
-          </Button>
-          <Button accentColor={accentColor} onClick={openCreate}>
-            <Plus size={16} />
-            Nueva tarea
-          </Button>
         </div>
-      </div>
-
+      </section>
       {view === 'kanban' ? (
         <div className="space-y-4">
-          <div className="lg:hidden">
+        <div className="lg:hidden">
             <SurfaceCard tone="muted" className="p-3">
               <div className="flex items-center justify-between gap-3">
                 <IconButton
@@ -724,12 +841,13 @@ export default function Pipeline() {
                   tone="ghost"
                 />
                 <div className="text-center">
-                  <p className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
-                    Fase {currentStatusIdx + 1} de {STATUSES.length}
+                  <p className="text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/70 uppercase">
+                    {currentStatusIdx + 1} de {STATUSES.length}
                   </p>
-                  <h2 className="mt-1 text-lg font-extrabold" style={{ color: accentColor }}>
-                    {currentStatus}
-                  </h2>
+                  <div className="mt-1 flex items-center justify-center gap-2">
+                    <span className="h-2.5 w-2.5 rounded-full" style={getStatusDotStyle(currentStatus, accentColor)} />
+                    <h2 className="text-lg font-extrabold text-[var(--text-primary)]">{currentStatus}</h2>
+                  </div>
                 </div>
                 <IconButton
                   icon={ChevronRight}
@@ -747,7 +865,7 @@ export default function Pipeline() {
               ) : (
                 <EmptyState
                   icon={Trello}
-                  title="No hay tareas en esta fase"
+                  title="No hay tareas aquí"
                   description="Cuando muevas tareas o crees una nueva, aparecerán aquí."
                 />
               )}
@@ -755,40 +873,49 @@ export default function Pipeline() {
           </div>
 
           <div className="hidden lg:block">
-            <div className="grid gap-4 lg:grid-cols-1 xl:grid-cols-2 2xl:grid-cols-3">
+            <div className="hide-scrollbar flex gap-4 overflow-x-auto pb-2">
               {STATUSES.map((status) => {
                 const columnTasks = tasksByStatus[status];
                 const columnValue = columnTasks.reduce((sum, task) => sum + task.value, 0);
 
                 return (
-                  <div key={status}>
-                    <SurfaceCard
-                      tone="muted"
-                      className="flex min-w-0 flex-col self-start p-4"
-                    >
-                      <div className="flex items-start justify-between gap-3 border-b border-slate-200/70 pb-4 dark:border-slate-700/60">
+                  <div key={status} className="min-w-[19.5rem] max-w-[19.5rem] shrink-0 space-y-3">
+                    <div className="px-1">
+                      <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
-                            Fase
-                          </p>
-                          <h2 className="mt-1 text-base font-extrabold" style={{ color: accentColor }}>
-                            {status}
-                          </h2>
-                          <p className="mt-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+                          <div className="flex items-center gap-2">
+                            <span className="h-2.5 w-2.5 rounded-full" style={getStatusDotStyle(status, accentColor)} />
+                            <h2 className="text-[1rem] font-extrabold text-[var(--text-primary)]">
+                              {status}
+                            </h2>
+                          </div>
+                          <p className="mt-1 text-xs font-medium text-[var(--text-secondary)]">
                             {formatCurrency(columnValue)}
                           </p>
                         </div>
-                        <span className="rounded-[0.8rem] bg-white px-3 py-1.5 text-xs font-black text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                        <span className="rounded-[0.8rem] border bg-[var(--surface-card)] px-3 py-1.5 text-xs font-black text-[var(--text-primary)] shadow-[var(--shadow-soft)] [border-color:var(--line-soft)]">
                           {columnTasks.length}
                         </span>
                       </div>
+                    </div>
 
-                      <div className="mt-4 space-y-3">
+                    <SurfaceCard
+                      tone="muted"
+                      className={cx(
+                        'flex min-h-[16rem] min-w-0 flex-col self-start p-4 transition-all duration-200 hover:-translate-y-0.5',
+                        draggedTaskId && dragOverStatus === status
+                          ? 'border-transparent bg-[var(--accent-soft)] shadow-[0_18px_34px_-26px_rgba(15,23,42,0.18)]'
+                          : '',
+                      )}
+                      onDragOver={(event) => handleColumnDragOver(event, status)}
+                      onDrop={(event) => void handleColumnDrop(event, status)}
+                    >
+                      <div className="space-y-3">
                         {columnTasks.length > 0 ? (
                           columnTasks.map((task) => renderTaskCard(task))
                         ) : (
                           <EmptyState
-                            title="Sin tareas en esta fase"
+                            title="Sin tareas aquí"
                             description="Añade una entrega o mueve una tarea para equilibrar el flujo."
                             className="px-4 py-6"
                           />
@@ -804,16 +931,20 @@ export default function Pipeline() {
       ) : null}
 
       {view === 'list' ? (
-        sortedTasks.length > 0 ? (
-          <SurfaceCard tone="muted" className="overflow-hidden">
-            <div className="hidden grid-cols-[minmax(0,1.45fr)_minmax(8.5rem,0.7fr)_minmax(8.5rem,0.7fr)_auto] gap-4 border-b border-slate-200/70 px-5 py-3 text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase xl:grid dark:border-slate-700/60 dark:text-slate-500">
+        listTasks.length > 0 ? (
+          <SurfaceCard tone="muted" className="overflow-hidden p-0">
+            <div className="hidden grid-cols-[minmax(0,1.5fr)_minmax(8rem,0.7fr)_minmax(7.5rem,0.65fr)_minmax(11rem,0.9fr)] gap-4 border-b px-5 py-3 text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/70 uppercase xl:grid [border-color:var(--line-soft)]">
               <span>Tarea</span>
               <span>Entrega</span>
+              <span>Valor</span>
               <span>Estado</span>
-              <span className="text-right">Acciones</span>
             </div>
-            <div className="divide-y divide-slate-200/70 dark:divide-slate-700/60">
-              {sortedTasks.map((task) => renderListRow(task))}
+            <div className="space-y-0">
+              {listTasks.map((task, index) => (
+                <div key={task.id} className={cx(index > 0 && 'border-t [border-color:var(--line-soft)]')}>
+                  {renderListRow(task)}
+                </div>
+              ))}
             </div>
           </SurfaceCard>
         ) : (
@@ -842,10 +973,10 @@ export default function Pipeline() {
                 tone="ghost"
               />
               <div className="text-center">
-                <p className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
+                <p className="text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/70 uppercase">
                   Vista mensual
                 </p>
-                <h2 className="mt-1 text-lg font-extrabold capitalize text-slate-900 dark:text-slate-100">
+                <h2 className="mt-1 text-lg font-extrabold capitalize text-[var(--text-primary)]">
                   {monthLabel}
                 </h2>
               </div>
@@ -861,7 +992,7 @@ export default function Pipeline() {
               {WEEKDAY_LABELS.map((day) => (
                 <div
                   key={day}
-                  className="py-1.5 text-center text-[9px] font-bold tracking-[0.14em] text-slate-400 uppercase dark:text-slate-500 sm:py-2 sm:text-[10px]"
+                  className="py-1.5 text-center text-[9px] font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase sm:py-2 sm:text-[10px]"
                 >
                   {day}
                 </div>
@@ -878,13 +1009,13 @@ export default function Pipeline() {
             <SurfaceCard tone="muted" className="p-5">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
+                  <p className="text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/70 uppercase">
                     {selectedDate ? 'Agenda del día' : 'Agenda del mes'}
                   </p>
-                  <h3 className="mt-1 text-lg font-extrabold capitalize text-slate-900 dark:text-slate-100">
+                  <h3 className="mt-1 text-lg font-extrabold capitalize text-[var(--text-primary)]">
                     {calendarPanelLabel}
                   </h3>
-                  <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                  <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
                     {calendarPanelTasks.length > 0
                       ? calendarPanelSummary
                       : 'No hay tareas programadas en este bloque de tiempo.'}
@@ -894,7 +1025,7 @@ export default function Pipeline() {
                   <button
                     type="button"
                     onClick={() => setSelectedDate(null)}
-                    className="rounded-[0.8rem] bg-white px-3 py-2 text-xs font-bold text-slate-500 transition-colors hover:text-slate-900 dark:bg-slate-800 dark:text-slate-300 dark:hover:text-white"
+                    className="rounded-[0.8rem] border bg-[var(--surface-card)] px-3 py-2 text-xs font-bold text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)] [border-color:var(--line-soft)]"
                   >
                     Ver mes
                   </button>
@@ -963,7 +1094,7 @@ export default function Pipeline() {
                     onClick={() => requestTaskDeletion(editingTask)}
                     disabled={deletingTaskId === editingTask.id}
                   >
-                    {deletingTaskId === editingTask.id ? 'Eliminando…' : 'Eliminar'}
+                    {deletingTaskId === editingTask.id ? 'Eliminando...' : 'Eliminar'}
                   </Button>
                 ) : null}
                 <Button
@@ -974,7 +1105,7 @@ export default function Pipeline() {
                   disabled={isSubmittingTask}
                 >
                   {isSubmittingTask
-                    ? 'Guardando…'
+                    ? 'Guardando...'
                     : modalMode === 'edit'
                       ? 'Guardar cambios'
                       : 'Crear tarea'}
@@ -985,7 +1116,7 @@ export default function Pipeline() {
             <form id="pipeline-task-form" onSubmit={saveTask} className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="sm:col-span-2">
-                  <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-slate-500 dark:text-slate-400 uppercase">
+                  <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
                     Título
                   </label>
                   <input
@@ -999,7 +1130,7 @@ export default function Pipeline() {
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-slate-500 dark:text-slate-400 uppercase">
+                  <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
                     Descripción
                   </label>
                   <textarea
@@ -1013,21 +1144,77 @@ export default function Pipeline() {
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-slate-500 dark:text-slate-400 uppercase">
+                  <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
                     Partner o marca
                   </label>
-                  <input
-                    required
-                    value={form.partnerName}
-                    onChange={(event) => setForm({ ...form, partnerName: event.target.value })}
-                    className={fieldClass}
-                    style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                    placeholder="Ej. TechBrand"
-                  />
+                  <div className="relative">
+                    <input
+                      required
+                      autoComplete="off"
+                      value={form.partnerName}
+                      onFocus={() => setIsPartnerPickerOpen(true)}
+                      onBlur={() => {
+                        window.setTimeout(() => setIsPartnerPickerOpen(false), 120);
+                      }}
+                      onChange={(event) => {
+                        setForm({ ...form, partnerName: event.target.value });
+                        setIsPartnerPickerOpen(true);
+                      }}
+                      className={fieldClass}
+                      style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                      placeholder="Busca en Directorio o escribe una marca nueva"
+                    />
+
+                    {shouldShowPartnerSuggestions ? (
+                      <div className="absolute inset-x-0 top-[calc(100%+0.55rem)] z-20 overflow-hidden rounded-[1rem] border bg-[var(--surface-card)] p-2 shadow-[0_22px_40px_-28px_rgba(59,43,34,0.3)] [border-color:var(--line-soft)]">
+                        <p className="px-2 pb-2 text-[10px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/70 uppercase">
+                          Directorio
+                        </p>
+
+                        <div className="space-y-1">
+                          {partnerSuggestions.map((partner) => {
+                            const isExactMatch = getPartnerLookupKey(partner.name) === partnerInputLookupKey;
+
+                            return (
+                              <button
+                                key={partner.id}
+                                type="button"
+                                onMouseDown={(event) => {
+                                  event.preventDefault();
+                                  selectPartnerSuggestion(partner.name);
+                                }}
+                                className="flex w-full items-center justify-between gap-3 rounded-[0.9rem] px-3 py-2.5 text-left transition-colors hover:bg-[var(--surface-muted)]"
+                              >
+                                <div className="min-w-0">
+                                  <p className="truncate text-sm font-bold text-[var(--text-primary)]">
+                                    {partner.name}
+                                  </p>
+                                  <p className="truncate text-xs text-[var(--text-secondary)]">
+                                    {partner.contacts.length} contactos guardados
+                                  </p>
+                                </div>
+                                <StatusBadge tone={isExactMatch ? 'accent' : 'neutral'}>
+                                  {isExactMatch ? 'Seleccionada' : partner.status}
+                                </StatusBadge>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  <p className="mt-2 text-xs leading-5 text-[var(--text-secondary)]">
+                    {selectedPartner
+                      ? `Se vinculara con ${selectedPartner.name}, que ya existe en tu directorio.`
+                      : shouldCreatePartnerOnSave
+                        ? `No existe todavia. Al guardar la tarea, ${form.partnerName.trim()} se creara como nueva marca en el directorio.`
+                        : 'Selecciona una marca existente o escribe una nueva para crearla al guardar.'}
+                  </p>
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-slate-500 dark:text-slate-400 uppercase">
+                  <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
                     Valor
                   </label>
                   <input
@@ -1043,7 +1230,7 @@ export default function Pipeline() {
                 </div>
 
                 <div>
-                  <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-slate-500 dark:text-slate-400 uppercase">
+                  <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
                     Fecha
                   </label>
                   <input
@@ -1057,7 +1244,7 @@ export default function Pipeline() {
                 </div>
 
                 <div className="sm:col-span-2">
-                  <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-slate-500 dark:text-slate-400 uppercase">
+                  <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
                     Estado inicial
                   </label>
                   <select

@@ -8,20 +8,33 @@ const ONBOARDING_STORAGE_KEY = 'hasSeenOnboardingTour';
 export default function OnboardingTour() {
   const { theme, accentColor } = useAppContext();
   const [run, setRun] = useState(false);
-  const [tooltipWidth, setTooltipWidth] = useState(() =>
-    typeof window === 'undefined' ? 360 : Math.min(window.innerWidth - 64, 384),
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window === 'undefined' ? true : window.matchMedia('(min-width: 1024px)').matches,
   );
-  const accentForeground = getAccessibleAccentForeground(accentColor || '#8b5cf6');
+  const [tooltipWidth, setTooltipWidth] = useState(() =>
+    typeof window === 'undefined'
+      ? 360
+      : Math.min(window.innerWidth - 24, window.innerWidth >= 1024 ? 384 : 320),
+  );
+  const accentForeground = getAccessibleAccentForeground(accentColor || '#c96f5b');
+  const isDark = theme === 'dark';
+  const tooltipBackground = isDark ? '#261f1b' : '#fffaf4';
+  const tooltipSurface = isDark ? '#2f2722' : '#fffdf9';
+  const tooltipText = isDark ? '#f7f2ec' : '#201a17';
+  const tooltipSecondary = isDark ? '#b6aba2' : '#6b625c';
+  const tooltipBorder = isDark ? 'rgba(247, 242, 236, 0.12)' : 'rgba(96, 78, 66, 0.1)';
+  const tooltipShadow = isDark
+    ? '0 28px 80px -38px rgba(0, 0, 0, 0.72)'
+    : '0 28px 76px -40px rgba(59, 43, 34, 0.34)';
 
   useEffect(() => {
     if (typeof window === 'undefined') {
       return undefined;
     }
 
-    const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
     const hasSeenTour = localStorage.getItem(ONBOARDING_STORAGE_KEY);
 
-    if (!isDesktop || hasSeenTour) {
+    if (hasSeenTour) {
       return undefined;
     }
 
@@ -37,14 +50,28 @@ export default function OnboardingTour() {
       return undefined;
     }
 
+    const mediaQuery = window.matchMedia('(min-width: 1024px)');
     const syncTooltipWidth = () => {
-      setTooltipWidth(Math.min(window.innerWidth - 64, 384));
+      setIsDesktop(mediaQuery.matches);
+      setTooltipWidth(Math.min(window.innerWidth - 24, mediaQuery.matches ? 384 : 320));
     };
 
     syncTooltipWidth();
     window.addEventListener('resize', syncTooltipWidth);
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', syncTooltipWidth);
+    } else {
+      mediaQuery.addListener(syncTooltipWidth);
+    }
 
-    return () => window.removeEventListener('resize', syncTooltipWidth);
+    return () => {
+      window.removeEventListener('resize', syncTooltipWidth);
+      if (typeof mediaQuery.removeEventListener === 'function') {
+        mediaQuery.removeEventListener('change', syncTooltipWidth);
+      } else {
+        mediaQuery.removeListener(syncTooltipWidth);
+      }
+    };
   }, []);
 
   const handleJoyrideCallback = (data: CallBackProps) => {
@@ -58,41 +85,74 @@ export default function OnboardingTour() {
   };
 
   const steps = useMemo<Step[]>(() => {
-    const baseSteps: Step[] = [
-      {
-        target: 'body',
-        content: 'Bienvenida a Tía. Este tour te enseña el flujo base del workspace para que ubiques navegación, pipeline y relaciones.',
-        placement: 'center',
-        disableBeacon: true,
-      },
-      {
-        target: '#nav-dashboard',
-        content: 'Aquí aterrizas con el resumen operativo: valor abierto, entregables cercanos y señales del pipeline.',
-      },
-      {
-        target: '#nav-pipeline',
-        content: 'El pipeline concentra tareas, fases y calendario en una misma superficie.',
-      },
-      {
-        target: '#nav-directory',
-        content: 'El directorio te da contexto de marca, contactos y outreach sin salir del workspace.',
-      },
-      {
-        target: '#nav-settings',
-        content: 'Desde ajustes controlas tema, integraciones y plantillas reutilizables.',
-      },
-    ];
+    const baseSteps: Step[] = isDesktop
+      ? [
+          {
+            target: 'body',
+            content:
+              'Bienvenida a Tia. Este tour te muestra el flujo base del workspace para ubicar navegacion, pipeline y relaciones.',
+            placement: 'center',
+            disableBeacon: true,
+          },
+          {
+            target: '#nav-dashboard',
+            content:
+              'Aqui aterrizas con el resumen operativo: valor abierto, entregables cercanos y senales del pipeline.',
+          },
+          {
+            target: '#nav-pipeline',
+            content: 'El pipeline concentra tareas, fases y calendario en una misma superficie.',
+          },
+          {
+            target: '#nav-directory',
+            content: 'El directorio te da contexto de marca, contactos y outreach sin salir del workspace.',
+          },
+          {
+            target: '#nav-settings',
+            content: 'Desde ajustes controlas tema, integraciones y plantillas reutilizables.',
+          },
+        ]
+      : [
+          {
+            target: 'body',
+            content:
+              'Bienvenida a Tia. En movil vas a moverte sobre todo con la barra inferior y siempre volveras rapido a cada modulo.',
+            placement: 'center',
+            disableBeacon: true,
+          },
+          {
+            target: '#nav-dashboard',
+            content: 'Inicio te devuelve al resumen del dia y al estado general del workspace.',
+            placement: 'top',
+          },
+          {
+            target: '#nav-pipeline',
+            content: 'Pipeline es tu mesa operativa para tareas, fases y calendario.',
+            placement: 'top',
+          },
+          {
+            target: '#nav-directory',
+            content: 'Directorio concentra marcas, contactos y outreach sin salir de la app.',
+            placement: 'top',
+          },
+          {
+            target: '#nav-settings',
+            content: 'Ajustes agrupa tema, integraciones, plantillas y utilidades del sistema.',
+            placement: 'top',
+          },
+        ];
 
     if (typeof document !== 'undefined' && document.querySelector('#tia-assistant-btn')) {
       baseSteps.push({
         target: '#tia-assistant-btn',
-        content: 'Cuando la IA está disponible, puedes abrirla desde aquí para crear tareas o actualizar estados con lenguaje natural.',
-        placement: 'left',
+        content:
+          'Cuando la IA esta disponible, puedes abrirla desde aqui para crear tareas o actualizar estados con lenguaje natural.',
+        placement: isDesktop ? 'left' : 'top',
       });
     }
 
     return baseSteps;
-  }, [run]);
+  }, [isDesktop, run]);
 
   if (!run) {
     return null;
@@ -106,9 +166,11 @@ export default function OnboardingTour() {
       run={run}
       scrollToFirstStep
       showSkipButton
+      scrollOffset={isDesktop ? 88 : 24}
+      spotlightPadding={isDesktop ? 8 : 12}
       steps={steps}
       locale={{
-        back: 'Atrás',
+        back: 'Atras',
         close: 'Cerrar',
         last: 'Finalizar',
         next: 'Siguiente',
@@ -119,47 +181,70 @@ export default function OnboardingTour() {
         options: {
           zIndex: 10000,
           width: tooltipWidth,
-          primaryColor: accentColor || '#8b5cf6',
-          backgroundColor: theme === 'dark' ? '#1e293b' : '#ffffff',
-          textColor: theme === 'dark' ? '#f8fafc' : '#1e293b',
-          arrowColor: theme === 'dark' ? '#1e293b' : '#ffffff',
+          primaryColor: accentColor || '#c96f5b',
+          backgroundColor: tooltipBackground,
+          textColor: tooltipText,
+          arrowColor: tooltipBackground,
         },
         tooltip: {
           width: tooltipWidth,
           maxWidth: 'calc(100vw - 4rem)',
-          borderRadius: '1.25rem',
+          borderRadius: '1.5rem',
           boxSizing: 'border-box',
+          boxShadow: tooltipShadow,
+          backgroundColor: tooltipBackground,
+          border: `1px solid ${tooltipBorder}`,
+          overflow: 'hidden',
         },
         tooltipContainer: {
           textAlign: 'left',
-          padding: '1rem',
+          padding: '1rem 1rem 0.9rem',
+          background: `linear-gradient(180deg, ${tooltipSurface}, ${tooltipBackground})`,
+          color: tooltipText,
         },
         tooltipContent: {
           overflowWrap: 'anywhere',
+          lineHeight: 1.65,
+          fontSize: '13px',
+          color: tooltipSecondary,
+          paddingTop: '0.2rem',
         },
         tooltipFooter: {
           display: 'flex',
           flexWrap: 'wrap',
           alignItems: 'center',
-          gap: '0.75rem',
+          gap: '0.65rem',
           justifyContent: 'space-between',
+          marginTop: '0.75rem',
+          paddingTop: '0.9rem',
+          borderTop: `1px solid ${tooltipBorder}`,
         },
         buttonNext: {
-          backgroundColor: accentColor || '#8b5cf6',
+          backgroundColor: accentColor || '#c96f5b',
           color: accentForeground,
           borderRadius: '9999px',
-          padding: '8px 16px',
+          padding: '9px 18px',
           fontWeight: 'bold',
           marginLeft: 'auto',
           maxWidth: '100%',
+          boxShadow: '0 16px 28px -20px rgba(0, 0, 0, 0.28)',
         },
         buttonBack: {
-          color: theme === 'dark' ? '#94a3b8' : '#64748b',
+          color: tooltipSecondary,
           marginRight: 0,
         },
         buttonSkip: {
-          color: theme === 'dark' ? '#94a3b8' : '#64748b',
+          color: tooltipSecondary,
           padding: 0,
+        },
+        spotlight: {
+          borderRadius: '1.4rem',
+        },
+        beaconInner: {
+          backgroundColor: accentColor || '#c96f5b',
+        },
+        beaconOuter: {
+          borderColor: accentColor || '#c96f5b',
         },
       }}
     />

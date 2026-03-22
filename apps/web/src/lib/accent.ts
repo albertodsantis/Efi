@@ -63,9 +63,9 @@ export function getAccentCssVariables(hex: string) {
   return {
     '--accent-color': hex,
     '--accent-foreground': foreground,
-    '--accent-soft': withAlpha(hex, 0.14),
+    '--accent-soft': withAlpha(hex, 0.12),
     '--accent-soft-strong': withAlpha(hex, 0.18),
-    '--accent-border': withAlpha(hex, 0.24),
-    '--accent-glow': withAlpha(hex, 0.32),
+    '--accent-border': withAlpha(hex, 0.22),
+    '--accent-glow': withAlpha(hex, 0.3),
   } as const;
 }

@@ -3,9 +3,8 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
-  CalendarDays,
   Home,
   LayoutDashboard,
   Settings as SettingsIcon,
@@ -118,49 +117,78 @@ function renderActiveView(activeTab: TabId) {
   return <Settings />;
 }
 
+function canScrollElementInDirection(element: HTMLElement, deltaY: number) {
+  if (typeof window === 'undefined' || deltaY === 0) {
+    return false;
+  }
+
+  const { overflowY } = window.getComputedStyle(element);
+  const allowsVerticalScroll =
+    overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay';
+
+  if (!allowsVerticalScroll || element.scrollHeight <= element.clientHeight + 1) {
+    return false;
+  }
+
+  if (deltaY < 0) {
+    return element.scrollTop > 0;
+  }
+
+  return element.scrollTop + element.clientHeight < element.scrollHeight - 1;
+}
+
+function hasScrollableAncestorThatCanConsume(target: HTMLElement | null, deltaY: number) {
+  let current: HTMLElement | null = target;
+
+  while (current) {
+    if (canScrollElementInDirection(current, deltaY)) {
+      return true;
+    }
+
+    current = current.parentElement;
+  }
+
+  return false;
+}
+
+// Desktop scroll safety:
+// the workspace `main` owns vertical scrolling, while the sidebar only forwards
+// wheel input into `main` when it cannot consume that movement itself.
 const DesktopSidebar = ({
   activeTab,
   onTabChange,
+  onWheelCapture,
   accentColor,
   profileAvatar,
   profileName,
-  todayLabel,
 }: {
   activeTab: TabId;
   onTabChange: (tabId: TabId) => void;
+  onWheelCapture?: React.WheelEventHandler<HTMLElement>;
   accentColor: string;
   profileAvatar: string;
   profileName: string;
-  todayLabel: string;
 }) => (
-  <aside className="hide-scrollbar hidden lg:sticky lg:top-0 lg:flex lg:h-[100dvh] lg:min-h-[100dvh] lg:min-w-0 lg:flex-col lg:gap-4 lg:overflow-y-auto lg:px-4 lg:py-5">
-    <div className="px-1 py-1">
-      <div className="flex items-center gap-3">
+  <aside
+    onWheelCapture={onWheelCapture}
+    className="hide-scrollbar hidden lg:sticky lg:top-4 lg:flex lg:max-h-[calc(100dvh-2rem)] lg:min-w-0 lg:self-start lg:flex-col lg:gap-4 lg:overflow-y-auto lg:bg-[color:var(--surface-overlay)] lg:px-5 lg:py-6"
+  >
+    <div className="px-1">
+      <div className="flex items-center gap-3 px-3">
         <img
           src={profileAvatar}
           alt={profileName}
-          className="h-11 w-11 rounded-xl border border-white/80 object-cover shadow-sm dark:border-slate-700/60"
+          className="h-12 w-12 rounded-[1rem] border object-cover shadow-sm [border-color:var(--line-soft)]"
         />
         <div className="min-w-0">
-          <p className="text-[10px] font-bold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500">
-            {'Sesi\u00f3n'}
-          </p>
-          <p className="mt-1 truncate text-sm font-bold text-slate-900 dark:text-slate-100">
-            {profileName}
-          </p>
-          <div className="mt-1 flex items-center gap-1.5 text-[11px] font-medium text-slate-500 dark:text-slate-400">
-            <CalendarDays size={13} />
-            <span className="truncate">{todayLabel}</span>
-          </div>
+          <p className="truncate text-sm font-bold text-[var(--text-primary)]">{profileName}</p>
+          <p className="mt-1 text-xs text-[var(--text-secondary)]">Workspace personal</p>
         </div>
       </div>
     </div>
 
-    <SurfaceCard className="p-2.5">
-      <p className="px-3 pb-2 text-[10px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
-        {'Navegaci\u00f3n'}
-      </p>
-      <nav className="space-y-1">
+    <div className="px-1">
+      <nav className="space-y-1.5">
         {tabs.map((tab) => {
           const Icon = tab.icon;
           const isActive = activeTab === tab.id;
@@ -172,37 +200,38 @@ const DesktopSidebar = ({
               type="button"
               onClick={() => onTabChange(tab.id)}
               className={cx(
-                'w-full rounded-[1rem] border px-3.5 py-3.5 text-left transition-all',
+                'w-full rounded-[1.1rem] border px-3 py-3 text-left transition-all [border-color:transparent]',
                 isActive
-                  ? 'border-slate-200/80 shadow-[0_16px_28px_-26px_rgba(15,23,42,0.26)] dark:border-slate-700/60'
-                  : 'border-transparent hover:border-slate-200/70 hover:bg-slate-50/80 dark:hover:border-slate-700/60 dark:hover:bg-slate-800/70',
+                  ? 'bg-[var(--surface-card-strong)] shadow-[var(--shadow-soft)] [border-color:var(--line-soft)]'
+                  : 'hover:bg-[var(--surface-card)]/80',
               )}
-              style={isActive ? { backgroundColor: `${accentColor}12` } : undefined}
+              style={isActive ? { boxShadow: 'var(--shadow-soft)' } : undefined}
             >
               <div className="flex items-center gap-3">
                 <div
-                  className={cx(
-                    'flex h-10 w-10 items-center justify-center rounded-[0.8rem]',
-                    isActive
-                      ? 'bg-white/92 dark:bg-slate-900/62'
-                      : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400',
-                  )}
+                  className="flex h-10 w-10 items-center justify-center rounded-[0.95rem] text-[var(--text-secondary)] transition-colors"
                   style={isActive ? { color: accentColor } : undefined}
                 >
                   <Icon size={18} strokeWidth={isActive ? 2.4 : 2.05} />
                 </div>
-                <div className="min-w-0">
-                  <p className="text-sm font-bold text-slate-900 dark:text-slate-100">{tab.label}</p>
-                  <p className="mt-1 text-[12px] leading-5 text-slate-500 dark:text-slate-400">
-                    {tab.description}
-                  </p>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    {isActive ? (
+                      <span
+                        aria-hidden="true"
+                        className="h-5 w-1 shrink-0 rounded-full"
+                        style={{ backgroundColor: accentColor }}
+                      />
+                    ) : null}
+                    <p className="truncate text-sm font-bold text-[var(--text-primary)]">{tab.label}</p>
+                  </div>
                 </div>
               </div>
             </button>
           );
         })}
       </nav>
-    </SurfaceCard>
+    </div>
   </aside>
 );
 
@@ -216,7 +245,7 @@ const MobileBottomNav = ({
   accentColor: string;
 }) => (
   <div
-    className="fixed left-4 right-4 z-[90] flex justify-between rounded-[1.35rem] border border-white/55 bg-white/90 px-3 shadow-[0_22px_50px_-20px_rgba(15,23,42,0.34)] backdrop-blur-2xl transition-colors duration-300 dark:border-slate-700/40 dark:bg-slate-800/88 lg:hidden"
+    className="fixed left-4 right-4 z-[90] flex justify-between rounded-[1.45rem] border bg-[var(--surface-card-strong)] px-3 shadow-[var(--shadow-floating)] backdrop-blur-2xl transition-colors duration-300 [border-color:var(--line-soft)] lg:hidden"
     style={{
       bottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)',
       paddingTop: '0.7rem',
@@ -239,8 +268,8 @@ const MobileBottomNav = ({
             className={cx(
               'flex w-full max-w-[68px] flex-col items-center gap-1 rounded-[1rem] px-2 py-2.5 transition-all',
               isActive
-                ? 'shadow-[0_16px_25px_-22px_rgba(15,23,42,0.45)]'
-                : 'text-slate-500 dark:text-slate-400',
+                ? 'shadow-[var(--shadow-soft)]'
+                : 'text-[var(--text-secondary)]',
             )}
             style={isActive ? { backgroundColor: `${accentColor}16`, color: accentColor } : undefined}
           >
@@ -263,6 +292,7 @@ const MobileBottomNav = ({
 const MainLayout = () => {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
   const isDesktop = useIsDesktop();
+  const mainRegionRef = useRef<HTMLElement | null>(null);
   const {
     accentColor,
     profile,
@@ -274,27 +304,100 @@ const MainLayout = () => {
   } = useAppContext();
 
   const activeTabConfig = tabs.find((tab) => tab.id === activeTab) || tabs[0];
-  const todayLabel = useMemo(
-    () =>
-      new Date().toLocaleDateString('es-ES', {
-        weekday: 'long',
-        day: 'numeric',
-        month: 'long',
-      }),
-    [],
-  );
+
+  useEffect(() => {
+    if (isDesktop) {
+      mainRegionRef.current?.scrollTo({ top: 0, behavior: 'auto' });
+    } else if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'auto' });
+    }
+
+    requestAnimationFrame(() => {
+      mainRegionRef.current?.focus({ preventScroll: true });
+    });
+  }, [activeTab, isDesktop]);
+
+  const handleMainKeyDownCapture = (event: React.KeyboardEvent<HTMLElement>) => {
+    const mainRegion = mainRegionRef.current;
+
+    if (!mainRegion || typeof window === 'undefined') {
+      return;
+    }
+
+    const target = event.target as HTMLElement | null;
+
+    if (target?.closest('input, textarea, select, [contenteditable="true"]')) {
+      return;
+    }
+
+    const scrollTarget = isDesktop ? mainRegion : window;
+    const viewportHeight = isDesktop ? mainRegion.clientHeight : window.innerHeight;
+    const pageStep = Math.max(viewportHeight * 0.88, 240);
+
+    if (event.key === 'PageDown' || (event.key === ' ' && !event.shiftKey)) {
+      event.preventDefault();
+      scrollTarget.scrollBy({ top: pageStep, behavior: 'auto' });
+      return;
+    }
+
+    if (event.key === 'PageUp' || (event.key === ' ' && event.shiftKey)) {
+      event.preventDefault();
+      scrollTarget.scrollBy({ top: -pageStep, behavior: 'auto' });
+      return;
+    }
+
+    if (event.key === 'Home') {
+      event.preventDefault();
+      scrollTarget.scrollTo({ top: 0, behavior: 'auto' });
+      return;
+    }
+
+    if (event.key === 'End') {
+      event.preventDefault();
+      if (isDesktop) {
+        mainRegion.scrollTo({ top: mainRegion.scrollHeight, behavior: 'auto' });
+      } else {
+        window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'auto' });
+      }
+    }
+  };
+
+  const handleDesktopSidebarWheelCapture = (event: React.WheelEvent<HTMLElement>) => {
+    if (!isDesktop || Math.abs(event.deltaY) < 1) {
+      return;
+    }
+
+    const mainRegion = mainRegionRef.current;
+
+    if (!mainRegion) {
+      return;
+    }
+
+    const target = event.target as HTMLElement | null;
+
+    if (hasScrollableAncestorThatCanConsume(target, event.deltaY)) {
+      return;
+    }
+
+    if (!canScrollElementInDirection(mainRegion, event.deltaY)) {
+      return;
+    }
+
+    event.preventDefault();
+    mainRegion.scrollBy({ top: event.deltaY, behavior: 'auto' });
+  };
 
   if (isBootstrapping) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 px-6 dark:bg-slate-950">
+      <div className="flex min-h-screen items-center justify-center bg-[var(--surface-app)] px-6">
         <SurfaceCard className="w-full max-w-lg p-8 text-center">
-          <p className="text-[11px] font-bold tracking-[0.18em] text-slate-400 dark:text-slate-500 uppercase">
+          <p className="text-[11px] font-bold tracking-[0.18em] text-[var(--text-secondary)] uppercase">
             {`T\u00eda`}
           </p>
-          <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
+          <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-[var(--text-primary)]">
             Cargando workspace
           </h1>
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+          <p className="mt-2 text-sm text-[var(--text-secondary)]">
             Estamos preparando tus datos y tus vistas de trabajo.
           </p>
         </SurfaceCard>
@@ -304,13 +407,13 @@ const MainLayout = () => {
 
   if (bootstrapError) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100 px-6 dark:bg-slate-950">
+      <div className="flex min-h-screen items-center justify-center bg-[var(--surface-app)] px-6">
         <SurfaceCard className="w-full max-w-lg p-8 text-center">
           <p className="text-[11px] font-bold tracking-[0.18em] text-rose-500 uppercase">Error</p>
-          <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
+          <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-[var(--text-primary)]">
             No pudimos cargar la app
           </h1>
-          <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{bootstrapError}</p>
+          <p className="mt-2 text-sm text-[var(--text-secondary)]">{bootstrapError}</p>
           <button
             type="button"
             onClick={() => void refreshAppData()}
@@ -325,111 +428,120 @@ const MainLayout = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 font-sans text-slate-900 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100">
+    <div className="min-h-screen bg-[var(--surface-app)] font-sans text-[var(--text-primary)] transition-colors duration-300">
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div
-          className="absolute -top-28 right-[-6%] h-80 w-80 rounded-full blur-3xl opacity-55"
+          className="absolute -top-28 right-[-6%] h-80 w-80 rounded-full blur-3xl opacity-60"
           style={{ backgroundColor: `${accentColor}22` }}
         />
-        <div className="absolute bottom-0 left-[-4%] h-72 w-72 rounded-full bg-cyan-200/20 blur-3xl dark:bg-cyan-500/10" />
+        <div className="absolute bottom-0 left-[-4%] h-72 w-72 rounded-full bg-emerald-200/20 blur-3xl dark:bg-emerald-400/10" />
       </div>
 
-      <div className="relative min-h-[100dvh] w-full">
-        <div className="min-h-[100dvh] w-full lg:grid lg:grid-cols-[clamp(240px,18vw,300px)_minmax(0,1fr)] lg:items-start">
-          {isDesktop ? (
-            <DesktopSidebar
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-              accentColor={accentColor}
-              profileAvatar={profile.avatar}
-              profileName={profile.name}
-              todayLabel={todayLabel}
-            />
-          ) : null}
-
-          <main
-            className={cx(
-              'relative min-w-0 transition-colors duration-300',
-              isDesktop
-                ? 'flex min-h-[100dvh] flex-col border-l border-slate-200/80 bg-white/86 dark:border-slate-700/60 dark:bg-slate-900/78'
-                : 'flex min-h-[100dvh] flex-col bg-white/94 dark:bg-slate-900/96',
-            )}
-          >
-            <div
-              className="pointer-events-none absolute left-0 right-0 top-0 h-72 opacity-75 transition-colors duration-700"
-              style={{
-                background: `linear-gradient(135deg, ${accentColor}18, ${accentColor}08, transparent)`,
-              }}
-            />
-
+      <div className="relative min-h-[100dvh] w-full lg:h-[100dvh] lg:p-4">
+        <div className="min-h-[100dvh] w-full lg:h-[calc(100dvh-2rem)] lg:min-h-0 lg:overflow-hidden lg:rounded-[2rem] lg:border lg:bg-[var(--surface-shell)] lg:shadow-[var(--shadow-medium)] [border-color:var(--line-soft)]">
+          <div className="min-h-[100dvh] w-full lg:grid lg:h-full lg:min-h-0 lg:grid-cols-[clamp(250px,18vw,300px)_minmax(0,1fr)] lg:items-start">
             {isDesktop ? (
-              <div className="relative z-10 px-6 pt-7 pb-1 lg:px-8 lg:pt-8">
-                <div className="w-full">
-                  <p className="text-[11px] font-bold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500">
-                    Panel de trabajo
-                  </p>
-                  <h2 className="mt-2 text-[2rem] font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
-                    {activeTabConfig.label}
-                  </h2>
-                  <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                    {activeTabConfig.description}
-                  </p>
-                </div>
-              </div>
-            ) : null}
-
-            <div className="relative z-10 flex flex-1 flex-col">
-              <div
-                className={cx(
-                  isDesktop
-                    ? 'pb-16'
-                    : 'hide-scrollbar flex-1 overflow-y-auto',
-                )}
-                style={
-                  isDesktop
-                    ? undefined
-                    : {
-                        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.75rem)',
-                        paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8.5rem)',
-                      }
-                }
-              >
-                {actionError ? (
-                  <div className={cx(isDesktop ? 'px-8 pt-1' : 'px-4 pt-1')}>
-                    <div className="flex items-start gap-3 rounded-[1rem] border border-rose-200/80 bg-rose-50/90 px-4 py-3 dark:border-rose-500/20 dark:bg-rose-500/10">
-                      <div className="flex-1">
-                        <p className="text-[11px] font-bold tracking-[0.16em] text-rose-500 uppercase">
-                          {'Acci\u00f3n no completada'}
-                        </p>
-                        <p className="mt-1 text-sm text-rose-700 dark:text-rose-200">{actionError}</p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={dismissActionError}
-                        className="text-xs font-bold tracking-[0.14em] text-rose-500 uppercase"
-                      >
-                        Cerrar
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
-
-                <div className={cx('min-w-0', isDesktop ? 'w-full' : 'px-0')}>
-                  {renderActiveView(activeTab)}
-                </div>
-              </div>
-            </div>
-
-            {!isDesktop ? (
-              <MobileBottomNav
+              <DesktopSidebar
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
+                onWheelCapture={handleDesktopSidebarWheelCapture}
                 accentColor={accentColor}
+                profileAvatar={profile.avatar}
+                profileName={profile.name}
               />
             ) : null}
 
-            <AIAssistant isDesktop={isDesktop} />
-          </main>
+            <main
+              ref={mainRegionRef}
+              tabIndex={-1}
+              onKeyDownCapture={handleMainKeyDownCapture}
+              className={cx(
+                'relative min-w-0 outline-none transition-colors duration-300',
+                isDesktop
+                  ? 'hide-scrollbar flex min-h-[100dvh] flex-col border-l bg-transparent lg:h-full lg:min-h-0 lg:overflow-y-auto [border-color:var(--line-soft)]'
+                  : 'flex min-h-[100dvh] flex-col bg-[var(--surface-card)]',
+              )}
+            >
+              <div
+                className="pointer-events-none absolute left-0 right-0 top-0 h-80 opacity-90 transition-colors duration-700"
+                style={{
+                  background: `linear-gradient(135deg, ${accentColor}14, rgba(114,151,140,0.08), transparent 72%)`,
+                }}
+              />
+
+              <div className="relative z-10 flex flex-1 min-h-0 flex-col">
+                <div
+                  className="hide-scrollbar flex-1 min-h-0"
+                  style={
+                    isDesktop
+                      ? {
+                          paddingBottom: '4rem',
+                        }
+                      : {
+                          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8.5rem)',
+                        }
+                  }
+                >
+                  <div className="border-b bg-[var(--surface-overlay)] backdrop-blur-xl [border-color:var(--line-soft)]">
+                    <div
+                      className={cx(
+                        'min-w-0',
+                        isDesktop ? 'px-8 py-5' : 'px-4 pb-3 pt-4',
+                      )}
+                      style={
+                        isDesktop
+                          ? undefined
+                          : {
+                              paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.55rem)',
+                            }
+                      }
+                    >
+                      <h2 className={cx('font-bold tracking-tight text-[var(--text-primary)]', isDesktop ? 'text-[1.5rem]' : 'text-lg')}>
+                        {activeTabConfig.label}
+                      </h2>
+                      <p className={cx('mt-2 max-w-3xl text-[var(--text-secondary)]', isDesktop ? 'text-sm leading-6' : 'text-xs leading-5')}>
+                        {activeTabConfig.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  {actionError ? (
+                    <div className={cx(isDesktop ? 'px-8 pt-1' : 'px-4 pt-1')}>
+                      <div className="flex items-start gap-3 rounded-[1rem] border border-rose-200/80 bg-rose-50/90 px-4 py-3">
+                        <div className="flex-1">
+                          <p className="text-[11px] font-bold tracking-[0.16em] text-rose-500 uppercase">
+                            {'Acci\u00f3n no completada'}
+                          </p>
+                          <p className="mt-1 text-sm text-rose-700">{actionError}</p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={dismissActionError}
+                          className="text-xs font-bold tracking-[0.14em] text-rose-500 uppercase"
+                        >
+                          Cerrar
+                        </button>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  <div className={cx('min-w-0', isDesktop ? 'w-full' : 'px-0')}>
+                    {renderActiveView(activeTab)}
+                  </div>
+                </div>
+              </div>
+
+              {!isDesktop ? (
+                <MobileBottomNav
+                  activeTab={activeTab}
+                  onTabChange={setActiveTab}
+                  accentColor={accentColor}
+                />
+              ) : null}
+
+              <AIAssistant isDesktop={isDesktop} />
+            </main>
+          </div>
         </div>
       </div>
     </div>

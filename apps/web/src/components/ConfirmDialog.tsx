@@ -24,9 +24,10 @@ export default function ConfirmDialog({
   accentColor?: string;
 }) {
   return (
-    <OverlayModal tone="slate" onClose={onClose}>
+    <OverlayModal onClose={onClose}>
       <ModalPanel
         title={title}
+        description="Confirma esta accion antes de aplicarla al workspace."
         onClose={onClose}
         size="sm"
         footer={
@@ -41,12 +42,12 @@ export default function ConfirmDialog({
               disabled={isConfirming}
               className="sm:min-w-[9rem]"
             >
-              {isConfirming ? 'Procesando…' : confirmLabel}
+              {isConfirming ? 'Procesando...' : confirmLabel}
             </Button>
           </div>
         }
       >
-        <p className="text-sm leading-6 text-slate-500 dark:text-slate-400">{description}</p>
+        <p className="text-sm leading-6 text-[var(--text-secondary)]">{description}</p>
       </ModalPanel>
     </OverlayModal>
   );

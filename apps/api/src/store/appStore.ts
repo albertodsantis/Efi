@@ -1,4 +1,9 @@
 import { randomUUID } from 'crypto';
+import {
+  createDefaultMediaKitProfile,
+  createEmptySocialProfiles,
+  getPartnerLookupKey,
+} from '@shared';
 import type {
   AppState,
   Contact,
@@ -8,6 +13,8 @@ import type {
   CreateTemplateRequest,
   DashboardSummaryResponse,
   DeleteEntityResponse,
+  MediaKitMetric,
+  MediaKitOffer,
   Partner,
   SettingsResponse,
   Task,
@@ -18,6 +25,8 @@ import type {
   UpdateSettingsRequest,
   UpdateTaskRequest,
 } from '@shared';
+
+const SOCIAL_PROFILE_KEYS = ['instagram', 'tiktok', 'x', 'threads', 'youtube'] as const;
 
 const initialState: AppState = {
   tasks: [
@@ -72,9 +81,16 @@ const initialState: AppState = {
     },
   ],
   profile: {
-    name: 'Alex Creator',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80',
-    handle: '@alexcreator',
+    name: 'Maggie Dayz',
+    avatar: '/IMG_3522.JPG',
+    handle: '@maggiedayz',
+    socialProfiles: {
+      ...createEmptySocialProfiles(),
+      instagram: '@maggiedayz',
+      tiktok: '@maggiedayz',
+      x: '@maggiedayz',
+    },
+    mediaKit: createDefaultMediaKitProfile(),
     goals: [
       'Llegar a 1M en TikTok',
       'Cerrar 5 contratos a largo plazo',
@@ -82,7 +98,7 @@ const initialState: AppState = {
     ],
     notificationsEnabled: false,
   },
-  accentColor: '#8b5cf6',
+  accentColor: '#C96F5B',
   theme: 'light',
   templates: [
     {
@@ -110,6 +126,14 @@ function normalizeRequiredText(value: string | undefined, label: string) {
 
 function normalizeOptionalText(value: string | undefined) {
   return value?.trim() || undefined;
+}
+
+function normalizeText(value: string | undefined) {
+  return value?.trim() || '';
+}
+
+function normalizePartnerName(value: string | undefined, label: string) {
+  return normalizeRequiredText(value, label).replace(/\s+/g, ' ');
 }
 
 function normalizeDate(value: string | undefined) {
@@ -148,6 +172,66 @@ function normalizeAccentColor(color: string | undefined) {
   return normalized;
 }
 
+function normalizeMetricList(items: MediaKitMetric[] | undefined, fallback: MediaKitMetric[]) {
+  return (items ?? fallback).map((item, index) => ({
+    label: normalizeText(item?.label) || fallback[index]?.label || '',
+    value: normalizeText(item?.value),
+  }));
+}
+
+function normalizeOfferList(items: MediaKitOffer[] | undefined, fallback: MediaKitOffer[]) {
+  return (items ?? fallback).map((item, index) => ({
+    title: normalizeText(item?.title) || fallback[index]?.title || '',
+    price: normalizeText(item?.price),
+    description: normalizeText(item?.description),
+  }));
+}
+
+function normalizeStringList(values: string[] | undefined, fallback: string[]) {
+  return (values ?? fallback).map((value, index) => normalizeText(value) || fallback[index] || '');
+}
+
+function findPartnerByName(partners: Partner[], name: string) {
+  const lookupKey = getPartnerLookupKey(name);
+
+  if (!lookupKey) {
+    return undefined;
+  }
+
+  return partners.find((partner) => getPartnerLookupKey(partner.name) === lookupKey);
+}
+
+function normalizeMediaKitProfile(
+  mediaKit: Partial<AppState['profile']['mediaKit']> | undefined,
+  currentMediaKit = createDefaultMediaKitProfile(),
+) {
+  const fallback = currentMediaKit;
+
+  return {
+    periodLabel: normalizeText(mediaKit?.periodLabel) || fallback.periodLabel,
+    updatedLabel: normalizeText(mediaKit?.updatedLabel) || fallback.updatedLabel,
+    tagline: normalizeText(mediaKit?.tagline),
+    contactEmail: normalizeText(mediaKit?.contactEmail),
+    featuredImage: normalizeText(mediaKit?.featuredImage),
+    aboutTitle: normalizeText(mediaKit?.aboutTitle) || fallback.aboutTitle,
+    aboutParagraphs: normalizeStringList(mediaKit?.aboutParagraphs, fallback.aboutParagraphs),
+    topicTags: normalizeStringList(mediaKit?.topicTags, fallback.topicTags),
+    insightStats: normalizeMetricList(mediaKit?.insightStats, fallback.insightStats),
+    audienceGender: normalizeMetricList(mediaKit?.audienceGender, fallback.audienceGender),
+    ageDistribution: normalizeMetricList(mediaKit?.ageDistribution, fallback.ageDistribution),
+    topCountries: normalizeMetricList(mediaKit?.topCountries, fallback.topCountries),
+    portfolioImages: normalizeStringList(mediaKit?.portfolioImages, fallback.portfolioImages),
+    servicesTitle: normalizeText(mediaKit?.servicesTitle) || fallback.servicesTitle,
+    servicesDescription: normalizeText(mediaKit?.servicesDescription),
+    offerings: normalizeOfferList(mediaKit?.offerings, fallback.offerings),
+    brandsTitle: normalizeText(mediaKit?.brandsTitle) || fallback.brandsTitle,
+    trustedBrands: normalizeStringList(mediaKit?.trustedBrands, fallback.trustedBrands),
+    closingTitle: normalizeText(mediaKit?.closingTitle) || fallback.closingTitle,
+    closingDescription: normalizeText(mediaKit?.closingDescription),
+    footerNote: normalizeText(mediaKit?.footerNote) || fallback.footerNote,
+  };
+}
+
 class InMemoryAppStore {
   private state: AppState = clone(initialState);
 
@@ -160,7 +244,7 @@ class InMemoryAppStore {
 
     return {
       activePipelineValue: this.state.tasks
-        .filter((task) => task.status !== 'Cobro')
+        .filter((task) => task.status !== 'Cobrado')
         .reduce((sum, task) => sum + task.value, 0),
       tasksToday: this.state.tasks.filter((task) => task.dueDate === today).length,
       upcomingTasks: clone(
@@ -253,9 +337,16 @@ class InMemoryAppStore {
   }
 
   createPartner(input: CreatePartnerRequest): Partner {
+    const normalizedName = normalizePartnerName(input.name, 'El nombre de la marca');
+    const existingPartner = findPartnerByName(this.state.partners, normalizedName);
+
+    if (existingPartner) {
+      return clone(existingPartner);
+    }
+
     const partner: Partner = {
       id: randomUUID(),
-      name: normalizeRequiredText(input.name, 'El nombre de la marca'),
+      name: normalizedName,
       status: normalizeRequiredText(input.status, 'El estado') as Partner['status'],
       logo: normalizeOptionalText(input.logo),
       contacts: [],
@@ -274,7 +365,12 @@ class InMemoryAppStore {
     const normalizedUpdates: UpdatePartnerRequest = {};
 
     if (updates.name !== undefined) {
-      normalizedUpdates.name = normalizeRequiredText(updates.name, 'El nombre de la marca');
+      normalizedUpdates.name = normalizePartnerName(updates.name, 'El nombre de la marca');
+      const existingPartner = findPartnerByName(this.state.partners, normalizedUpdates.name);
+
+      if (existingPartner && existingPartner.id !== partnerId) {
+        throw new Error('Ya existe una marca con ese nombre.');
+      }
     }
 
     if (updates.status !== undefined) {
@@ -359,7 +455,15 @@ class InMemoryAppStore {
   }
 
   updateProfile(updates: UpdateProfileRequest) {
-    const normalizedUpdates: UpdateProfileRequest = {};
+    const normalizedUpdates: Partial<AppState['profile']> = {};
+    const currentSocialProfiles = {
+      ...createEmptySocialProfiles(),
+      ...(this.state.profile.socialProfiles ?? {}),
+    };
+    const currentMediaKit = normalizeMediaKitProfile(
+      this.state.profile.mediaKit,
+      createDefaultMediaKitProfile(),
+    );
 
     if (updates.name !== undefined) {
       normalizedUpdates.name = normalizeRequiredText(updates.name, 'El nombre');
@@ -372,6 +476,40 @@ class InMemoryAppStore {
     if (updates.handle !== undefined) {
       const handle = normalizeRequiredText(updates.handle, 'El handle');
       normalizedUpdates.handle = handle.startsWith('@') ? handle : `@${handle}`;
+    }
+
+    if (updates.socialProfiles !== undefined) {
+      normalizedUpdates.socialProfiles = SOCIAL_PROFILE_KEYS.reduce(
+        (accumulator, key) => {
+          if (updates.socialProfiles?.[key] !== undefined) {
+            accumulator[key] = normalizeOptionalText(updates.socialProfiles[key]) || '';
+          } else {
+            accumulator[key] = currentSocialProfiles[key];
+          }
+
+          return accumulator;
+        },
+        { ...currentSocialProfiles },
+      );
+    }
+
+    if (updates.mediaKit !== undefined) {
+      normalizedUpdates.mediaKit = normalizeMediaKitProfile(
+        {
+          ...currentMediaKit,
+          ...updates.mediaKit,
+          aboutParagraphs: updates.mediaKit.aboutParagraphs ?? currentMediaKit.aboutParagraphs,
+          topicTags: updates.mediaKit.topicTags ?? currentMediaKit.topicTags,
+          insightStats: updates.mediaKit.insightStats ?? currentMediaKit.insightStats,
+          audienceGender: updates.mediaKit.audienceGender ?? currentMediaKit.audienceGender,
+          ageDistribution: updates.mediaKit.ageDistribution ?? currentMediaKit.ageDistribution,
+          topCountries: updates.mediaKit.topCountries ?? currentMediaKit.topCountries,
+          portfolioImages: updates.mediaKit.portfolioImages ?? currentMediaKit.portfolioImages,
+          offerings: updates.mediaKit.offerings ?? currentMediaKit.offerings,
+          trustedBrands: updates.mediaKit.trustedBrands ?? currentMediaKit.trustedBrands,
+        },
+        currentMediaKit,
+      );
     }
 
     if (updates.goals !== undefined) {
@@ -390,6 +528,8 @@ class InMemoryAppStore {
 
     this.state.profile = {
       ...this.state.profile,
+      socialProfiles: currentSocialProfiles,
+      mediaKit: currentMediaKit,
       ...normalizedUpdates,
     };
 

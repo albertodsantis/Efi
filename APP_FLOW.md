@@ -95,10 +95,11 @@ Provide immediate visibility into the creator's operational state.
 
 ### 6.2 Core Elements
 
-- greeting and avatar
+- compact section header
 - total active pipeline value
 - tasks due today
 - upcoming deliverables list
+- operational blocks that fit inside the scrollable workspace
 
 ### 6.3 Transitions
 
@@ -112,6 +113,13 @@ Provide immediate visibility into the creator's operational state.
 - `Kanban`
 - `List`
 - `Calendar`
+
+### 7.1.1 Workspace Controls
+
+- `Kanban / Lista / Mes` segmented control
+- `Nueva tarea`
+- `Actualizar Calendar`
+- compact top bar instead of a large summary panel
 
 ### 7.2 Create Task Flow
 
@@ -138,6 +146,10 @@ Pipeline
   -> Toggle Kanban/List/Calendar
   -> The app preserves filters and local view state during the session
 ```
+
+Pipeline status flow:
+
+`Pendiente` -> `En Progreso` -> `En Revisión` -> `Completada` -> `Cobrado`
 
 ### 7.4 Day Detail Flow
 

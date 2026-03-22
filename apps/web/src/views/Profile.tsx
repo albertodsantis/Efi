@@ -1,121 +1,490 @@
-import React, { useState } from 'react';
-import { Download, Edit2, Sparkles, Target, UserCircle2 } from 'lucide-react';
-import { useAppContext } from '../context/AppContext';
-import OverlayModal from '../components/OverlayModal';
+import React, { useEffect, useState } from 'react';
 import {
-  Button,
-  MetricCard,
-  ModalPanel,
-  ScreenHeader,
-  SurfaceCard,
-} from '../components/ui';
-import { getAccessibleAccentForeground } from '../lib/accent';
+  BarChart3,
+  BriefcaseBusiness,
+  Download,
+  Image,
+  Save,
+  Sparkles,
+  Target,
+  Users,
+} from 'lucide-react';
+import type { MediaKitMetric, MediaKitOffer, SocialProfiles, UserProfile } from '@shared';
+import { useAppContext } from '../context/AppContext';
+import { Button, SurfaceCard } from '../components/ui';
 
 const fieldClass =
-  'w-full rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-medium text-slate-900 transition-all focus:bg-white focus:outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-900/50 dark:text-white dark:focus:bg-slate-800';
+  'w-full rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-card-strong)] px-4 py-3.5 text-sm font-medium text-[var(--text-primary)] transition-all placeholder:text-[var(--text-secondary)]/70 focus:outline-none focus:ring-2';
+
+const textareaClass = `${fieldClass} min-h-[116px] resize-y leading-6`;
+
+const socialProfileFields: Array<{
+  key: keyof SocialProfiles;
+  label: string;
+  placeholder: string;
+}> = [
+  { key: 'instagram', label: 'Instagram', placeholder: '@tuinstagram' },
+  { key: 'tiktok', label: 'TikTok', placeholder: '@tutiktok' },
+  { key: 'x', label: 'X', placeholder: '@tuusuario' },
+  { key: 'threads', label: 'Threads', placeholder: '@tuperfil' },
+  { key: 'youtube', label: 'YouTube', placeholder: 'youtube.com/@tucanal' },
+];
+
+const labelClass =
+  'mb-2 block text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/80 uppercase';
+
+type MetricKey = 'insightStats' | 'audienceGender' | 'ageDistribution' | 'topCountries';
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function buildSocialHref(platform: keyof SocialProfiles, value: string) {
+  const normalized = value.trim();
+  if (!normalized) {
+    return '';
+  }
+
+  if (/^https?:\/\//i.test(normalized)) {
+    return normalized;
+  }
+
+  const cleanHandle = normalized.replace(/^@/, '');
+  const baseByPlatform: Record<keyof SocialProfiles, string> = {
+    instagram: 'https://instagram.com/',
+    tiktok: 'https://www.tiktok.com/@',
+    x: 'https://x.com/',
+    threads: 'https://www.threads.net/@',
+    youtube: 'https://youtube.com/@',
+  };
+
+  return `${baseByPlatform[platform]}${cleanHandle}`;
+}
+
+function getFilledCount(values: string[]) {
+  return values.filter((value) => value.trim()).length;
+}
+
+function getFilledMetricCount(values: MediaKitMetric[]) {
+  return values.filter((item) => item.label.trim() || item.value.trim()).length;
+}
+
+function getFilledOfferCount(values: MediaKitOffer[]) {
+  return values.filter(
+    (item) => item.title.trim() || item.price.trim() || item.description.trim(),
+  ).length;
+}
+
+function SectionHeader({
+  icon: Icon,
+  eyebrow,
+  title,
+  description,
+  accentColor,
+}: {
+  icon: React.ComponentType<{ size?: number; strokeWidth?: number }>;
+  eyebrow: string;
+  title: string;
+  description?: string;
+  accentColor: string;
+}) {
+  return (
+    <div className="flex items-start gap-3">
+      <div
+        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[0.95rem]"
+        style={{ backgroundColor: `${accentColor}14`, color: accentColor }}
+      >
+        <Icon size={19} strokeWidth={2.4} />
+      </div>
+      <div>
+        <p className="text-[11px] font-bold tracking-[0.18em] text-[var(--text-secondary)]/80 uppercase">
+          {eyebrow}
+        </p>
+        <h2 className="mt-1 text-xl font-bold text-[var(--text-primary)]">{title}</h2>
+        {description ? (
+          <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
+            {description}
+          </p>
+        ) : null}
+      </div>
+    </div>
+  );
+}
 
 export default function Profile() {
-  const { profile, accentColor, updateProfile, tasks, partners } = useAppContext();
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const { profile, accentColor, updateProfile } = useAppContext();
+  const [profileForm, setProfileForm] = useState<UserProfile>(profile);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
-  const [profileForm, setProfileForm] = useState({
-    name: profile.name,
-    handle: profile.handle,
-    avatar: profile.avatar,
-  });
-  const openTasks = tasks.filter((task) => task.status !== 'Cobro');
-  const activePartners = partners.filter((partner) => partner.status === 'Activo').length;
-  const openPipelineValue = openTasks.reduce((sum, task) => sum + task.value, 0);
-  const accentForeground = getAccessibleAccentForeground(accentColor);
 
-  const openProfileEditor = () => {
-    setProfileForm({
-      name: profile.name,
-      handle: profile.handle,
-      avatar: profile.avatar,
-    });
-    setIsEditingProfile(true);
+  useEffect(() => {
+    setProfileForm(profile);
+  }, [profile]);
+
+  const mediaKit = profileForm.mediaKit;
+  const configuredPortfolio = getFilledCount(mediaKit.portfolioImages);
+  const configuredBrands = getFilledCount(mediaKit.trustedBrands);
+  const configuredStats =
+    getFilledMetricCount(mediaKit.insightStats) +
+    getFilledMetricCount(mediaKit.audienceGender) +
+    getFilledMetricCount(mediaKit.ageDistribution) +
+    getFilledMetricCount(mediaKit.topCountries);
+  const configuredOffers = getFilledOfferCount(mediaKit.offerings);
+
+  const setProfileField = <K extends keyof UserProfile>(key: K, value: UserProfile[K]) => {
+    setProfileForm((current) => ({
+      ...current,
+      [key]: value,
+    }));
   };
 
-  const handleGoalChange = (index: number, value: string) => {
-    const newGoals = [...profile.goals] as [string, string, string];
-    newGoals[index] = value;
-    void updateProfile({ goals: newGoals });
+  const setSocialField = (key: keyof SocialProfiles, value: string) => {
+    setProfileForm((current) => ({
+      ...current,
+      socialProfiles: {
+        ...current.socialProfiles,
+        [key]: value,
+      },
+    }));
   };
 
-  const handleSaveProfile = async (event: React.FormEvent) => {
-    event.preventDefault();
+  const setMediaKitField = <K extends keyof UserProfile['mediaKit']>(
+    key: K,
+    value: UserProfile['mediaKit'][K],
+  ) => {
+    setProfileForm((current) => ({
+      ...current,
+      mediaKit: {
+        ...current.mediaKit,
+        [key]: value,
+      },
+    }));
+  };
+
+  const setMetricField = (
+    key: MetricKey,
+    index: number,
+    field: keyof MediaKitMetric,
+    value: string,
+  ) => {
+    setProfileForm((current) => ({
+      ...current,
+      mediaKit: {
+        ...current.mediaKit,
+        [key]: current.mediaKit[key].map((item, itemIndex) =>
+          itemIndex === index ? { ...item, [field]: value } : item,
+        ),
+      },
+    }));
+  };
+
+  const setOfferingField = (index: number, field: keyof MediaKitOffer, value: string) => {
+    setProfileForm((current) => ({
+      ...current,
+      mediaKit: {
+        ...current.mediaKit,
+        offerings: current.mediaKit.offerings.map((item, itemIndex) =>
+          itemIndex === index ? { ...item, [field]: value } : item,
+        ),
+      },
+    }));
+  };
+
+  const setStringListField = (
+    key: 'aboutParagraphs' | 'topicTags' | 'portfolioImages' | 'trustedBrands',
+    index: number,
+    value: string,
+  ) => {
+    setProfileForm((current) => ({
+      ...current,
+      mediaKit: {
+        ...current.mediaKit,
+        [key]: current.mediaKit[key].map((item, itemIndex) => (itemIndex === index ? value : item)),
+      },
+    }));
+  };
+
+  const setGoalField = (index: number, value: string) => {
+    setProfileForm((current) => ({
+      ...current,
+      goals: current.goals.map((item, itemIndex) => (itemIndex === index ? value : item)) as [
+        string,
+        string,
+        string,
+      ],
+    }));
+  };
+
+  const handleSaveProfile = async () => {
     setIsSavingProfile(true);
 
     try {
       await updateProfile(profileForm);
-      setIsEditingProfile(false);
     } finally {
       setIsSavingProfile(false);
     }
   };
 
   const handleGenerateMediaKit = () => {
-    const generatedAt = new Date().toLocaleDateString('es-ES', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
+    const socialLinks = socialProfileFields
+      .map((field) => {
+        const value = profileForm.socialProfiles[field.key].trim();
+        const href = buildSocialHref(field.key, value);
+        if (!value || !href) {
+          return '';
+        }
+
+        return `<a class="pill-link" href="${escapeHtml(href)}" target="_blank" rel="noreferrer">${escapeHtml(
+          value,
+        )}</a>`;
+      })
+      .filter(Boolean)
+      .join('');
+
+    const insightCards = mediaKit.insightStats
+      .filter((item) => item.label.trim() || item.value.trim())
+      .map(
+        (item) => `
+          <article class="metric-card">
+            <div class="metric-value">${escapeHtml(item.value || '-')}</div>
+            <div class="metric-label">${escapeHtml(item.label || 'Dato')}</div>
+          </article>
+        `,
+      )
+      .join('');
+
+    const audienceCards = mediaKit.audienceGender
+      .filter((item) => item.label.trim() || item.value.trim())
+      .map(
+        (item) => `
+          <article class="list-card">
+            <div class="list-label">${escapeHtml(item.label || 'Segmento')}</div>
+            <div class="list-value">${escapeHtml(item.value || '-')}</div>
+          </article>
+        `,
+      )
+      .join('');
+
+    const ageCards = mediaKit.ageDistribution
+      .filter((item) => item.label.trim() || item.value.trim())
+      .map(
+        (item) => `
+          <article class="list-card">
+            <div class="list-label">${escapeHtml(item.label || 'Rango')}</div>
+            <div class="list-value">${escapeHtml(item.value || '-')}</div>
+          </article>
+        `,
+      )
+      .join('');
+
+    const countryRows = mediaKit.topCountries
+      .filter((item) => item.label.trim() || item.value.trim())
+      .map(
+        (item) => `
+          <div class="country-row">
+            <span>${escapeHtml(item.label || 'Pais')}</span>
+            <strong>${escapeHtml(item.value || '-')}</strong>
+          </div>
+        `,
+      )
+      .join('');
+
+    const aboutParagraphs = mediaKit.aboutParagraphs
+      .filter((paragraph) => paragraph.trim())
+      .map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`)
+      .join('');
+
+    const topicTags = mediaKit.topicTags
+      .filter((tag) => tag.trim())
+      .map((tag) => `<span class="tag">#${escapeHtml(tag.replace(/^#/, ''))}</span>`)
+      .join('');
+
+    const portfolioImages = mediaKit.portfolioImages
+      .filter((image) => image.trim())
+      .map(
+        (image, index) => `
+          <figure class="portfolio-item">
+            <img src="${escapeHtml(image)}" alt="Portfolio ${index + 1}" />
+          </figure>
+        `,
+      )
+      .join('');
+
+    const offerings = mediaKit.offerings
+      .filter((item) => item.title.trim() || item.price.trim() || item.description.trim())
+      .map(
+        (item) => `
+          <article class="offer-card">
+            <div class="offer-price">${escapeHtml(item.price || '-')}</div>
+            <h3>${escapeHtml(item.title || 'Colaboracion')}</h3>
+            <p>${escapeHtml(item.description || '')}</p>
+          </article>
+        `,
+      )
+      .join('');
+
+    const trustedBrands = mediaKit.trustedBrands
+      .filter((brand) => brand.trim())
+      .map((brand) => `<span class="brand-chip">${escapeHtml(brand)}</span>`)
+      .join('');
+    const nameParts = profileForm.name.trim().split(/\s+/).filter(Boolean);
+    const leadingName = nameParts[0] || profileForm.name;
+    const trailingName = nameParts.slice(1).join(' ');
+
     const mediaKitHtml = `
       <html>
         <head>
-          <title>Resumen comercial - ${profile.name}</title>
+          <title>Media kit - ${escapeHtml(profileForm.name)}</title>
           <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; font-size: 13px; color: #1f2937; margin: 0; padding: 40px; background: #f8fafc; -webkit-font-smoothing: antialiased; }
-            .container { max-width: 54rem; margin: 0 auto; background: white; padding: 40px; border-radius: 18px; box-shadow: 0 20px 60px rgba(15, 23, 42, 0.08); }
-            .header { display: flex; align-items: center; gap: 24px; margin-bottom: 32px; }
-            .avatar { width: 120px; height: 120px; border-radius: 18px; object-fit: cover; }
-            h1 { margin: 0; font-size: 38px; font-weight: 800; letter-spacing: -1px; }
-            .handle { color: #475569; font-size: 20px; font-weight: 700; margin-top: 6px; }
-            .meta { margin-top: 12px; display: inline-flex; align-items: center; gap: 10px; padding: 8px 14px; border-radius: 999px; background: ${accentColor}; color: ${accentForeground}; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
-            h2 { font-size: 24px; font-weight: 800; margin-top: 32px; margin-bottom: 18px; }
-            .goals { list-style: none; padding: 0; }
-            .goals li { background: #f8fafc; padding: 16px 18px; border-radius: 12px; margin-bottom: 12px; font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 12px; }
-            .dot { width: 10px; height: 10px; border-radius: 999px; background: ${accentColor}; }
-            .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 32px; }
-            .stat-card { background: #f8fafc; padding: 24px; border-radius: 14px; }
-            .stat-value { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; padding: 0 14px; border-radius: 999px; background: ${accentColor}; color: ${accentForeground}; font-size: 24px; font-weight: 800; }
-            .stat-label { font-size: 14px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; margin-top: 8px; }
-            .summary { margin-top: 24px; color: #475569; font-size: 15px; line-height: 1.7; }
+            :root { --accent: ${accentColor}; --text: #1f2937; --muted: #64748b; --surface: #ffffff; --soft: #f8fafc; --line: rgba(148, 163, 184, 0.22); }
+            * { box-sizing: border-box; }
+            body { margin: 0; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; color: var(--text); background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%); -webkit-font-smoothing: antialiased; }
+            .page { max-width: 1120px; margin: 0 auto; padding: 48px 28px 72px; }
+            .hero, .section { background: rgba(255,255,255,0.92); border: 1px solid var(--line); border-radius: 28px; box-shadow: 0 20px 50px rgba(15, 23, 42, 0.06); }
+            .hero { padding: 40px; }
+            .eyebrow { font-size: 12px; font-weight: 800; letter-spacing: 0.18em; text-transform: uppercase; color: var(--muted); }
+            h1 { margin: 14px 0 0; font-size: 64px; line-height: 0.96; letter-spacing: -0.06em; }
+            .accent { color: var(--accent); }
+            .tagline { margin: 18px 0 0; max-width: 680px; font-size: 18px; line-height: 1.6; color: #334155; }
+            .pill-row { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+            .pill-link { display: inline-flex; align-items: center; min-height: 44px; padding: 0 18px; border-radius: 999px; background: var(--soft); color: var(--text); font-size: 13px; font-weight: 700; text-decoration: none; }
+            .pill-link.primary { background: var(--accent); color: white; }
+            .grid { display: grid; gap: 24px; margin-top: 24px; }
+            .two-col { grid-template-columns: minmax(0, 0.92fr) minmax(0, 1.08fr); }
+            .section { padding: 32px; }
+            .section h2 { margin: 0; font-size: 30px; letter-spacing: -0.04em; }
+            .section-head { display: flex; justify-content: space-between; gap: 16px; align-items: end; margin-bottom: 24px; }
+            .section-copy { margin-top: 10px; color: var(--muted); line-height: 1.7; }
+            .about-layout { display: grid; grid-template-columns: 320px minmax(0, 1fr); gap: 28px; align-items: start; }
+            .about-image { width: 100%; height: 420px; object-fit: cover; border-radius: 24px; }
+            .about-copy p { margin: 0 0 16px; line-height: 1.8; color: #334155; }
+            .tag-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+            .tag { display: inline-flex; align-items: center; min-height: 38px; padding: 0 14px; border-radius: 999px; background: rgba(15, 23, 42, 0.04); font-size: 12px; font-weight: 700; color: #334155; }
+            .metrics-grid, .list-grid, .offer-grid { display: grid; gap: 16px; }
+            .metrics-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+            .list-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .metric-card, .list-card, .offer-card { border-radius: 22px; background: var(--soft); padding: 22px; }
+            .metric-value, .list-value, .offer-price { font-size: 32px; font-weight: 800; letter-spacing: -0.05em; }
+            .metric-label, .list-label { margin-top: 8px; font-size: 12px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); }
+            .country-list { display: grid; gap: 12px; }
+            .country-row { display: flex; justify-content: space-between; gap: 16px; align-items: center; padding: 16px 18px; border-radius: 18px; background: var(--soft); }
+            .country-row span { color: #334155; font-weight: 600; }
+            .portfolio-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
+            .portfolio-item { margin: 0; border-radius: 22px; overflow: hidden; background: var(--soft); min-height: 220px; }
+            .portfolio-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+            .offer-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .offer-card h3 { margin: 16px 0 0; font-size: 20px; letter-spacing: -0.03em; }
+            .offer-card p { margin: 10px 0 0; color: var(--muted); line-height: 1.7; }
+            .brand-row { display: flex; flex-wrap: wrap; gap: 10px; }
+            .brand-chip { display: inline-flex; align-items: center; min-height: 42px; padding: 0 16px; border-radius: 999px; background: var(--soft); font-size: 13px; font-weight: 700; }
+            .footer-section { text-align: center; padding: 36px 32px; }
+            .footer-section a { color: var(--text); font-weight: 700; text-decoration: none; }
+            .footer-note { margin-top: 18px; color: var(--muted); font-size: 13px; }
+            @media (max-width: 900px) { h1 { font-size: 48px; } .two-col, .about-layout, .metrics-grid, .offer-grid, .list-grid, .portfolio-grid { grid-template-columns: 1fr; } .hero, .section { padding: 24px; } }
           </style>
         </head>
         <body>
-          <div class="container">
-            <div class="header">
-              <img src="${profile.avatar}" alt="${profile.name}" class="avatar" />
-              <div>
-                <h1>${profile.name}</h1>
-                <div class="handle">${profile.handle}</div>
-                <div class="meta">Actualizado ${generatedAt}</div>
+          <main class="page">
+            <section class="hero">
+              <div class="eyebrow">${escapeHtml(mediaKit.periodLabel)}</div>
+              <h1>${escapeHtml(leadingName)}${
+      trailingName ? ` <span class="accent">${escapeHtml(trailingName)}</span>` : ''
+    }</h1>
+              <p class="tagline">${escapeHtml(mediaKit.tagline)}</p>
+              <div class="pill-row">
+                ${socialLinks}
+                <a class="pill-link" href="mailto:${escapeHtml(mediaKit.contactEmail)}">${escapeHtml(
+      mediaKit.contactEmail,
+    )}</a>
+                <a class="pill-link primary" href="#" onclick="window.print(); return false;">Descargar PDF</a>
               </div>
+            </section>
+
+            <div class="grid two-col">
+              <section class="section">
+                <div class="about-layout">
+                  <img class="about-image" src="${escapeHtml(
+                    mediaKit.featuredImage || profileForm.avatar,
+                  )}" alt="${escapeHtml(profileForm.name)}" />
+                  <div class="about-copy">
+                    <h2>${escapeHtml(mediaKit.aboutTitle)}</h2>
+                    <div class="section-copy">${aboutParagraphs}</div>
+                    <div class="tag-row">${topicTags}</div>
+                  </div>
+                </div>
+              </section>
+
+              <section class="section">
+                <div class="section-head">
+                  <div>
+                    <h2>Community Insights</h2>
+                    <p class="section-copy">Actualizado: ${escapeHtml(mediaKit.updatedLabel)}</p>
+                  </div>
+                </div>
+                <div class="metrics-grid">${insightCards}</div>
+                <div class="grid">
+                  <div>
+                    <h2 style="font-size:24px;">Audiencia</h2>
+                    <div class="list-grid" style="margin-top:16px;">${audienceCards}</div>
+                  </div>
+                  <div>
+                    <h2 style="font-size:24px;">Rango de Edad</h2>
+                    <div class="list-grid" style="margin-top:16px;">${ageCards}</div>
+                  </div>
+                  <div>
+                    <h2 style="font-size:24px;">Top Countries</h2>
+                    <div class="country-list" style="margin-top:16px;">${countryRows}</div>
+                  </div>
+                </div>
+              </section>
             </div>
-            <div class="summary">
-              Snapshot actual del workspace para compartir foco comercial, ritmo del pipeline y prioridades de marca.
-            </div>
-            <div class="stats">
-              <div class="stat-card">
-                <div class="stat-value">$${openPipelineValue.toLocaleString('es-ES')}</div>
-                <div class="stat-label">Pipeline abierto</div>
+
+            <section class="section" style="margin-top:24px;">
+              <div class="section-head">
+                <div>
+                  <h2>Portfolio</h2>
+                  <p class="section-copy">Seleccion de imagenes y piezas destacadas para mostrar el estilo de trabajo.</p>
+                </div>
               </div>
-              <div class="stat-card">
-                <div class="stat-value">${activePartners}</div>
-                <div class="stat-label">Partners activos</div>
+              <div class="portfolio-grid">${portfolioImages}</div>
+            </section>
+
+            <section class="section" style="margin-top:24px;">
+              <div class="section-head">
+                <div>
+                  <h2>${escapeHtml(mediaKit.servicesTitle)}</h2>
+                  <p class="section-copy">${escapeHtml(mediaKit.servicesDescription)}</p>
+                </div>
               </div>
-              <div class="stat-card">
-                <div class="stat-value">${openTasks.length}</div>
-                <div class="stat-label">Entregas abiertas</div>
+              <div class="offer-grid">${offerings}</div>
+            </section>
+
+            <section class="section" style="margin-top:24px;">
+              <div class="section-head">
+                <div>
+                  <h2>${escapeHtml(mediaKit.brandsTitle)}</h2>
+                </div>
               </div>
-            </div>
-            <h2>Objetivos del año</h2>
-            <ul class="goals">
-              ${profile.goals.map((goal) => `<li><span class="dot"></span>${goal}</li>`).join('')}
-            </ul>
-          </div>
+              <div class="brand-row">${trustedBrands}</div>
+            </section>
+
+            <section class="section footer-section" style="margin-top:24px;">
+              <h2>${escapeHtml(mediaKit.closingTitle)}</h2>
+              <p class="section-copy">${escapeHtml(mediaKit.closingDescription)}</p>
+              <p style="margin-top:18px;">
+                <a href="mailto:${escapeHtml(mediaKit.contactEmail)}">${escapeHtml(
+      mediaKit.contactEmail,
+    )}</a>
+              </p>
+              <p class="footer-note">© 2026 ${escapeHtml(profileForm.name)}. ${escapeHtml(
+      mediaKit.footerNote,
+    )}</p>
+            </section>
+          </main>
           <script>
             window.onload = () => window.print();
           </script>
@@ -130,230 +499,664 @@ export default function Profile() {
 
   return (
     <div className="space-y-5 p-4 pb-6 lg:space-y-6 lg:px-8 lg:pt-4 lg:pb-8">
-      <ScreenHeader
-        mobileOnly
-        eyebrow="Perfil"
-        title="Identidad y materiales"
-        description="Define cómo te presentas, qué objetivos persigues y qué materiales compartes con tus partners."
-        className="px-2"
-      />
+      <SurfaceCard className="relative overflow-hidden p-6 lg:p-7">
+        <div
+          className="pointer-events-none absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(circle at top left, rgba(201, 111, 91, 0.16), transparent 38%), radial-gradient(circle at 85% 10%, rgba(93, 141, 123, 0.12), transparent 34%), linear-gradient(180deg, var(--surface-card), var(--surface-muted))',
+          }}
+        />
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-        <SurfaceCard className="p-6 lg:p-7">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
-            <div className="flex items-center gap-4">
+        <div className="relative">
+          <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+            <div className="flex min-w-0 items-start gap-4">
               <img
-                src={profile.avatar}
-                alt={profile.name}
-                className="h-24 w-24 rounded-[1.2rem] border-4 border-white object-cover shadow-[0_20px_50px_-26px_rgba(15,23,42,0.35)] dark:border-slate-800"
+                src={profileForm.avatar}
+                alt={profileForm.name}
+                className="h-24 w-24 shrink-0 rounded-[1.25rem] border border-white/70 object-cover shadow-[0_22px_42px_-24px_rgba(63,43,34,0.38)]"
               />
               <div className="min-w-0">
-                <p className="text-[11px] font-bold tracking-[0.18em] text-slate-400 dark:text-slate-500 uppercase">
-                  Perfil activo
+                <p className="text-[11px] font-bold tracking-[0.18em] text-[var(--text-secondary)]/80 uppercase">
+                  Perfil y media kit
                 </p>
-                <h1 className="mt-1 text-[2rem] font-extrabold tracking-tight text-slate-900 dark:text-slate-100">
-                  {profile.name}
+                <h1 className="mt-2 text-[1.75rem] font-extrabold tracking-tight text-[var(--text-primary)] lg:text-[2.15rem]">
+                  {profileForm.name}
                 </h1>
-                <p className="mt-1 text-sm font-semibold text-slate-500 dark:text-slate-400">
-                  {profile.handle}
+                <p className="mt-2 text-sm font-semibold text-[var(--text-secondary)]">
+                  {profileForm.handle}
+                </p>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
+                  Estamos mapeando cada bloque del media kit final para que la pagina se pueda
+                  generar directamente desde aqui.
                 </p>
               </div>
             </div>
 
-            <div className="flex gap-2 sm:justify-end">
-              <Button tone="secondary" onClick={openProfileEditor}>
-                <Edit2 size={16} />
-                Editar
+            <div className="flex flex-wrap gap-2 xl:justify-end">
+              <Button
+                tone="secondary"
+                onClick={() => void handleSaveProfile()}
+                disabled={isSavingProfile}
+              >
+                <Save size={16} />
+                {isSavingProfile ? 'Guardando...' : 'Guardar cambios'}
               </Button>
               <Button accentColor={accentColor} onClick={handleGenerateMediaKit}>
                 <Download size={16} />
-                Media kit
+                Generar media kit
               </Button>
             </div>
           </div>
 
-          <div className="mt-6 grid gap-3 sm:grid-cols-3">
-            <MetricCard
-              icon={Target}
-              label="Objetivos"
-              value={`${profile.goals.length}`}
-              helper="Focos estratégicos activos."
-              accentColor={accentColor}
-            />
-            <MetricCard
-              icon={Sparkles}
-              label="Estado"
-              value="Live"
-              helper="Tu perfil está listo para compartir."
-              accentColor={accentColor}
-            />
-            <MetricCard
-              icon={Download}
-              label="Material"
-              value="PDF"
-              helper="Salida rápida para partners y marcas."
-              accentColor={accentColor}
-            />
+          <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div className="rounded-[1rem] border border-[var(--line-soft)] bg-white/72 px-4 py-4">
+              <p className="text-[10px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/80 uppercase">
+                Portada
+              </p>
+              <p className="mt-2 text-2xl font-extrabold tracking-tight text-[var(--text-primary)]">
+                1
+              </p>
+              <p className="mt-1 text-xs leading-5 text-[var(--text-secondary)]">
+                Identidad, tagline, contacto y enlaces.
+              </p>
+            </div>
+            <div className="rounded-[1rem] border border-[var(--line-soft)] bg-white/72 px-4 py-4">
+              <p className="text-[10px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/80 uppercase">
+                Insights
+              </p>
+              <p className="mt-2 text-2xl font-extrabold tracking-tight text-[var(--text-primary)]">
+                {configuredStats}
+              </p>
+              <p className="mt-1 text-xs leading-5 text-[var(--text-secondary)]">
+                Metricas y distribuciones con contenido cargado.
+              </p>
+            </div>
+            <div className="rounded-[1rem] border border-[var(--line-soft)] bg-white/72 px-4 py-4">
+              <p className="text-[10px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/80 uppercase">
+                Portfolio
+              </p>
+              <p className="mt-2 text-2xl font-extrabold tracking-tight text-[var(--text-primary)]">
+                {configuredPortfolio}
+              </p>
+              <p className="mt-1 text-xs leading-5 text-[var(--text-secondary)]">
+                Imagenes cargadas para la galeria.
+              </p>
+            </div>
+            <div className="rounded-[1rem] border border-[var(--line-soft)] bg-white/72 px-4 py-4">
+              <p className="text-[10px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/80 uppercase">
+                Marcas y tarifas
+              </p>
+              <p className="mt-2 text-2xl font-extrabold tracking-tight text-[var(--text-primary)]">
+                {configuredBrands + configuredOffers}
+              </p>
+              <p className="mt-1 text-xs leading-5 text-[var(--text-secondary)]">
+                Items cargados entre ofertas y marcas.
+              </p>
+            </div>
+          </div>
+        </div>
+      </SurfaceCard>
+
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        <SurfaceCard className="p-6 lg:p-7">
+          <SectionHeader
+            icon={Target}
+            eyebrow="Portada"
+            title="Identidad y contacto"
+            description="Estos datos alimentan el bloque superior del media kit."
+            accentColor={accentColor}
+          />
+
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className={labelClass}>Nombre</label>
+              <input
+                value={profileForm.name}
+                onChange={(event) => setProfileField('name', event.target.value)}
+                className={fieldClass}
+                style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                placeholder="Nombre artistico o profesional"
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Handle</label>
+              <input
+                value={profileForm.handle}
+                onChange={(event) => setProfileField('handle', event.target.value)}
+                className={fieldClass}
+                style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                placeholder="@tuusuario"
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Avatar</label>
+              <input
+                value={profileForm.avatar}
+                onChange={(event) => setProfileField('avatar', event.target.value)}
+                className={fieldClass}
+                style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                placeholder="https://..."
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Periodo visible</label>
+              <input
+                value={mediaKit.periodLabel}
+                onChange={(event) => setMediaKitField('periodLabel', event.target.value)}
+                className={fieldClass}
+                style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                placeholder="Media Kit - Marzo 2026"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className={labelClass}>Tagline</label>
+              <input
+                value={mediaKit.tagline}
+                onChange={(event) => setMediaKitField('tagline', event.target.value)}
+                className={fieldClass}
+                style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                placeholder="Humor, estilo, verticales o posicionamiento"
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Email de contacto</label>
+              <input
+                value={mediaKit.contactEmail}
+                onChange={(event) => setMediaKitField('contactEmail', event.target.value)}
+                className={fieldClass}
+                style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                placeholder="contacto@..."
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Texto de actualizacion</label>
+              <input
+                value={mediaKit.updatedLabel}
+                onChange={(event) => setMediaKitField('updatedLabel', event.target.value)}
+                className={fieldClass}
+                style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                placeholder="Marzo 2026"
+              />
+            </div>
           </div>
 
-          <SurfaceCard tone="muted" className="mt-5 p-5">
-            <div className="flex items-center gap-3">
-              <div
-                className="flex h-12 w-12 items-center justify-center rounded-xl"
-                style={{ backgroundColor: `${accentColor}14`, color: accentColor }}
-              >
-                <UserCircle2 size={20} />
-              </div>
-              <div>
-                <p className="text-[11px] font-bold tracking-[0.18em] text-slate-400 dark:text-slate-500 uppercase">
-                  Identidad
-                </p>
-                <h2 className="mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">
-                  Resumen de marca personal
-                </h2>
-              </div>
+          <div className="mt-6 border-t border-[var(--line-soft)] pt-5">
+            <p className={labelClass}>Perfiles sociales</p>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {socialProfileFields.map((field) => (
+                <div key={field.key}>
+                  <label className={labelClass}>{field.label}</label>
+                  <input
+                    value={profileForm.socialProfiles[field.key]}
+                    onChange={(event) => setSocialField(field.key, event.target.value)}
+                    className={fieldClass}
+                    style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                    placeholder={field.placeholder}
+                  />
+                </div>
+              ))}
             </div>
-
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-[1rem] border border-slate-200/80 bg-white/90 p-4 dark:border-slate-700/60 dark:bg-slate-900/45">
-                <p className="text-[11px] font-bold tracking-[0.16em] text-slate-400 dark:text-slate-500 uppercase">
-                  Nombre
-                </p>
-                <p className="mt-2 text-sm font-bold text-slate-900 dark:text-slate-100">
-                  {profile.name}
-                </p>
-              </div>
-              <div className="rounded-[1rem] border border-slate-200/80 bg-white/90 p-4 dark:border-slate-700/60 dark:bg-slate-900/45">
-                <p className="text-[11px] font-bold tracking-[0.16em] text-slate-400 dark:text-slate-500 uppercase">
-                  Handle
-                </p>
-                <p className="mt-2 text-sm font-bold text-slate-900 dark:text-slate-100">
-                  {profile.handle}
-                </p>
-              </div>
-            </div>
-          </SurfaceCard>
+          </div>
         </SurfaceCard>
 
         <SurfaceCard className="p-6 lg:p-7">
-          <div className="flex items-center gap-3">
-            <div
-              className="flex h-12 w-12 items-center justify-center rounded-xl"
-              style={{ backgroundColor: `${accentColor}14`, color: accentColor }}
-            >
-              <Target size={20} />
+          <SectionHeader
+            icon={Sparkles}
+            eyebrow="Sobre Ti"
+            title="Historia y tono"
+            description="Equivale al bloque de presentacion, foto principal y tags tematicos."
+            accentColor={accentColor}
+          />
+
+          <div className="mt-6 grid gap-4">
+            <div>
+              <label className={labelClass}>Imagen principal</label>
+              <input
+                value={mediaKit.featuredImage}
+                onChange={(event) => setMediaKitField('featuredImage', event.target.value)}
+                className={fieldClass}
+                style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                placeholder="https://..."
+              />
+            </div>
+            <div className="overflow-hidden rounded-[1.15rem] border border-[var(--line-soft)] bg-[var(--surface-muted)]">
+              <img
+                src={mediaKit.featuredImage || profileForm.avatar}
+                alt={profileForm.name}
+                className="h-64 w-full object-cover"
+              />
             </div>
             <div>
-              <p className="text-[11px] font-bold tracking-[0.18em] text-slate-400 dark:text-slate-500 uppercase">
-                Dirección
-              </p>
-              <h2 className="mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">
-                Objetivos del año
-              </h2>
+              <label className={labelClass}>Titulo de presentacion</label>
+              <input
+                value={mediaKit.aboutTitle}
+                onChange={(event) => setMediaKitField('aboutTitle', event.target.value)}
+                className={fieldClass}
+                style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                placeholder="Hola! Soy..."
+              />
             </div>
-          </div>
-
-          <div className="mt-5 space-y-4">
-            {profile.goals.map((goal, index) => (
-              <div key={index} className="rounded-[1rem] border border-slate-200/80 bg-slate-50/90 p-4 dark:border-slate-700/60 dark:bg-slate-900/45">
-                <div className="flex items-center gap-3">
-                  <div
-                    className="flex h-9 w-9 items-center justify-center rounded-[0.85rem] text-sm font-black"
-                    style={{ backgroundColor: accentColor, color: 'var(--accent-foreground)' }}
-                  >
-                    {index + 1}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[11px] font-bold tracking-[0.16em] text-slate-400 dark:text-slate-500 uppercase">
-                      Objetivo {index + 1}
-                    </p>
-                    <input
-                      type="text"
-                      value={goal}
-                      onChange={(event) => handleGoalChange(index, event.target.value)}
-                      className="mt-2 w-full border-none bg-transparent p-0 text-sm font-bold text-slate-900 focus:outline-none focus:ring-0 dark:text-slate-100"
-                      placeholder="Escribe un objetivo..."
-                    />
-                  </div>
-                </div>
+            {mediaKit.aboutParagraphs.map((paragraph, index) => (
+              <div key={index}>
+                <label className={labelClass}>Parrafo {index + 1}</label>
+                <textarea
+                  value={paragraph}
+                  onChange={(event) =>
+                    setStringListField('aboutParagraphs', index, event.target.value)
+                  }
+                  className={textareaClass}
+                  style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                  placeholder="Describe tu voz, tu universo y como trabajas con marcas."
+                />
               </div>
             ))}
+            <div>
+              <p className={labelClass}>Tags</p>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {mediaKit.topicTags.map((tag, index) => (
+                  <input
+                    key={index}
+                    value={tag}
+                    onChange={(event) => setStringListField('topicTags', index, event.target.value)}
+                    className={fieldClass}
+                    style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                    placeholder={`Tag ${index + 1}`}
+                  />
+                ))}
+              </div>
+            </div>
           </div>
-
-          <SurfaceCard tone="muted" className="mt-5 p-5">
-            <p className="text-[11px] font-bold tracking-[0.18em] text-slate-400 dark:text-slate-500 uppercase">
-              Uso recomendado
-            </p>
-            <p className="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">
-              Mantén estos objetivos cortos, concretos y accionables. Piensa en ellos como el guion
-              que debería guiar tus negociaciones, tu media kit y tus decisiones de pipeline.
-            </p>
-          </SurfaceCard>
         </SurfaceCard>
       </div>
 
-      {isEditingProfile ? (
-        <OverlayModal onClose={() => setIsEditingProfile(false)}>
-          <ModalPanel
-            title="Editar perfil"
-            description="Actualiza tu identidad básica para que toda la app y el material comercial mantengan el mismo tono."
-            onClose={() => setIsEditingProfile(false)}
-            footer={
-              <Button
-                type="submit"
-                form="profile-form"
-                accentColor={accentColor}
-                className="w-full"
-                disabled={isSavingProfile}
-              >
-                {isSavingProfile ? 'Guardando…' : 'Guardar perfil'}
-              </Button>
-            }
+      <SurfaceCard className="p-6 lg:p-7">
+        <SectionHeader
+          icon={BarChart3}
+          eyebrow="Insights"
+          title="Metricas y audiencia"
+          description="Replica las piezas de Community Insights, Audiencia, Rangos de edad y Top Countries."
+          accentColor={accentColor}
+        />
+
+        <div className="mt-6 grid gap-6">
+          <div>
+            <p className={labelClass}>Metricas principales</p>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {mediaKit.insightStats.map((item, index) => (
+                <div
+                  key={index}
+                  className="rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-muted)] p-4"
+                >
+                  <label className={labelClass}>Etiqueta</label>
+                  <input
+                    value={item.label}
+                    onChange={(event) =>
+                      setMetricField('insightStats', index, 'label', event.target.value)
+                    }
+                    className={fieldClass}
+                    style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                    placeholder="Seguidores"
+                  />
+                  <label className={`${labelClass} mt-4`}>Valor</label>
+                  <input
+                    value={item.value}
+                    onChange={(event) =>
+                      setMetricField('insightStats', index, 'value', event.target.value)
+                    }
+                    className={fieldClass}
+                    style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                    placeholder="22K"
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,0.68fr)_minmax(0,1.32fr)]">
+            <div>
+              <p className={labelClass}>Audiencia</p>
+              <div className="grid gap-4">
+                {mediaKit.audienceGender.map((item, index) => (
+                  <div
+                    key={index}
+                    className="rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-muted)] p-4"
+                  >
+                    <label className={labelClass}>Segmento</label>
+                    <input
+                      value={item.label}
+                      onChange={(event) =>
+                        setMetricField('audienceGender', index, 'label', event.target.value)
+                      }
+                      className={fieldClass}
+                      style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                      placeholder="Mujeres"
+                    />
+                    <label className={`${labelClass} mt-4`}>Valor</label>
+                    <input
+                      value={item.value}
+                      onChange={(event) =>
+                        setMetricField('audienceGender', index, 'value', event.target.value)
+                      }
+                      className={fieldClass}
+                      style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                      placeholder="43%"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid gap-6">
+              <div>
+                <p className={labelClass}>Rangos de edad</p>
+                <div className="grid gap-4 md:grid-cols-2">
+                  {mediaKit.ageDistribution.map((item, index) => (
+                    <div
+                      key={index}
+                      className="rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-muted)] p-4"
+                    >
+                      <label className={labelClass}>Rango</label>
+                      <input
+                        value={item.label}
+                        onChange={(event) =>
+                          setMetricField('ageDistribution', index, 'label', event.target.value)
+                        }
+                        className={fieldClass}
+                        style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                        placeholder="25-34"
+                      />
+                      <label className={`${labelClass} mt-4`}>Valor</label>
+                      <input
+                        value={item.value}
+                        onChange={(event) =>
+                          setMetricField('ageDistribution', index, 'value', event.target.value)
+                        }
+                        className={fieldClass}
+                        style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                        placeholder="41%"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className={labelClass}>Top countries</p>
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {mediaKit.topCountries.map((item, index) => (
+                    <div
+                      key={index}
+                      className="rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-muted)] p-4"
+                    >
+                      <label className={labelClass}>Pais</label>
+                      <input
+                        value={item.label}
+                        onChange={(event) =>
+                          setMetricField('topCountries', index, 'label', event.target.value)
+                        }
+                        className={fieldClass}
+                        style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                        placeholder="Venezuela"
+                      />
+                      <label className={`${labelClass} mt-4`}>Valor</label>
+                      <input
+                        value={item.value}
+                        onChange={(event) =>
+                          setMetricField('topCountries', index, 'value', event.target.value)
+                        }
+                        className={fieldClass}
+                        style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                        placeholder="43%"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </SurfaceCard>
+
+      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)]">
+        <SurfaceCard className="p-6 lg:p-7">
+          <SectionHeader
+            icon={Image}
+            eyebrow="Portfolio"
+            title="Galeria y marcas"
+            description="Llena la galeria visual y el bloque de marcas que confian en ti."
+            accentColor={accentColor}
+          />
+
+          <div className="mt-6 grid gap-6">
+            <div>
+              <p className={labelClass}>Imagenes del portfolio</p>
+              <div className="grid gap-4">
+                {mediaKit.portfolioImages.map((image, index) => (
+                  <div key={index}>
+                    <label className={labelClass}>Imagen {index + 1}</label>
+                    <input
+                      value={image}
+                      onChange={(event) =>
+                        setStringListField('portfolioImages', index, event.target.value)
+                      }
+                      className={fieldClass}
+                      style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                      placeholder={`https://.../${index + 1}.jpg`}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {mediaKit.portfolioImages.map((image, index) => (
+                <div
+                  key={index}
+                  className="overflow-hidden rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-muted)]"
+                >
+                  {image.trim() ? (
+                    <img
+                      src={image}
+                      alt={`Portfolio ${index + 1}`}
+                      className="h-36 w-full object-cover"
+                    />
+                  ) : (
+                    <div className="flex h-36 items-center justify-center text-sm font-medium text-[var(--text-secondary)]">
+                      Slot {index + 1}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="border-t border-[var(--line-soft)] pt-5">
+              <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_180px]">
+                <div>
+                  <label className={labelClass}>Titulo del bloque de marcas</label>
+                  <input
+                    value={mediaKit.brandsTitle}
+                    onChange={(event) => setMediaKitField('brandsTitle', event.target.value)}
+                    className={fieldClass}
+                    style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                    placeholder="Marcas que confian en mi"
+                  />
+                </div>
+                <div className="rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-muted)] px-4 py-4">
+                  <p className="text-[10px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/80 uppercase">
+                    Marcas cargadas
+                  </p>
+                  <p className="mt-2 text-2xl font-extrabold tracking-tight text-[var(--text-primary)]">
+                    {configuredBrands}
+                  </p>
+                </div>
+              </div>
+
+              <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                {mediaKit.trustedBrands.map((brand, index) => (
+                  <div key={index}>
+                    <label className={labelClass}>Marca {index + 1}</label>
+                    <input
+                      value={brand}
+                      onChange={(event) =>
+                        setStringListField('trustedBrands', index, event.target.value)
+                      }
+                      className={fieldClass}
+                      style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                      placeholder="Nombre de la marca"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </SurfaceCard>
+
+        <SurfaceCard className="p-6 lg:p-7">
+          <SectionHeader
+            icon={BriefcaseBusiness}
+            eyebrow="Colaboraciones"
+            title="Ofertas y cierre"
+            description="Cubre la grilla de tarifas y el bloque final de contacto del media kit."
+            accentColor={accentColor}
+          />
+
+          <div className="mt-6 grid gap-6">
+            <div>
+              <label className={labelClass}>Titulo del bloque de tarifas</label>
+              <input
+                value={mediaKit.servicesTitle}
+                onChange={(event) => setMediaKitField('servicesTitle', event.target.value)}
+                className={fieldClass}
+                style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                placeholder="Trabajemos juntos!"
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Descripcion del bloque de tarifas</label>
+              <textarea
+                value={mediaKit.servicesDescription}
+                onChange={(event) => setMediaKitField('servicesDescription', event.target.value)}
+                className={textareaClass}
+                style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                placeholder="Describe como colaborar contigo y que esperar de la propuesta."
+              />
+            </div>
+
+            <div className="grid gap-4">
+              {mediaKit.offerings.map((offering, index) => (
+                <div
+                  key={index}
+                  className="rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-muted)] p-4"
+                >
+                  <p className={labelClass}>Oferta {index + 1}</p>
+                  <div className="grid gap-4">
+                    <input
+                      value={offering.title}
+                      onChange={(event) => setOfferingField(index, 'title', event.target.value)}
+                      className={fieldClass}
+                      style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                      placeholder="Nombre del formato"
+                    />
+                    <input
+                      value={offering.price}
+                      onChange={(event) => setOfferingField(index, 'price', event.target.value)}
+                      className={fieldClass}
+                      style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                      placeholder="$550"
+                    />
+                    <textarea
+                      value={offering.description}
+                      onChange={(event) =>
+                        setOfferingField(index, 'description', event.target.value)
+                      }
+                      className={textareaClass}
+                      style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                      placeholder="Describe el entregable o la colaboracion."
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="border-t border-[var(--line-soft)] pt-5">
+              <div className="grid gap-4">
+                <div>
+                  <label className={labelClass}>Titulo del cierre</label>
+                  <input
+                    value={mediaKit.closingTitle}
+                    onChange={(event) => setMediaKitField('closingTitle', event.target.value)}
+                    className={fieldClass}
+                    style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                    placeholder="Let's create magic."
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Descripcion del cierre</label>
+                  <textarea
+                    value={mediaKit.closingDescription}
+                    onChange={(event) =>
+                      setMediaKitField('closingDescription', event.target.value)
+                    }
+                    className={textareaClass}
+                    style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                    placeholder="Cierre final y llamada a la accion."
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Texto del footer</label>
+                  <input
+                    value={mediaKit.footerNote}
+                    onChange={(event) => setMediaKitField('footerNote', event.target.value)}
+                    className={fieldClass}
+                    style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                    placeholder="Todos los derechos reservados."
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </SurfaceCard>
+      </div>
+
+      <SurfaceCard className="p-6 lg:p-7">
+        <SectionHeader
+          icon={Users}
+          eyebrow="Interno"
+          title="Objetivos del ano"
+          description="Estos objetivos siguen siendo utiles para la app, aunque no salgan en el media kit final."
+          accentColor={accentColor}
+        />
+
+        <div className="mt-6 grid gap-4 md:grid-cols-3">
+          {profileForm.goals.map((goal, index) => (
+            <div
+              key={index}
+              className="rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-muted)] p-4"
+            >
+              <label className={labelClass}>Objetivo {index + 1}</label>
+              <input
+                value={goal}
+                onChange={(event) => setGoalField(index, event.target.value)}
+                className={fieldClass}
+                style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                placeholder="Escribe un objetivo..."
+              />
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-6 flex justify-end">
+          <Button
+            accentColor={accentColor}
+            onClick={() => void handleSaveProfile()}
+            disabled={isSavingProfile}
           >
-            <form id="profile-form" onSubmit={handleSaveProfile} className="space-y-4">
-              <div>
-                <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-slate-500 dark:text-slate-400 uppercase">
-                  Nombre
-                </label>
-                <input
-                  required
-                  value={profileForm.name}
-                  onChange={(event) => setProfileForm({ ...profileForm, name: event.target.value })}
-                  className={fieldClass}
-                  style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                  placeholder="Nombre"
-                />
-              </div>
-              <div>
-                <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-slate-500 dark:text-slate-400 uppercase">
-                  Handle
-                </label>
-                <input
-                  required
-                  value={profileForm.handle}
-                  onChange={(event) => setProfileForm({ ...profileForm, handle: event.target.value })}
-                  className={fieldClass}
-                  style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                  placeholder="@tuusuario"
-                />
-              </div>
-              <div>
-                <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-slate-500 dark:text-slate-400 uppercase">
-                  URL del avatar
-                </label>
-                <input
-                  required
-                  value={profileForm.avatar}
-                  onChange={(event) => setProfileForm({ ...profileForm, avatar: event.target.value })}
-                  className={fieldClass}
-                  style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                  placeholder="https://..."
-                />
-              </div>
-            </form>
-          </ModalPanel>
-        </OverlayModal>
-      ) : null}
+            <Save size={16} />
+            {isSavingProfile ? 'Guardando...' : 'Guardar perfil'}
+          </Button>
+        </div>
+      </SurfaceCard>
     </div>
   );
 }

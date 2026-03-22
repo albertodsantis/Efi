@@ -3,10 +3,10 @@ import {
   Bell,
   Calendar as CalendarIcon,
   ChevronDown,
-  RotateCcw,
   MessageSquare,
   Moon,
   Plus,
+  RotateCcw,
   Shield,
   Sun,
   Trash2,
@@ -17,7 +17,6 @@ import {
   Button,
   EmptyState,
   ModalPanel,
-  ScreenHeader,
   SettingRow,
   StatusBadge,
   SurfaceCard,
@@ -26,8 +25,13 @@ import {
 } from '../components/ui';
 
 const ACCENT_OPTIONS = [
+  { name: 'Arcilla', value: '#C96F5B' },
+  { name: 'Terracota', value: '#C65D4B' },
+  { name: 'Cobre', value: '#B86A45' },
+  { name: 'Eucalipto', value: '#5D8D7B' },
+  { name: 'Salvia', value: '#6F8A74' },
   { name: 'Violeta', value: '#8B5CF6' },
-  { name: 'Índigo', value: '#6366F1' },
+  { name: 'Indigo', value: '#6366F1' },
   { name: 'Azul', value: '#2563EB' },
   { name: 'Cielo', value: '#0EA5E9' },
   { name: 'Turquesa', value: '#06B6D4' },
@@ -35,9 +39,9 @@ const ACCENT_OPTIONS = [
   { name: 'Esmeralda', value: '#10B981' },
   { name: 'Verde', value: '#22C55E' },
   { name: 'Lima', value: '#84CC16' },
-  { name: 'Limón', value: '#A3E635' },
+  { name: 'Limon', value: '#A3E635' },
   { name: 'Amarillo', value: '#EAB308' },
-  { name: 'Ámbar', value: '#F59E0B' },
+  { name: 'Ambar', value: '#F59E0B' },
   { name: 'Naranja', value: '#FC4C00' },
   { name: 'Coral', value: '#FB7185' },
   { name: 'Rojo', value: '#EF4444' },
@@ -49,7 +53,7 @@ const ACCENT_OPTIONS = [
 ] as const;
 
 const fieldClass =
-  'w-full rounded-[1rem] border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm font-medium text-slate-900 transition-all focus:bg-white focus:outline-none focus:ring-2 dark:border-slate-700 dark:bg-slate-900/50 dark:text-white dark:focus:bg-slate-800';
+  'w-full rounded-[1rem] border border-[color:var(--line-soft)] bg-[var(--surface-card-strong)] px-4 py-3.5 text-sm font-medium text-[var(--text-primary)] transition-all placeholder:text-[var(--text-secondary)]/70 focus:bg-white/96 focus:outline-none focus:ring-2 dark:focus:bg-[var(--surface-card)]';
 
 export default function Settings() {
   const {
@@ -74,6 +78,8 @@ export default function Settings() {
       name: 'Actual',
       value: accentColor,
     };
+  const templatesLabel =
+    templates.length === 1 ? '1 plantilla activa' : `${templates.length} plantillas activas`;
 
   useEffect(() => {
     fetch('/api/auth/status')
@@ -140,33 +146,9 @@ export default function Settings() {
 
   return (
     <div className="space-y-5 p-4 pb-6 lg:space-y-6 lg:px-8 lg:pt-4 lg:pb-8">
-      <ScreenHeader
-        mobileOnly
-        eyebrow="Ajustes"
-        title="Configuración del workspace"
-        description="Controla el tema, las integraciones y las plantillas que sostienen tu operación diaria."
-        className="px-2"
-      />
-
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(0,0.95fr)]">
-        <SurfaceCard className="p-6">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <p className="text-[11px] font-bold tracking-[0.18em] text-slate-400 dark:text-slate-500 uppercase">
-                Apariencia
-              </p>
-              <h2 className="mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">
-                Tema visual
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                Ajusta el color de acento y el modo visual para mantener una experiencia coherente en todas las pantallas.
-              </p>
-            </div>
-
-            <StatusBadge tone="accent">{activeAccent.name}</StatusBadge>
-          </div>
-
-          <div className="mt-5 rounded-[1.1rem] border border-slate-200/80 bg-slate-50/90 p-4 dark:border-slate-700/60 dark:bg-slate-900/45">
+      <SurfaceCard className="overflow-hidden p-0">
+        <div className="grid xl:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)]">
+          <div className="p-6 lg:p-7">
             <button
               type="button"
               onClick={() => setIsAccentPaletteOpen((current) => !current)}
@@ -179,15 +161,17 @@ export default function Settings() {
                   style={{ backgroundColor: activeAccent.value }}
                 />
                 <div>
-                  <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                    {activeAccent.name}
+                  <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                    Paleta de acento
                   </p>
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{activeAccent.value}</p>
+                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    Actual: {activeAccent.name}.
+                  </p>
                 </div>
               </div>
 
               <div className="text-right">
-                <p className="text-[11px] font-bold tracking-[0.16em] text-slate-400 dark:text-slate-500 uppercase">
+                <p className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
                   {isAccentPaletteOpen ? 'Ocultar' : 'Cambiar'}
                 </p>
                 <ChevronDown
@@ -229,93 +213,128 @@ export default function Settings() {
                 })}
               </div>
             ) : null}
+
+            <div className="mt-5 border-t border-slate-200/70 pt-3 dark:border-slate-700/60">
+              <SettingRow
+                icon={theme === 'dark' ? Moon : Sun}
+                title="Modo oscuro"
+                description="Cambia la iluminacion general del workspace."
+                onClick={() => void setTheme(theme === 'dark' ? 'light' : 'dark')}
+                trailing={<ToggleSwitch checked={theme === 'dark'} accentColor={accentColor} />}
+                className="px-0 py-3"
+              />
+            </div>
           </div>
 
-          <div className="mt-4 rounded-[1.1rem] border border-slate-200/80 bg-white/92 p-2 dark:border-slate-700/60 dark:bg-slate-900/45">
-            <SettingRow
-              icon={theme === 'dark' ? Moon : Sun}
-              title="Modo oscuro"
-              description="Cambia la iluminación general del workspace."
-              onClick={() => void setTheme(theme === 'dark' ? 'light' : 'dark')}
-              trailing={<ToggleSwitch checked={theme === 'dark'} accentColor={accentColor} />}
-            />
+          <div className="border-t border-slate-200/70 p-6 xl:border-t-0 xl:border-l lg:p-7 dark:border-slate-700/60">
+            <div className="space-y-1">
+              <SettingRow
+                icon={Bell}
+                title="Notificaciones push"
+                description="Recibe avisos cuando haya entregas cercanas o cambios relevantes."
+                onClick={() => void toggleNotifications()}
+                trailing={<ToggleSwitch checked={profile.notificationsEnabled} accentColor={accentColor} />}
+                className="px-0 py-3"
+              />
+              <SettingRow
+                icon={CalendarIcon}
+                title="Sincronizacion con Calendar"
+                description={
+                  gcalConnected
+                    ? 'Google Calendar esta conectado.'
+                    : 'Conecta tu calendario para sincronizar fechas.'
+                }
+                onClick={() => void connectGoogleCalendar()}
+                trailing={<ToggleSwitch checked={gcalConnected} accentColor={accentColor} />}
+                className="px-0 py-3"
+              />
+              <SettingRow
+                icon={Shield}
+                title="Privacidad y seguridad"
+                description="Controla sesiones, permisos y preferencias sensibles."
+                trailing={<ToggleSwitch checked={false} accentColor={accentColor} disabled />}
+                className="cursor-not-allowed px-0 py-3"
+              />
+            </div>
           </div>
-        </SurfaceCard>
+        </div>
+      </SurfaceCard>
 
-        <SurfaceCard className="p-6">
+      <div className="grid gap-4 xl:grid-cols-[minmax(260px,0.72fr)_minmax(0,1.28fr)]">
+        <SurfaceCard tone="muted" className="p-6 lg:p-7">
           <div>
-            <p className="text-[11px] font-bold tracking-[0.18em] text-slate-400 dark:text-slate-500 uppercase">
-              Cuenta y sincronización
-            </p>
-            <h2 className="mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">
-              Ajustes generales
-            </h2>
-            <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-              Activa notificaciones, controla integraciones y mantén la configuración del workspace bajo control.
-            </p>
-          </div>
-
-          <div className="mt-5 space-y-2 rounded-[1.1rem] border border-slate-200/80 bg-white/92 p-2 dark:border-slate-700/60 dark:bg-slate-900/45">
-            <SettingRow
-              icon={Bell}
-              title="Notificaciones push"
-              description="Recibe avisos cuando haya entregas cercanas o cambios relevantes."
-              onClick={() => void toggleNotifications()}
-              trailing={<ToggleSwitch checked={profile.notificationsEnabled} accentColor={accentColor} />}
-            />
-            <SettingRow
-              icon={CalendarIcon}
-              title="Sincronización con Calendar"
-              description={gcalConnected ? 'Google Calendar está conectado.' : 'Conecta tu calendario para sincronizar fechas.'}
-              onClick={() => void connectGoogleCalendar()}
-              trailing={<ToggleSwitch checked={gcalConnected} accentColor={accentColor} />}
-            />
-            <SettingRow
-              icon={Shield}
-              title="Privacidad y seguridad"
-              description="Próximamente podrás controlar sesiones, permisos y preferencias sensibles."
-              trailing={<StatusBadge tone="neutral">Próximamente</StatusBadge>}
-            />
-          </div>
-        </SurfaceCard>
-      </div>
-
-      <SurfaceCard className="p-6">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-[11px] font-bold tracking-[0.18em] text-slate-400 dark:text-slate-500 uppercase">
+            <p className="text-[11px] font-bold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500">
               Plantillas
             </p>
-            <h2 className="mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">
+            <h2 className="mt-2 text-[1.55rem] font-bold tracking-tight text-slate-800 dark:text-slate-100">
               Mensajes reutilizables
             </h2>
             <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-              Guarda bases de outreach y personalízalas luego desde el directorio.
+              Guarda bases de outreach y personalizalas luego desde el directorio.
             </p>
           </div>
 
-          <Button accentColor={accentColor} onClick={() => setIsAddingTemplate(true)}>
-            <Plus size={16} />
-            Nueva plantilla
-          </Button>
-        </div>
+          <div className="mt-5 space-y-4">
+            <div className="rounded-[1rem] border border-white/70 bg-white/88 p-4 shadow-[0_16px_34px_-28px_rgba(59,43,34,0.2)] dark:border-slate-700/60 dark:bg-slate-950/28">
+              <p className="text-[10px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
+                Biblioteca
+              </p>
+              <p className="mt-2 text-base font-bold text-slate-800 dark:text-slate-100">
+                {templatesLabel}
+              </p>
+              <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                Usa plantillas cortas, faciles de adaptar y con variables claras para acelerar las
+                conversaciones sin sonar rigida.
+              </p>
+            </div>
 
-        <div className="mt-5 space-y-3">
+            <Button
+              accentColor={accentColor}
+              onClick={() => setIsAddingTemplate(true)}
+              className="w-full justify-center"
+            >
+              <Plus size={16} />
+              Nueva plantilla
+            </Button>
+
+            <div className="rounded-[1rem] border border-slate-200/70 bg-[var(--surface-card-strong)] p-4 dark:border-slate-700/60">
+              <p className="text-[10px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
+                Variables
+              </p>
+              <p className="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                {'{{brandName}}, {{contactName}}, {{creatorName}}, {{deliverable}}'}
+              </p>
+            </div>
+          </div>
+        </SurfaceCard>
+
+        <SurfaceCard className="overflow-hidden p-0">
           {templates.length > 0 ? (
-            templates.map((template) => (
-              <div key={template.id}>
-                <SurfaceCard tone="inset" className="p-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex min-w-0 items-start gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-slate-50 text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+            <div className="divide-y divide-slate-200/70 dark:divide-slate-700/60">
+              {templates.map((template) => (
+                <div
+                  key={template.id}
+                  className="flex items-start justify-between gap-4 px-5 py-5 transition-colors hover:bg-[var(--surface-muted)]/55 sm:px-6"
+                >
+                  <div className="flex min-w-0 items-start gap-4">
+                    <div
+                      className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-[0.95rem]"
+                      style={{ backgroundColor: `${accentColor}12`, color: accentColor }}
+                    >
                       <MessageSquare size={18} />
                     </div>
                     <div className="min-w-0">
-                      <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                        {template.name}
-                      </h3>
-                      <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                          {template.name}
+                        </h3>
+                        <StatusBadge tone="neutral">Base</StatusBadge>
+                      </div>
+                      <p className="mt-2 text-xs font-semibold tracking-[0.08em] text-slate-400 uppercase dark:text-slate-500">
                         {template.subject}
+                      </p>
+                      <p className="mt-2 line-clamp-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+                        {template.body}
                       </p>
                     </div>
                   </div>
@@ -323,46 +342,51 @@ export default function Settings() {
                   <button
                     type="button"
                     onClick={() => void deleteTemplate(template.id)}
-                    className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-50 text-rose-500 transition-colors hover:bg-rose-100 dark:bg-rose-500/15 dark:text-rose-300 dark:hover:bg-rose-500/20"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-rose-50 text-rose-500 transition-colors hover:bg-rose-100 dark:bg-rose-500/15 dark:text-rose-300 dark:hover:bg-rose-500/20"
                     aria-label={`Eliminar plantilla ${template.name}`}
                   >
                     <Trash2 size={16} />
                   </button>
                 </div>
-                </SurfaceCard>
-              </div>
-            ))
+              ))}
+            </div>
           ) : (
-            <EmptyState
-              icon={MessageSquare}
-              title="Aún no hay plantillas"
-              description="Crea una plantilla para acelerar respuestas, follow-ups y primeros contactos."
-              action={
-                <Button accentColor={accentColor} onClick={() => setIsAddingTemplate(true)}>
-                  <Plus size={16} />
-                  Crear plantilla
-                </Button>
-              }
-            />
+            <div className="p-6 sm:p-8">
+              <EmptyState
+                icon={MessageSquare}
+                title="Aun no hay plantillas"
+                description="Crea una plantilla para acelerar respuestas, follow-ups y primeros contactos."
+                action={
+                  <Button accentColor={accentColor} onClick={() => setIsAddingTemplate(true)}>
+                    <Plus size={16} />
+                    Crear plantilla
+                  </Button>
+                }
+              />
+            </div>
           )}
-        </div>
-      </SurfaceCard>
+        </SurfaceCard>
+      </div>
 
-      <SurfaceCard tone="muted" className="p-4">
+      <SurfaceCard tone="muted" className="p-4 sm:p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-[11px] font-bold tracking-[0.18em] text-slate-400 dark:text-slate-500 uppercase">
+            <p className="text-[11px] font-bold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500">
               Utilidades
             </p>
-            <h2 className="mt-1 text-lg font-bold text-slate-900 dark:text-slate-100">
+            <h2 className="mt-2 text-lg font-bold text-slate-800 dark:text-slate-100">
               Reiniciar onboarding
             </h2>
             <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-              Vuelve a mostrar el tour guiado la próxima vez que cargue la app.
+              Vuelve a mostrar el tour guiado la proxima vez que cargue la app.
             </p>
           </div>
 
-          <Button tone="secondary" className="justify-center sm:min-w-[12rem]" onClick={handleResetTour}>
+          <Button
+            tone="secondary"
+            className="justify-center sm:min-w-[12rem]"
+            onClick={handleResetTour}
+          >
             <RotateCcw size={16} />
             Reiniciar tour
           </Button>
@@ -373,7 +397,7 @@ export default function Settings() {
         <OverlayModal onClose={() => setIsAddingTemplate(false)}>
           <ModalPanel
             title="Nueva plantilla"
-            description="Guarda un mensaje base para reutilizarlo después con variables dinámicas."
+            description="Guarda un mensaje base para reutilizarlo despues con variables dinamicas."
             onClose={() => setIsAddingTemplate(false)}
             footer={
               <Button type="submit" form="template-form" accentColor={accentColor} className="w-full">
@@ -383,7 +407,7 @@ export default function Settings() {
           >
             <form id="template-form" onSubmit={handleAddTemplate} className="space-y-4">
               <div>
-                <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-slate-500 dark:text-slate-400 uppercase">
+                <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-slate-500 uppercase dark:text-slate-400">
                   Nombre de la plantilla
                 </label>
                 <input
@@ -397,7 +421,7 @@ export default function Settings() {
               </div>
 
               <div>
-                <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-slate-500 dark:text-slate-400 uppercase">
+                <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-slate-500 uppercase dark:text-slate-400">
                   Asunto
                 </label>
                 <input
@@ -411,7 +435,7 @@ export default function Settings() {
               </div>
 
               <div>
-                <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-slate-500 dark:text-slate-400 uppercase">
+                <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-slate-500 uppercase dark:text-slate-400">
                   Cuerpo del mensaje
                 </label>
                 <textarea

@@ -2,8 +2,10 @@ import type {
   AppState,
   AppTheme,
   Contact,
+  MediaKitProfile,
   Partner,
   PartnerStatus,
+  SocialProfiles,
   Task,
   TaskStatus,
   Template,
@@ -49,7 +51,10 @@ export interface CreateContactRequest {
 
 export type UpdateContactRequest = Partial<CreateContactRequest>;
 
-export type UpdateProfileRequest = Partial<UserProfile>;
+export interface UpdateProfileRequest extends Partial<Omit<UserProfile, 'socialProfiles' | 'mediaKit'>> {
+  socialProfiles?: Partial<SocialProfiles>;
+  mediaKit?: Partial<MediaKitProfile>;
+}
 
 export interface UpdateSettingsRequest {
   accentColor?: string;

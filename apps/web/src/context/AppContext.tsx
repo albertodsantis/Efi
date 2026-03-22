@@ -1,4 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import {
+  createDefaultMediaKitProfile,
+  createEmptySocialProfiles,
+  getPartnerLookupKey,
+} from '@shared';
 import type {
   AppState,
   AppTheme,
@@ -6,6 +11,7 @@ import type {
   Partner,
   Task,
   Template,
+  UpdateProfileRequest,
   UserProfile,
 } from '@shared';
 import { appApi } from '../lib/api';
@@ -24,11 +30,13 @@ interface AppContextType extends AppState {
   updateTask: (taskId: string, updates: Partial<Task>) => Promise<Task>;
   deleteTask: (taskId: string) => Promise<void>;
   addPartner: (partner: Omit<Partner, 'id'>) => Promise<string>;
+  findPartnerByName: (name: string) => Partner | undefined;
+  ensurePartnerByName: (name: string, status?: Partner['status']) => Promise<Partner>;
   updatePartner: (partnerId: string, updates: Partial<Partner>) => Promise<void>;
   addContact: (partnerId: string, contact: Omit<Contact, 'id'>) => Promise<void>;
   updateContact: (partnerId: string, contactId: string, updates: Partial<Contact>) => Promise<void>;
   deleteContact: (partnerId: string, contactId: string) => Promise<void>;
-  updateProfile: (profile: Partial<UserProfile>) => Promise<void>;
+  updateProfile: (profile: UpdateProfileRequest) => Promise<void>;
   setAccentColor: (color: string) => Promise<void>;
   setTheme: (theme: AppTheme) => Promise<void>;
   addTemplate: (template: Omit<Template, 'id'>) => Promise<void>;
@@ -42,13 +50,46 @@ const emptyState: AppState = {
     name: '',
     avatar: '',
     handle: '',
+    socialProfiles: createEmptySocialProfiles(),
+    mediaKit: createDefaultMediaKitProfile(),
     goals: ['', '', ''],
     notificationsEnabled: false,
   },
-  accentColor: '#8b5cf6',
+  accentColor: '#C96F5B',
   theme: 'light',
   templates: [],
 };
+
+function normalizeProfile(profile: UserProfile): UserProfile {
+  return {
+    ...profile,
+    socialProfiles: {
+      ...createEmptySocialProfiles(),
+      ...(profile.socialProfiles ?? {}),
+    },
+    mediaKit: {
+      ...createDefaultMediaKitProfile(),
+      ...(profile.mediaKit ?? {}),
+    },
+  };
+}
+
+function normalizeAppState(appState: AppState): AppState {
+  return {
+    ...appState,
+    profile: normalizeProfile(appState.profile),
+  };
+}
+
+function upsertPartnerInState(partners: Partner[], incomingPartner: Partner) {
+  const existingIndex = partners.findIndex((partner) => partner.id === incomingPartner.id);
+
+  if (existingIndex === -1) {
+    return [...partners, incomingPartner];
+  }
+
+  return partners.map((partner) => (partner.id === incomingPartner.id ? incomingPartner : partner));
+}
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
@@ -64,7 +105,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     try {
       const { appState } = await appApi.getBootstrap();
-      setState(appState);
+      setState(normalizeAppState(appState));
     } catch (error) {
       const message = error instanceof Error ? error.message : 'No se pudo cargar la app.';
       setBootstrapError(message);
@@ -130,6 +171,46 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const message = error instanceof Error ? error.message : 'Ha ocurrido un error inesperado.';
     setActionError(message);
     throw error;
+  };
+
+  const findPartnerByName = (name: string) => {
+    const lookupKey = getPartnerLookupKey(name);
+
+    if (!lookupKey) {
+      return undefined;
+    }
+
+    return state.partners.find((partner) => getPartnerLookupKey(partner.name) === lookupKey);
+  };
+
+  const createOrReusePartner = async ({
+    name,
+    status,
+    logo,
+  }: {
+    name: string;
+    status: Partner['status'];
+    logo?: string;
+  }) => {
+    const normalizedName = name.trim().replace(/\s+/g, ' ');
+    const existingPartner = findPartnerByName(normalizedName);
+
+    if (existingPartner) {
+      return existingPartner;
+    }
+
+    const createdPartner = await appApi.createPartner({
+      name: normalizedName,
+      status,
+      logo,
+    });
+
+    setState((current) => ({
+      ...current,
+      partners: upsertPartnerInState(current.partners, createdPartner),
+    }));
+
+    return createdPartner;
   };
 
   const addTask = async (task: Omit<Task, 'id'>) => {
@@ -210,18 +291,23 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setActionError(null);
 
     try {
-      const createdPartner = await appApi.createPartner({
+      const resolvedPartner = await createOrReusePartner({
         name: partner.name,
         status: partner.status,
         logo: partner.logo,
       });
 
-      setState((current) => ({
-        ...current,
-        partners: [...current.partners, createdPartner],
-      }));
+      return resolvedPartner.id;
+    } catch (error) {
+      return trackError(error);
+    }
+  };
 
-      return createdPartner.id;
+  const ensurePartnerByName = async (name: string, status: Partner['status'] = 'Prospecto') => {
+    setActionError(null);
+
+    try {
+      return await createOrReusePartner({ name, status });
     } catch (error) {
       return trackError(error);
     }
@@ -314,14 +400,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const updateProfile = async (profile: Partial<UserProfile>) => {
+  const updateProfile = async (profile: UpdateProfileRequest) => {
     setActionError(null);
 
     try {
       const updatedProfile = await appApi.updateProfile(profile);
       setState((current) => ({
         ...current,
-        profile: updatedProfile,
+        profile: normalizeProfile(updatedProfile),
       }));
     } catch (error) {
       trackError(error);
@@ -401,6 +487,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         updateTask,
         deleteTask,
         addPartner,
+        findPartnerByName,
+        ensurePartnerByName,
         updatePartner,
         addContact,
         updateContact,

@@ -1,65 +1,96 @@
 import React, { useMemo } from 'react';
 import {
-  AlertTriangle,
   CalendarClock,
   CalendarDays,
+  CalendarRange,
   CheckCircle2,
   CircleDollarSign,
-  TrendingUp,
   Users,
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
-import { EmptyState, MetricCard, StatusBadge, SurfaceCard } from '../components/ui';
-import type { TaskStatus } from '@shared/domain';
+import { EmptyState, StatusBadge, SurfaceCard } from '../components/ui';
+import type { Task, TaskStatus } from '@shared/domain';
 import { formatLocalDateISO, parseLocalDate, startOfLocalDay } from '../lib/date';
 
 const PIPELINE_STATUSES: TaskStatus[] = [
   'Pendiente',
   'En Progreso',
-  'En Revisión',
+  'En Revisi\u00f3n',
   'Completada',
-  'Cobro',
+  'Cobrado',
 ];
 
 const statusToneMap: Record<TaskStatus, 'warning' | 'info' | 'accent' | 'success' | 'neutral'> = {
   Pendiente: 'warning',
   'En Progreso': 'info',
-  'En Revisión': 'accent',
+  'En Revisi\u00f3n': 'accent',
   Completada: 'success',
-  Cobro: 'neutral',
+  Cobrado: 'neutral',
+};
+
+const formatCurrency = (value: number) => `$${value.toLocaleString('es-ES')}`;
+
+const formatTaskDate = (task: Task) =>
+  parseLocalDate(task.dueDate).toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+
+type OverviewItem = {
+  icon: React.ComponentType<{
+    size?: number;
+    strokeWidth?: number;
+    className?: string;
+    style?: React.CSSProperties;
+  }>;
+  label: string;
+  value: string;
+  helper: string;
+  emphasis?: 'accent' | 'success';
 };
 
 export default function Dashboard() {
-  const { profile, tasks, partners, accentColor } = useAppContext();
+  const { tasks, partners, accentColor } = useAppContext();
   const today = new Date();
   const todayIso = formatLocalDateISO(today);
   const startOfToday = startOfLocalDay(today);
+  const tomorrow = new Date(startOfToday);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const tomorrowIso = formatLocalDateISO(tomorrow);
   const weekEnd = new Date(startOfToday);
   weekEnd.setDate(weekEnd.getDate() + 6);
 
   const summary = useMemo(() => {
-    const activePipelineTasks = tasks.filter((task) => task.status !== 'Cobro');
+    const activePipelineTasks = tasks.filter((task) => task.status !== 'Cobrado');
     const activePipelineValue = activePipelineTasks.reduce((sum, task) => sum + task.value, 0);
+    const closedPipelineValue = tasks
+      .filter((task) => task.status === 'Cobrado')
+      .reduce((sum, task) => sum + task.value, 0);
     const tasksToday = tasks.filter((task) => task.dueDate === todayIso).length;
+    const tasksTomorrow = tasks.filter((task) => task.dueDate === tomorrowIso).length;
     const tasksThisWeek = tasks.filter((task) => {
       const dueDate = startOfLocalDay(parseLocalDate(task.dueDate));
       return dueDate >= startOfToday && dueDate <= weekEnd;
     }).length;
     const activePartners = partners.filter((partner) => partner.status === 'Activo').length;
+    const totalPartners = partners.length;
+    const totalContacts = partners.reduce((sum, partner) => sum + partner.contacts.length, 0);
     const overdue = tasks.filter(
-      (task) => startOfLocalDay(parseLocalDate(task.dueDate)) < startOfToday && task.status !== 'Cobro',
+      (task) => startOfLocalDay(parseLocalDate(task.dueDate)) < startOfToday && task.status !== 'Cobrado',
     ).length;
-    const syncedTasks = tasks.filter((task) => Boolean(task.gcalEventId)).length;
-
     return {
       activePipelineValue,
+      closedPipelineValue,
       tasksToday,
+      tasksTomorrow,
       tasksThisWeek,
       activePartners,
+      totalPartners,
+      totalContacts,
       overdue,
-      syncedTasks,
     };
-  }, [partners, tasks, startOfToday, todayIso, weekEnd]);
+  }, [partners, tasks, startOfToday, todayIso, tomorrowIso, weekEnd]);
 
   const upcomingTasks = useMemo(
     () =>
@@ -74,6 +105,7 @@ export default function Dashboard() {
       PIPELINE_STATUSES.map((status) => {
         const statusTasks = tasks.filter((task) => task.status === status);
         const value = statusTasks.reduce((sum, task) => sum + task.value, 0);
+
         return {
           status,
           count: statusTasks.length,
@@ -83,183 +115,188 @@ export default function Dashboard() {
     [tasks],
   );
 
-  const greeting = today.getHours() < 12 ? 'Buenos días' : today.getHours() < 20 ? 'Buenas tardes' : 'Buenas noches';
-  const firstName = profile.name.split(' ')[0] || profile.name;
+  const maxBreakdownCount = Math.max(...breakdown.map((item) => item.count), 1);
+  const busiestStage = breakdown.reduce(
+    (current, item) => {
+      if (!current || item.count > current.count) {
+        return item;
+      }
+
+      return current;
+    },
+    null as (typeof breakdown)[number] | null,
+  );
+
+  const overviewItems: OverviewItem[] = [
+    {
+      icon: CircleDollarSign,
+      label: 'Valor abierto',
+      value: formatCurrency(summary.activePipelineValue),
+      helper: 'Pipeline activo',
+      emphasis: 'accent',
+    },
+    {
+      icon: CheckCircle2,
+      label: 'Valor cerrado',
+      value: formatCurrency(summary.closedPipelineValue),
+      helper: 'Ya cobrado',
+      emphasis: 'success',
+    },
+    {
+      icon: CalendarClock,
+      label: 'Hoy',
+      value: String(summary.tasksToday),
+      helper: 'Entregas previstas',
+    },
+    {
+      icon: CalendarDays,
+      label: 'Ma\u00f1ana',
+      value: String(summary.tasksTomorrow),
+      helper: 'Siguiente tanda',
+    },
+    {
+      icon: CalendarRange,
+      label: 'Semana',
+      value: String(summary.tasksThisWeek),
+      helper: 'Pr\u00f3ximos 7 d\u00edas',
+    },
+    {
+      icon: Users,
+      label: 'Partners',
+      value: String(summary.totalPartners),
+      helper: 'Total registrados',
+    },
+    {
+      icon: Users,
+      label: 'Partners activos',
+      value: String(summary.activePartners),
+      helper: 'Relaciones activas',
+    },
+    {
+      icon: Users,
+      label: 'Contactos',
+      value: String(summary.totalContacts),
+      helper: 'Base activa',
+    },
+  ];
 
   return (
-    <div className="space-y-6 p-4 pb-6 lg:px-8 lg:pt-4 lg:pb-8">
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.15fr)_minmax(320px,0.85fr)]">
-        <SurfaceCard className="p-6 lg:p-7">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-slate-500 dark:text-slate-400">{greeting},</p>
-              <h1 className="mt-2 text-[2rem] font-extrabold tracking-tight text-slate-900 dark:text-slate-100 lg:text-[2.4rem]">
-                {firstName}
-              </h1>
-              <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-                Mueve tu semana con foco. Aquí se concentra el valor abierto, lo que vence pronto y
-                el estado real de tus colaboraciones.
+    <div className="space-y-5 p-4 pb-6 animate-in fade-in slide-in-from-bottom-4 duration-500 lg:px-8 lg:pt-4 lg:pb-8">
+      <section className="grid gap-5 xl:grid-cols-[minmax(0,1.18fr)_minmax(320px,0.82fr)]">
+        <SurfaceCard className="relative overflow-hidden p-6 lg:p-8">
+          <div
+            className="pointer-events-none absolute inset-x-0 top-0 h-24"
+            style={{
+              background: `linear-gradient(135deg, ${accentColor}18, ${accentColor}08, transparent 72%)`,
+            }}
+          />
+
+          <div className="relative">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <p className="text-[11px] font-bold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500">
+                Resumen operativo
               </p>
+              <StatusBadge tone={summary.overdue > 0 ? 'warning' : 'success'}>
+                {summary.overdue > 0 ? `${summary.overdue} retrasadas` : 'Todo en orden'}
+              </StatusBadge>
             </div>
 
-            <div className="shrink-0 text-right">
-              <img
-                src={profile.avatar}
-                alt={profile.name}
-                className="ml-auto h-14 w-14 rounded-[1rem] border-4 border-white object-cover shadow-sm dark:border-slate-800 lg:h-16 lg:w-16"
-              />
-              <div className="mt-3 inline-flex items-center gap-2 rounded-[0.85rem] bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-300">
-                <CalendarDays size={14} />
-                {today.toLocaleDateString('es-ES', { day: 'numeric', month: 'short' })}
-              </div>
-            </div>
-          </div>
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {overviewItems.map((item, index) => {
+                const Icon = item.icon;
+                const isAccent = item.emphasis === 'accent';
+                const isSuccess = item.emphasis === 'success';
 
-          <div className="mt-6 grid gap-3 min-[360px]:grid-cols-2 xl:grid-cols-4">
-            <MetricCard
-              icon={CircleDollarSign}
-              label="Pipeline activo"
-              value={`$${summary.activePipelineValue.toLocaleString()}`}
-              helper="Valor abierto pendiente de cobro."
-              accentColor={accentColor}
-            />
-            <MetricCard
-              icon={CheckCircle2}
-              label="Entregas de hoy"
-              value={`${summary.tasksToday}`}
-              helper="Acciones que vencen en esta jornada."
-              accentColor={accentColor}
-            />
-            <MetricCard
-              icon={Users}
-              label="Partners activos"
-              value={`${summary.activePartners}`}
-              helper="Relaciones comerciales actualmente vivas."
-              accentColor={accentColor}
-            />
-            <MetricCard
-              icon={CalendarClock}
-              label="Esta semana"
-              value={`${summary.tasksThisWeek}`}
-              helper="Carga prevista para los próximos 7 días."
-              accentColor={accentColor}
-            />
+                return (
+                  <div
+                    key={item.label}
+                    className="rounded-[1rem] border border-slate-200/70 bg-white/72 px-4 py-4 shadow-[0_10px_24px_-22px_rgba(15,23,42,0.16)] transition-transform duration-200 hover:-translate-y-0.5 dark:border-slate-700/60 dark:bg-slate-900/38"
+                    style={
+                      isAccent
+                        ? {
+                            borderColor: 'var(--accent-border)',
+                            backgroundColor: 'var(--accent-soft)',
+                          }
+                        : isSuccess
+                          ? {
+                              borderColor: 'rgba(16, 185, 129, 0.22)',
+                              backgroundColor: 'rgba(16, 185, 129, 0.07)',
+                            }
+                          : undefined
+                    }
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-bold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500">
+                          {item.label}
+                        </p>
+                        <p className="mt-2 text-[1.4rem] font-extrabold tracking-tight text-slate-800 dark:text-slate-100">
+                          {item.value}
+                        </p>
+                        <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                          {item.helper}
+                        </p>
+                      </div>
+                      <Icon
+                        size={18}
+                        strokeWidth={2.3}
+                        className="mt-1 shrink-0"
+                        style={{
+                          color: isSuccess ? 'rgb(5, 150, 105)' : accentColor,
+                          opacity: index === 0 || isSuccess ? 1 : 0.72,
+                        }}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </SurfaceCard>
 
-        <SurfaceCard tone="muted" className="p-6 lg:p-7">
-          <div className="flex items-center gap-3">
-            <div
-              className="flex h-12 w-12 items-center justify-center rounded-xl"
-              style={{ backgroundColor: `${accentColor}14`, color: accentColor }}
-            >
-              <TrendingUp size={20} strokeWidth={2.4} />
-            </div>
+        <SurfaceCard className="p-6 lg:px-7 lg:py-7">
+          <div className="flex items-center justify-between gap-3">
             <div>
-              <p className="text-[11px] font-bold tracking-[0.18em] text-slate-400 dark:text-slate-500 uppercase">
-                Pulso del día
-              </p>
-              <h2 className="mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">
-                Señales rápidas
-              </h2>
-            </div>
-          </div>
-
-          <div className="mt-6 grid gap-3">
-            <div className="rounded-[1rem] border border-slate-200/80 bg-white/90 px-4 py-4 dark:border-slate-700/60 dark:bg-slate-900/45">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-bold text-slate-900 dark:text-slate-100">Vencimientos críticos</p>
-                  <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
-                    Tareas retrasadas que aún no están cerradas.
-                  </p>
-                </div>
-                <StatusBadge tone={summary.overdue > 0 ? 'danger' : 'success'}>
-                  {summary.overdue > 0 ? `${summary.overdue} pendientes` : 'En orden'}
-                </StatusBadge>
-              </div>
-            </div>
-
-            <div className="rounded-[1rem] border border-slate-200/80 bg-white/90 px-4 py-4 dark:border-slate-700/60 dark:bg-slate-900/45">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-bold text-slate-900 dark:text-slate-100">Sincronización</p>
-                  <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
-                    Tareas conectadas con Google Calendar.
-                  </p>
-                </div>
-                <StatusBadge tone={summary.syncedTasks > 0 ? 'success' : 'neutral'}>
-                  {summary.syncedTasks} enlazadas
-                </StatusBadge>
-              </div>
-            </div>
-
-            <div className="rounded-[1rem] border border-slate-200/80 bg-white/90 px-4 py-4 dark:border-slate-700/60 dark:bg-slate-900/45">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-bold text-slate-900 dark:text-slate-100">Ritmo semanal</p>
-                  <p className="mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400">
-                    Balance entre entregas inmediatas y carga del resto de la semana.
-                  </p>
-                </div>
-                <StatusBadge tone={summary.tasksThisWeek > 5 ? 'warning' : 'info'}>
-                  {summary.tasksThisWeek > 5 ? 'Semana intensa' : 'Semana controlada'}
-                </StatusBadge>
-              </div>
-            </div>
-          </div>
-        </SurfaceCard>
-      </section>
-
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(330px,0.95fr)]">
-        <SurfaceCard className="p-6 lg:p-7">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-[11px] font-bold tracking-[0.18em] text-slate-400 dark:text-slate-500 uppercase">
+              <p className="text-[11px] font-bold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500">
                 Agenda inmediata
               </p>
-              <h2 className="mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">
-                Próximos entregables
-              </h2>
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                Las proximas entregas ordenadas por fecha.
+              </p>
             </div>
-            <StatusBadge tone="info">{upcomingTasks.length} próximos</StatusBadge>
+            <StatusBadge tone="info">{upcomingTasks.length} proximas</StatusBadge>
           </div>
 
           <div className="mt-5 space-y-3">
             {upcomingTasks.length > 0 ? (
-              upcomingTasks.map((task) => {
+              upcomingTasks.map((task, index) => {
                 const partner = partners.find((item) => item.id === task.partnerId);
+
                 return (
                   <div
                     key={task.id}
-                    className="flex items-center gap-4 rounded-[1rem] border border-slate-100 bg-slate-50/70 px-4 py-4 dark:border-slate-700/60 dark:bg-slate-900/45"
+                    className="group rounded-[1rem] border border-slate-200/70 bg-white/78 px-4 py-4 shadow-[0_10px_20px_-24px_rgba(15,23,42,0.22)] transition-all duration-200 hover:-translate-y-0.5 hover:border-slate-300 dark:border-slate-700/60 dark:bg-slate-950/14 dark:hover:border-slate-600"
                   >
-                    <div
-                      className="flex h-11 w-11 items-center justify-center rounded-xl text-sm font-bold"
-                      style={{ backgroundColor: `${accentColor}12`, color: accentColor }}
-                    >
-                      {(partner?.name || task.title).charAt(0)}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="truncate text-sm font-bold text-slate-900 dark:text-slate-100">
-                          {task.title}
-                        </h3>
-                        <StatusBadge tone={statusToneMap[task.status]} className="hidden sm:inline-flex">
-                          {task.status}
-                        </StatusBadge>
+                    <div className="flex items-start gap-3">
+                      <div
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[0.9rem] text-sm font-black"
+                        style={{ backgroundColor: `${accentColor}14`, color: accentColor }}
+                      >
+                        {String(index + 1).padStart(2, '0')}
                       </div>
-                      <p className="mt-1 truncate text-xs text-slate-500 dark:text-slate-400">
-                        {partner?.name || 'Sin marca'} · {parseLocalDate(task.dueDate).toLocaleDateString('es-ES', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </p>
-                    </div>
-                    <div className="shrink-0 text-right">
-                      <p className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                        ${task.value.toLocaleString()}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="truncate text-sm font-bold text-slate-800 dark:text-slate-100">
+                            {task.title}
+                          </h3>
+                          <StatusBadge tone={statusToneMap[task.status]}>{task.status}</StatusBadge>
+                        </div>
+                        <p className="mt-2 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                          {partner?.name || 'Sin marca'} {'\u00b7'} {formatTaskDate(task)}
+                        </p>
+                      </div>
+                      <p className="shrink-0 text-sm font-black text-slate-800 dark:text-slate-100">
+                        {formatCurrency(task.value)}
                       </p>
                     </div>
                   </div>
@@ -268,74 +305,86 @@ export default function Dashboard() {
             ) : (
               <EmptyState
                 icon={CalendarClock}
-                title="No hay entregables próximos"
-                description="Cuando añadas nuevas tareas o fechas, aparecerán aquí para que puedas priorizarlas."
+                title="No hay entregables proximos"
+                description="Cuando anadas nuevas tareas o fechas, apareceran aqui para ayudarte a priorizar."
+                className="py-10"
               />
             )}
           </div>
         </SurfaceCard>
+      </section>
 
-        <SurfaceCard className="p-6 lg:p-7">
-          <div className="flex items-center justify-between gap-4">
+      <section>
+        <SurfaceCard className="p-6 lg:p-8">
+          <div className="flex items-end justify-between gap-4">
             <div>
-              <p className="text-[11px] font-bold tracking-[0.18em] text-slate-400 dark:text-slate-500 uppercase">
+              <p className="text-[11px] font-bold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500">
                 Estado operativo
               </p>
-              <h2 className="mt-1 text-xl font-bold text-slate-900 dark:text-slate-100">
-                Ritmo del pipeline
-              </h2>
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                Distribucion del pipeline y valor en cada fase.
+              </p>
             </div>
             <StatusBadge tone="neutral">{tasks.length} tareas</StatusBadge>
           </div>
 
-          <div className="mt-5 space-y-4">
+          <div className="mt-6 flex flex-col gap-4 rounded-[1.05rem] bg-slate-50/80 px-4 py-4 dark:bg-slate-900/34 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-[1.35rem] font-extrabold tracking-tight text-slate-800 dark:text-slate-100">
+                {formatCurrency(summary.activePipelineValue)}
+              </p>
+              <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                Valor abierto en el pipeline actual
+              </p>
+            </div>
+            <div className="sm:text-right">
+              <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                {busiestStage?.status ?? 'Sin carga'}
+              </p>
+              <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                {busiestStage ? `${busiestStage.count} tareas en la fase mas cargada` : 'No hay tareas activas'}
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6 divide-y divide-slate-200/70 dark:divide-slate-700/60">
             {breakdown.map((item) => {
-              const width = tasks.length > 0 ? Math.max((item.count / tasks.length) * 100, item.count > 0 ? 8 : 0) : 0;
+              const width = item.count > 0 ? Math.max((item.count / maxBreakdownCount) * 100, 16) : 8;
+
               return (
-                <div key={item.status}>
-                  <div className="mb-2 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <StatusBadge tone={statusToneMap[item.status]}>{item.status}</StatusBadge>
-                      <span className="text-sm font-semibold text-slate-500 dark:text-slate-400">
-                        {item.count}
-                      </span>
+                <div
+                  key={item.status}
+                  className="grid gap-3 py-4 first:pt-0 last:pb-0 md:grid-cols-[minmax(0,1fr)_220px]"
+                >
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{item.status}</p>
+                      <StatusBadge tone={statusToneMap[item.status]}>{item.count} tareas</StatusBadge>
                     </div>
-                    <span className="text-sm font-bold text-slate-900 dark:text-slate-100">
-                      ${item.value.toLocaleString()}
-                    </span>
+                    <p className="mt-2 text-xs font-medium text-slate-500 dark:text-slate-400">
+                      {formatCurrency(item.value)} en esta fase
+                    </p>
                   </div>
-                  <div className="h-2.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${width}%`,
-                        backgroundColor: accentColor,
-                        opacity: item.count > 0 ? 0.95 : 0.2,
-                      }}
-                    />
+
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-2.5 flex-1 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800/88">
+                      <div
+                        className="rounded-full transition-all duration-300"
+                        style={{
+                          width: `${width}%`,
+                          backgroundColor: accentColor,
+                          opacity: item.count > 0 ? 0.92 : 0.18,
+                        }}
+                      />
+                    </div>
+                    <p className="w-11 shrink-0 text-right text-sm font-black text-slate-800 dark:text-slate-100">
+                      {item.count}
+                    </p>
                   </div>
                 </div>
               );
             })}
           </div>
-
-          {summary.overdue > 0 ? (
-            <div className="mt-6 rounded-[1rem] border border-rose-200/80 bg-rose-50/90 px-4 py-4 dark:border-rose-500/20 dark:bg-rose-500/10">
-              <div className="flex items-start gap-3">
-                <div className="mt-0.5 text-rose-500">
-                  <AlertTriangle size={18} />
-                </div>
-                <div>
-                  <p className="text-sm font-bold text-rose-700 dark:text-rose-200">
-                    Atención: hay tareas fuera de fecha
-                  </p>
-                  <p className="mt-1 text-xs leading-5 text-rose-600 dark:text-rose-200/85">
-                    Revisa el pipeline para desbloquear {summary.overdue} entrega{summary.overdue === 1 ? '' : 's'} atrasada{summary.overdue === 1 ? '' : 's'}.
-                  </p>
-                </div>
-              </div>
-            </div>
-          ) : null}
         </SurfaceCard>
       </section>
     </div>
