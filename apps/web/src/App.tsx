@@ -463,9 +463,9 @@ const MainLayout = () => {
               )}
             >
               <div
-                className="pointer-events-none absolute left-0 right-0 top-0 h-80 opacity-90 transition-colors duration-700"
+                className="pointer-events-none absolute inset-0 opacity-75 transition-colors duration-700"
                 style={{
-                  background: `linear-gradient(135deg, ${accentColor}14, rgba(114,151,140,0.08), transparent 72%)`,
+                  background: `radial-gradient(circle at top left, ${accentColor}30 0%, ${accentColor}10 35%, transparent 65%)`,
                 }}
               />
 
@@ -505,25 +505,7 @@ const MainLayout = () => {
                     </div>
                   </div>
 
-                  {actionError ? (
-                    <div className={cx(isDesktop ? 'px-8 pt-1' : 'px-4 pt-1')}>
-                      <div className="flex items-start gap-3 rounded-[1rem] border border-rose-200/80 bg-rose-50/90 px-4 py-3">
-                        <div className="flex-1">
-                          <p className="text-[11px] font-bold tracking-[0.16em] text-rose-500 uppercase">
-                            {'Acci\u00f3n no completada'}
-                          </p>
-                          <p className="mt-1 text-sm text-rose-700">{actionError}</p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={dismissActionError}
-                          className="text-xs font-bold tracking-[0.14em] text-rose-500 uppercase"
-                        >
-                          Cerrar
-                        </button>
-                      </div>
-                    </div>
-                  ) : null}
+
 
                   <div className={cx('min-w-0', isDesktop ? 'w-full' : 'px-0')}>
                     {renderActiveView(activeTab)}

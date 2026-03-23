@@ -185,9 +185,10 @@ export default function Dashboard() {
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1.18fr)_minmax(320px,0.82fr)]">
         <SurfaceCard className="relative overflow-hidden p-6 lg:p-8">
           <div
-            className="pointer-events-none absolute inset-x-0 top-0 h-24"
+            className="pointer-events-none absolute inset-0"
             style={{
-              background: `linear-gradient(135deg, ${accentColor}18, ${accentColor}08, transparent 72%)`,
+              background: `radial-gradient(circle at top left, ${accentColor}30 0%, ${accentColor}10 35%, transparent 62%)`,
+              opacity: 0.5,
             }}
           />
 

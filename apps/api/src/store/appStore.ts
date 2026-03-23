@@ -513,13 +513,17 @@ class InMemoryAppStore {
     }
 
     if (updates.goals !== undefined) {
-      if (!Array.isArray(updates.goals) || updates.goals.length !== 3) {
-        throw new Error('Los objetivos deben ser exactamente 3.');
+      if (!Array.isArray(updates.goals)) {
+        throw new Error('Los objetivos deben ser un array.');
       }
 
-      normalizedUpdates.goals = updates.goals.map((goal, index) =>
-        normalizeRequiredText(goal, `El objetivo ${index + 1}`),
-      ) as [string, string, string];
+      if (updates.goals.length === 0 || updates.goals.length > 5) {
+        throw new Error('Debes definir entre 1 y 5 objetivos.');
+      }
+
+      normalizedUpdates.goals = updates.goals
+        .map((goal) => normalizeRequiredText(goal, 'Un objetivo'))
+        .filter((goal) => goal.length > 0);
     }
 
     if (updates.notificationsEnabled !== undefined) {

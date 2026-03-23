@@ -415,7 +415,13 @@ export function ModalPanel({
         widthClass,
       )}
     >
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[linear-gradient(135deg,var(--accent-soft-strong),transparent_72%)] opacity-70" />
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: 'radial-gradient(circle at top left, var(--accent-soft-strong) 0%, rgba(255,255,255,0.2) 38%, transparent 72%)',
+          opacity: 0.55,
+        }}
+      />
       <div className="relative border-b px-5 py-5 [border-color:var(--line-soft)] sm:px-6">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">

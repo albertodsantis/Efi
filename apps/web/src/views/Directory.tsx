@@ -249,10 +249,10 @@ export default function Directory() {
             ].map((item, index) => (
               <div
                 key={item.label}
-                className="inline-flex items-center gap-3 rounded-full border bg-[var(--surface-card)] px-3 py-2 shadow-[var(--shadow-soft)] [border-color:var(--line-soft)]"
+                className="inline-flex items-center gap-3 px-3 py-2"
                 style={
                   index === 0
-                    ? { borderColor: 'var(--accent-border)', backgroundColor: 'var(--accent-soft)' }
+                    ? { color: accentColor }
                     : undefined
                 }
               >

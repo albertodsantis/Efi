@@ -52,7 +52,7 @@ const emptyState: AppState = {
     handle: '',
     socialProfiles: createEmptySocialProfiles(),
     mediaKit: createDefaultMediaKitProfile(),
-    goals: ['', '', ''],
+    goals: [],
     notificationsEnabled: false,
   },
   accentColor: '#C96F5B',

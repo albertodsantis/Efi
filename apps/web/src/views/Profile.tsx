@@ -7,11 +7,13 @@ import {
   Save,
   Sparkles,
   Target,
+  Trash2,
   Users,
+  X,
 } from 'lucide-react';
 import type { MediaKitMetric, MediaKitOffer, SocialProfiles, UserProfile } from '@shared';
 import { useAppContext } from '../context/AppContext';
-import { Button, SurfaceCard } from '../components/ui';
+import { Button, SurfaceCard, ModalPanel } from '../components/ui';
 
 const fieldClass =
   'w-full rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-card-strong)] px-4 py-3.5 text-sm font-medium text-[var(--text-primary)] transition-all placeholder:text-[var(--text-secondary)]/70 focus:outline-none focus:ring-2';
@@ -120,6 +122,7 @@ export default function Profile() {
   const { profile, accentColor, updateProfile } = useAppContext();
   const [profileForm, setProfileForm] = useState<UserProfile>(profile);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isGoalsModalOpen, setIsGoalsModalOpen] = useState(false);
 
   useEffect(() => {
     setProfileForm(profile);
@@ -211,11 +214,21 @@ export default function Profile() {
   const setGoalField = (index: number, value: string) => {
     setProfileForm((current) => ({
       ...current,
-      goals: current.goals.map((item, itemIndex) => (itemIndex === index ? value : item)) as [
-        string,
-        string,
-        string,
-      ],
+      goals: current.goals.map((item, itemIndex) => (itemIndex === index ? value : item)),
+    }));
+  };
+
+  const addGoal = () => {
+    setProfileForm((current) => ({
+      ...current,
+      goals: [...current.goals, ''],
+    }));
+  };
+
+  const deleteGoal = (index: number) => {
+    setProfileForm((current) => ({
+      ...current,
+      goals: current.goals.filter((_, itemIndex) => itemIndex !== index),
     }));
   };
 
@@ -517,35 +530,62 @@ export default function Profile() {
                 className="h-24 w-24 shrink-0 rounded-[1.25rem] border border-white/70 object-cover shadow-[0_22px_42px_-24px_rgba(63,43,34,0.38)]"
               />
               <div className="min-w-0">
-                <p className="text-[11px] font-bold tracking-[0.18em] text-[var(--text-secondary)]/80 uppercase">
-                  Perfil y media kit
-                </p>
                 <h1 className="mt-2 text-[1.75rem] font-extrabold tracking-tight text-[var(--text-primary)] lg:text-[2.15rem]">
                   {profileForm.name}
                 </h1>
                 <p className="mt-2 text-sm font-semibold text-[var(--text-secondary)]">
                   {profileForm.handle}
                 </p>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-[var(--text-secondary)]">
-                  Estamos mapeando cada bloque del media kit final para que la pagina se pueda
-                  generar directamente desde aqui.
-                </p>
               </div>
             </div>
 
-            <div className="flex flex-wrap gap-2 xl:justify-end">
-              <Button
-                tone="secondary"
-                onClick={() => void handleSaveProfile()}
-                disabled={isSavingProfile}
+            <div className="flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={() => setIsGoalsModalOpen(true)}
+                className="w-full rounded-[1.2rem] border-2 border-dashed p-4 transition-all hover:bg-[var(--surface-muted)]/40 [border-color:var(--accent-border)]"
+                style={{ borderColor: `${accentColor}40` }}
               >
-                <Save size={16} />
-                {isSavingProfile ? 'Guardando...' : 'Guardar cambios'}
-              </Button>
-              <Button accentColor={accentColor} onClick={handleGenerateMediaKit}>
-                <Download size={16} />
-                Generar media kit
-              </Button>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="flex h-10 w-10 items-center justify-center rounded-lg"
+                      style={{ backgroundColor: `${accentColor}14`, color: accentColor }}
+                    >
+                      <Target size={18} strokeWidth={2.4} />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-xs font-bold tracking-[0.14em] uppercase text-[var(--text-secondary)]">
+                        Objetivos del año
+                      </p>
+                      <p className="mt-1 text-sm font-bold text-[var(--text-primary)]">
+                        {profileForm.goals.filter((g) => g.trim()).length > 0 ? `${profileForm.goals.filter((g) => g.trim()).length} objetivo${profileForm.goals.filter((g) => g.trim()).length > 1 ? 's' : ''} definido${profileForm.goals.filter((g) => g.trim()).length > 1 ? 's' : ''}` : 'Sin definir'}
+                      </p>
+                    </div>
+                  </div>
+                  <div
+                    className="flex h-8 w-8 items-center justify-center rounded-full text-xs font-black"
+                    style={{ backgroundColor: `${accentColor}14`, color: accentColor }}
+                  >
+                    +
+                  </div>
+                </div>
+              </button>
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  tone="secondary"
+                  onClick={() => void handleSaveProfile()}
+                  disabled={isSavingProfile}
+                >
+                  <Save size={16} />
+                  {isSavingProfile ? 'Guardando...' : 'Guardar cambios'}
+                </Button>
+                <Button accentColor={accentColor} onClick={handleGenerateMediaKit}>
+                  <Download size={16} />
+                  Generar media kit
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -1119,44 +1159,102 @@ export default function Profile() {
         </SurfaceCard>
       </div>
 
-      <SurfaceCard className="p-6 lg:p-7">
-        <SectionHeader
-          icon={Users}
-          eyebrow="Interno"
-          title="Objetivos del ano"
-          description="Estos objetivos siguen siendo utiles para la app, aunque no salgan en el media kit final."
-          accentColor={accentColor}
-        />
-
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
-          {profileForm.goals.map((goal, index) => (
-            <div
-              key={index}
-              className="rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-muted)] p-4"
-            >
-              <label className={labelClass}>Objetivo {index + 1}</label>
-              <input
-                value={goal}
-                onChange={(event) => setGoalField(index, event.target.value)}
-                className={fieldClass}
-                style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                placeholder="Escribe un objetivo..."
-              />
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-6 flex justify-end">
-          <Button
-            accentColor={accentColor}
-            onClick={() => void handleSaveProfile()}
-            disabled={isSavingProfile}
+      {isGoalsModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div
+            className="relative flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-[1.35rem] border bg-[var(--surface-card-strong)] shadow-[var(--shadow-medium)] [border-color:var(--line-soft)] sm:w-[min(680px,92vw)]"
           >
-            <Save size={16} />
-            {isSavingProfile ? 'Guardando...' : 'Guardar perfil'}
-          </Button>
+            <div
+              className="pointer-events-none absolute inset-0"
+              style={{
+                background: `radial-gradient(circle at top left, var(--accent-soft-strong) 0%, rgba(255,255,255,0.2) 38%, transparent 72%)`,
+                opacity: 0.55,
+              }}
+            />
+            <div className="relative border-b px-5 py-5 [border-color:var(--line-soft)] sm:px-6">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <h2 className="text-2xl font-extrabold tracking-tight text-[var(--text-primary)]">
+                    Objetivos del año
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
+                    Define 3 o 4 objetivos clave que guíen tu estrategia de contenido este año.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsGoalsModalOpen(false)}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--surface-muted)] text-[var(--text-secondary)] transition-transform active:scale-95"
+                  aria-label="Cerrar modal"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+            </div>
+            <div className="relative flex-1 overflow-y-auto px-5 py-5 sm:px-6">
+              <div className="grid gap-4">
+                {profileForm.goals.map((goal, index) => (
+                  <div key={index} className="group">
+                    <div className="flex items-end gap-3">
+                      <div className="flex-1">
+                        <label className={labelClass}>Objetivo {index + 1}</label>
+                        <input
+                          value={goal}
+                          onChange={(event) => setGoalField(index, event.target.value)}
+                          className={fieldClass}
+                          style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                          placeholder="Escribe un objetivo..."
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => deleteGoal(index)}
+                        className="mb-2 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-rose-50/80 text-rose-500 transition-all hover:bg-rose-100 active:scale-95"
+                        title="Eliminar objetivo"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="relative border-t px-5 py-4 [border-color:var(--line-soft)] sm:px-6">
+              <div className="flex flex-col gap-3">
+                <Button
+                  tone="secondary"
+                  onClick={addGoal}
+                  disabled={profileForm.goals.length >= 5}
+                  className="w-full"
+                >
+                  Agregar objetivo
+                </Button>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setIsGoalsModalOpen(false)}
+                    className="flex-1 rounded-[1rem] border border-[var(--line-soft)] bg-transparent px-4 py-3 text-sm font-bold text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-muted)]/50"
+                  >
+                    Cancelar
+                  </button>
+                  <Button
+                    accentColor={accentColor}
+                    onClick={async () => {
+                      await handleSaveProfile();
+                      setIsGoalsModalOpen(false);
+                    }}
+                    disabled={isSavingProfile}
+                    className="flex-1"
+                  >
+                    <Save size={16} />
+                    {isSavingProfile ? 'Guardando...' : 'Guardar'}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      </SurfaceCard>
+      )}
     </div>
   );
 }

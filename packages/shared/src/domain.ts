@@ -189,7 +189,7 @@ export interface UserProfile {
   handle: string;
   socialProfiles: SocialProfiles;
   mediaKit: MediaKitProfile;
-  goals: [string, string, string];
+  goals: string[];
   notificationsEnabled: boolean;
 }
 
