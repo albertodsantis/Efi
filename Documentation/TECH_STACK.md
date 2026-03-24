@@ -1,8 +1,8 @@
-# Tía - Technology Stack Definition
+# Tia - Technology Stack Definition
 
 ## 1. Purpose
 
-This document locks the approved technical stack for taking Tía from the current prototype to a production-ready micro SaaS baseline.
+This document defines the approved technical stack for Tia, a micro SaaS CRM for content creators and influencers. It reflects the current state of the codebase and serves as the canonical reference for all technology decisions.
 
 ## 2. Language and Product Context
 
@@ -10,7 +10,7 @@ This document is written in English for technical consistency across AI-driven w
 
 Product context still matters:
 
-- Tía is a Spanish-first product
+- Tia is a Spanish-first product
 - visible UI copy remains in Spanish
 - brand tone remains in Spanish
 - engineering documentation remains in English
@@ -23,17 +23,46 @@ Product context still matters:
 - extract shared contracts that can later serve a native mobile app
 - avoid unnecessary rewrites and avoid microservices for MVP
 
-## 4. Approved Repository Topology
+## 4. Repository Topology
 
-The approved source layout is:
+The repository is a TypeScript monorepo with three packages:
 
 ```text
 apps/
-  api/
-  web/
+  api/               Express backend
+    src/
+      server.ts        Entry point, Vite middleware, OAuth client
+      routes/
+        auth.ts        Google OAuth (url, callback, status, logout)
+        calendar.ts    Calendar sync and sync-down
+        v1.ts          All CRUD endpoints
+      store/
+        appStore.ts    In-memory state with validation
+    build.ts           esbuild bundling
+
+  web/               React SPA
+    src/
+      App.tsx          Shell, navigation, responsive layout
+      main.tsx         React root
+      index.css        CSS tokens, theme variables
+      context/
+        AppContext.tsx  Central state, API calls
+      views/           Dashboard, Pipeline, Directory, Profile, Settings
+      components/      ui.tsx, AIAssistant, ConfirmDialog, CustomSelect,
+                       OnboardingTour, OverlayModal, Toaster
+      lib/             api.ts, accent.ts, date.ts, toast.ts
+    vite.config.ts
 
 packages/
-  shared/
+  shared/            Shared TypeScript layer
+    src/
+      domain.ts        Core types (Task, Partner, Contact, Template,
+                       UserProfile, MediaKit, Goal, etc.)
+      contracts/
+        appData.ts     CRUD request/response contracts
+        auth.ts        Auth contracts
+        googleCalendar.ts  Calendar contracts
+      index.ts
 ```
 
 Rules:
@@ -43,7 +72,7 @@ Rules:
 - `packages/shared` owns shared types, contracts, and pure utilities
 - `apps/mobile` is not approved yet as an active runtime
 
-## 5. Approved Frontend
+## 5. Frontend
 
 ### 5.1 Runtime and Language
 
@@ -58,28 +87,36 @@ Rules:
 - `@tailwindcss/vite` `4.1.14`
 - `@vitejs/plugin-react` `5.0.4`
 - `lucide-react` `0.546.0`
-- `react-colorful` `5.6.1`
-- `react-joyride` `2.9.3`
-- `motion` `12.23.24`
+- `react-colorful` `5.6.1` for accent color picker
+- `react-joyride` `2.9.3` for onboarding tours
+- `motion` `12.23.24` for animations
 
-### 5.3 Frontend Conventions
+### 5.3 Interaction
 
-- responsive SPA architecture
+- `@dnd-kit/core` `6.3.1` for drag-and-drop (pipeline board)
+
+### 5.4 AI Integration (Client-Side, Prototype Only)
+
+- `@google/genai` `1.29.0` for prototype AI assistant features
+
+### 5.5 Frontend Conventions
+
+- responsive SPA architecture (desktop sidebar + mobile bottom nav)
 - web-first delivery with strong mobile web support
 - remote data consumed through REST
 - no secrets in the client bundle
 - local state reserved for UI state and temporary optimistic state
-- business state should originate from the backend
+- business state originates from the backend via `/api/v1/bootstrap`
 
-## 6. Approved Backend
+## 6. Backend
 
 ### 6.1 Runtime and Framework
 
 - Node.js `20 LTS` target for deployment
 - Express `4.21.2`
-- `express-session` `1.19.0` as the temporary HTTP session layer until auth is revisited
+- `express-session` `1.19.0` as the HTTP session layer
 - `dotenv` `17.2.3` for local development
-- `googleapis` `171.4.0`
+- `googleapis` `171.4.0` for Google Calendar and OAuth
 
 ### 6.2 Build and Tooling
 
@@ -87,14 +124,17 @@ Rules:
 - `esbuild` `0.27.4` for the backend bundle
 - server build target: `node20`
 
-## 7. Approved Shared Layer
+### 6.3 Development Server
 
-The shared layer may contain:
+In development, the Express server runs Vite in middleware mode to serve the SPA. In production, Express serves the pre-built static files from `apps/web/dist`.
 
-- domain types
-- request and response contracts
-- validation schemas
-- pure utilities
+## 7. Shared Layer
+
+The shared layer contains:
+
+- domain types (`Task`, `Partner`, `Contact`, `Template`, `UserProfile`, `MediaKitProfile`, `Goal`, `SocialProfiles`, `AppState`)
+- request and response contracts for all API endpoints
+- pure utilities (`getPartnerLookupKey`, `createEmptySocialProfiles`, `createDefaultMediaKitProfile`)
 
 The shared layer must not depend on:
 
@@ -103,10 +143,10 @@ The shared layer must not depend on:
 - browser globals
 - Node-only runtime behavior unless explicitly isolated
 
-## 8. Approved External Integrations
+## 8. External Integrations
 
-- Google OAuth 2.0 for app sign-in
-- Google Calendar API for deliverable synchronization
+- Google OAuth 2.0 for Google Calendar authorization (popup flow)
+- Google Calendar API for task-to-calendar synchronization (sync up and sync down)
 
 Rules:
 
@@ -114,77 +154,66 @@ Rules:
 - `@google/genai` `1.29.0` is allowed only for prototype or controlled beta work
 - direct browser-side production consumption is not approved
 
-## 9. Approved Persistence and Infrastructure
+## 9. Persistence and Infrastructure
 
-### 9.1 Database
+### 9.1 Current State: In-Memory Store
 
-- PostgreSQL `16`
+All application state is currently held in an in-memory store (`InMemoryAppStore` class in `apps/api/src/store/appStore.ts`). Data resets on every server restart. The store includes seed data for development purposes.
 
-### 9.2 Hosting
+### 9.2 Planned: PostgreSQL 16
+
+PostgreSQL 16 is the approved target database. Migration from the in-memory store to PostgreSQL is a planned milestone. The hosting target is Neon PostgreSQL or an equivalent managed provider.
+
+### 9.3 Hosting
 
 - web application: served by the backend deployment during MVP, or split into dedicated web hosting later if needed
 - backend: persistent Node hosting
-- database: Neon PostgreSQL or equivalent managed PostgreSQL provider
+- database: Neon PostgreSQL or equivalent managed PostgreSQL provider (planned)
 
-### 9.3 CI/CD
+### 9.4 CI/CD
 
 - GitHub Actions as the official pipeline
 - automatic preview deployment on every pull request
 - production deployment only from a protected branch
 
-## 10. Approved Architecture
+## 10. Architecture
 
 The system is defined as a `modular monolith`.
 
-Approved modules:
+Current modules:
 
-- auth
-- dashboard
-- tasks
-- partners
-- contacts
-- templates
-- profile-settings
-- integrations-google-calendar
+- auth (Google OAuth via popup, session tokens)
+- dashboard (summary statistics)
+- tasks (CRUD with validation)
+- partners (CRUD with duplicate-name detection)
+- contacts (CRUD nested under partners)
+- templates (email template CRUD)
+- profile (user profile including social profiles, media kit, goals)
+- settings (accent color, theme)
+- integrations/google-calendar (sync up, sync down)
 
 Microservices are not approved for MVP v1.
 
-## 11. Mandatory Technical Policies
+## 11. Technical Policies
 
 - every new API must live under `/api/v1`
-- every mutation must be validated on the backend
+- every mutation must be validated on the backend (via normalize functions)
 - every authenticated endpoint must require an application user
 - critical business logic must not live only in the frontend
 - the repository must stay ready for a future second client without prematurely creating it
 
-## 12. Notes on the Current Repository
+## 12. Versions Confirmed From the Repository
 
-The current repository already contains:
+Versions verified from `package.json`:
 
-- React + Vite + Tailwind
-- an Express backend
-- basic Google Calendar OAuth
-- application state still held primarily in client memory
-- a prototype-era AI assistant implementation
-
-Required migration work to match the canonical stack:
-
-- keep moving frontend and backend code into the approved topology
-- extract shared domain contracts
-- introduce a real database
-- introduce real app authentication
-- replace demo state with backend-driven data
-
-## 13. Versions Confirmed From the Repository
-
-Versions verified from `package.json` and `package-lock.json`:
-
+- `@dnd-kit/core` `6.3.1`
 - `@google/genai` `1.29.0`
 - `@tailwindcss/vite` `4.1.14`
 - `@vitejs/plugin-react` `5.0.4`
+- `dotenv` `17.2.3`
+- `esbuild` `0.27.4`
 - `express` `4.21.2`
 - `express-session` `1.19.0`
-- `dotenv` `17.2.3`
 - `googleapis` `171.4.0`
 - `lucide-react` `0.546.0`
 - `motion` `12.23.24`
@@ -192,7 +221,6 @@ Versions verified from `package.json` and `package-lock.json`:
 - `react-colorful` `5.6.1`
 - `react-dom` `19.0.0`
 - `react-joyride` `2.9.3`
-- `esbuild` `0.27.4`
 - `tailwindcss` `4.1.14`
 - `tsx` `4.21.0`
 - `typescript` `5.8.2`

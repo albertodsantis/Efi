@@ -2,164 +2,146 @@
 <img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
 </div>
 
-# Tía
+# Tia
 
-Tía is a web-first micro SaaS for content creators and influencer operators. The product must work first as a desktop web app and mobile web experience, with a native mobile app reserved for a later phase.
+Tia is a micro SaaS CRM built for content creators, influencers, and creative freelancers. It provides a compact operational workspace to manage partnerships, track deliverables, and maintain a professional profile — all from a single responsive web app.
 
-## Documentation Language Policy
+The product UI is Spanish-first. All technical documentation and code comments are in English.
 
-This repository uses English for:
+## Features
 
-- technical documentation
-- architecture notes
-- implementation plans
-- code comments when needed
-- file and section naming conventions
+- **Dashboard (Inicio)** — goals, key metrics, and activity stats at a glance
+- **Pipeline** — task management with Kanban, List, and Calendar views; drag-and-drop reordering; Google Calendar sync; status flow: Pendiente, En Progreso, En Revision, Completada, Cobrado
+- **Directory (Directorio)** — partner and contact management with financial tracking and messaging
+- **Profile (Perfil)** — media kit, linked social profiles, and personal goals
+- **Settings (Ajustes)** — theme customization, integrations, and templates
+- **AI Assistant** — experimental conversational assistant powered by Google Gemini
+- **Onboarding Tour** — guided walkthrough for new users
 
-Tía itself is designed for a Spanish-speaking audience. Product copy, brand tone, and user-facing labels should remain in Spanish unless a specific feature requires another language.
+Desktop uses a sidebar layout; mobile uses bottom navigation.
 
-## Repository Direction
+## Tech Stack
 
-The repository is now aligned to a `web-first`, `API-first`, and `shared-domain-first` strategy.
+| Layer | Technology |
+|-------|------------|
+| Frontend | React 19, TypeScript, Vite |
+| Styling | Tailwind CSS 4 |
+| Backend | Express |
+| Drag and Drop | @dnd-kit |
+| Animation | motion |
+| Color Picker | react-colorful |
+| Icons | lucide-react |
+| Onboarding | react-joyride |
+| Google APIs | googleapis, @google/genai |
 
-That means:
-
-- the web application is the primary product client
-- mobile web quality is required from the same web codebase
-- backend APIs become the source of truth for product state
-- native mobile is a later channel, not the current implementation driver
-
-See [REPOSITORY_STRATEGY.md](./REPOSITORY_STRATEGY.md) for the canonical repository direction.
-
-## Design System Authority
-
-The repository now uses a single design authority:
-
-- `design-system/MASTER.md` is the canonical source of truth for the visual system and reusable UI rules
-- `FRONTEND_GUIDELINES.md` translates that master into implementation-facing frontend guidance
-
-If an external design helper such as UI/UX Pro Max is used, its proposals should be treated as inputs to improve Tia, not as a parallel authority. Reusable accepted ideas should be merged into `design-system/MASTER.md`.
-
-## Current Repository Shape
+## Repository Structure
 
 ```text
-apps/
-  api/
-  web/
-
-packages/
-  shared/
+tia/
+├── Documentation/              # project documentation
+│   ├── PRD.md
+│   ├── APP_FLOW.md
+│   ├── TECH_STACK.md
+│   ├── BACKEND_STRUCTURE.md
+│   ├── FRONTEND_GUIDELINES.md
+│   ├── IMPLEMENTATION_PLAN.md
+│   └── REPOSITORY_STRATEGY.md
+├── design-system/
+│   └── MASTER.md               # canonical design system
+├── apps/
+│   ├── api/src/                # Express backend
+│   │   ├── server.ts
+│   │   ├── routes/             # auth.ts, calendar.ts, v1.ts
+│   │   └── store/appStore.ts
+│   └── web/src/                # React SPA
+│       ├── App.tsx, main.tsx, index.css
+│       ├── components/         # ui.tsx, AIAssistant, ConfirmDialog,
+│       │                       # CustomSelect, OnboardingTour,
+│       │                       # OverlayModal, Toaster
+│       ├── context/AppContext.tsx
+│       ├── lib/                # api.ts, accent.ts, date.ts, toast.ts
+│       └── views/              # Dashboard, Pipeline, Directory,
+│                               # Profile, Settings
+├── packages/shared/src/        # shared types and contracts
+│   ├── domain.ts
+│   ├── contracts/              # appData.ts, auth.ts, googleCalendar.ts
+│   └── index.ts
+├── README.md
+├── package.json
+└── tsconfig.json
 ```
 
-Current responsibilities:
+### Responsibilities
 
-- `apps/web`: responsive React application for desktop and mobile browsers
-- `apps/api`: Express-based backend and integration layer
-- `packages/shared`: reusable domain types and API contracts
-
-The repository is still in transition from prototype decisions. Some product state still lives in the client and will be moved behind API contracts over time.
-
-## Current Product Shape
-
-The current app favors a compact operational workspace over heavy dashboard chrome.
-
-Current UX characteristics:
-
-- navigation and section headers are compact and sit inside the scrollable content
-- Inicio is intentionally simplified, with redundant hero text removed
-- Pipeline prioritizes the workspace controls first: Kanban, Lista, Mes, `Nueva tarea`, and `Actualizar Calendar`
-- Pipeline no longer uses a large summary block above the workspace
-- the task status flow is `Pendiente` -> `En Progreso` -> `En Revisión` -> `Completada` -> `Cobrado`
-- the UI reduces nested cards and repeated labels in favor of cleaner grouped layouts
+- **apps/web** — responsive React application for desktop and mobile browsers
+- **apps/api** — Express backend: auth flows, business rules, in-memory persistence, and external integrations
+- **packages/shared** — reusable domain types, API contracts, and pure helpers with no framework-specific assumptions
 
 ## Local Development
 
-Requirement:
+### Prerequisites
 
 - Node.js
 
-Setup:
+### Setup
 
-1. Install dependencies with `npm install`.
-2. If you want to test external integrations, create a local environment file from `.env.example`.
-3. Start the unified local app with `npm run dev`.
+```bash
+# 1. Install dependencies
+npm install
 
-Default local URL:
+# 2. (Optional) Create a local .env from the example for Google integrations
+cp .env.example .env
 
-- `http://127.0.0.1:3000`
-- `http://localhost:3000`
-
-Development notes:
-
-- `npm run dev` starts the Express server and mounts Vite in middleware mode.
-- The base UI can be opened without a local `.env` file.
-- Google OAuth and Calendar integration require the environment variables from `.env.example`.
-- Health check: `GET /api/health` returns `{ "ok": true }` when the local server is healthy.
-
-### Local Server Runbook
-
-Use this lightweight flow when a new session needs the app running quickly:
-
-1. Check whether the app is already running by opening `http://127.0.0.1:3000/api/health`.
-2. If the health check does not respond with `{ "ok": true }`, start the app from the repository root with `npm run dev`.
-3. Confirm the app loads at `http://127.0.0.1:3000` or `http://localhost:3000`.
-4. Share the local URL back to the user once the health check and root page both respond successfully.
-
-If the session needs the server to keep running without blocking the terminal, it is acceptable to start `npm run dev` in the background and write logs to local files such as `local-server.out.log` and `local-server.err.log`.
-
-Useful scripts:
-
-- `npm run dev`: runs the local application through the API server
-- `npm run build`: builds the web app and backend bundle
-- `npm run lint`: runs the TypeScript checks
-
-## Session Restart Checklist
-
-When resuming work in a new editor or agent session, include these points in the first message:
-
-- what feature, bug, or document was last in progress
-- a request to start the project and confirm that the local web app loads
-- whether the session should avoid commits or code changes
-- whether the session should run `npm run lint` after changes
-- whether the session needs Google OAuth or Calendar flows to be tested
-
-Suggested resume prompt:
-
-```text
-We are continuing work on Tía.
-Last time we were working on [topic].
-Start the project, confirm the local web app loads, and share the local URL.
-Today we want to work on [goal].
-Constraints: [no commits / read-only / run lint / test Google OAuth].
+# 3. Start the development server
+npm run dev
 ```
+
+The app will be available at **http://127.0.0.1:3000**.
+
+`npm run dev` starts the Express server and mounts Vite in middleware mode. The base UI works without a `.env` file; Google OAuth and Calendar integration require the environment variables below.
+
+### Health Check
+
+`GET /api/health` returns `{ "ok": true }` when the server is running.
+
+## Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start Express + Vite in middleware mode |
+| `npm run build` | Build the web app (Vite) and backend bundle (esbuild) |
+| `npm run lint` | Run TypeScript type checking (`tsc --noEmit`) |
+| `npm run preview` | Preview the production build |
 
 ## Environment Variables
 
-Current environment variables reflect the transition from prototype to micro SaaS baseline:
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `GEMINI_API_KEY` | No | API key for the experimental Gemini-based AI assistant |
+| `GOOGLE_CLIENT_ID` | Yes (for OAuth) | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | Yes (for OAuth) | Google OAuth client secret |
+| `APP_URL` | Yes (for OAuth) | Base URL for OAuth callbacks (e.g. `http://localhost:3000`) |
 
-- `GEMINI_API_KEY`
-  Optional. Used only by the inherited Gemini-based assistant implementation.
-- `GOOGLE_CLIENT_ID`
-  Required for local Google OAuth and Calendar integration.
-- `GOOGLE_CLIENT_SECRET`
-  Required for local Google OAuth and Calendar integration.
-- `APP_URL`
-  Base application URL used for OAuth callbacks. Example: `http://localhost:3000`.
+## Current State
 
-## Current Runtime Shape
+All core features are implemented with in-memory storage. Pending work:
 
-- frontend: React + TypeScript + Vite
-- backend: Express
-- styling: Tailwind CSS
-- external integration: Google Calendar via Google OAuth
+- PostgreSQL persistence
+- Real authentication
+- CI/CD pipeline
+- Production deployment
+
+## Documentation Language Policy
+
+English is used for all technical documentation, architecture notes, implementation plans, code comments, and file naming. The product UI and user-facing copy are in Spanish.
 
 ## Canonical Documents
 
 - [design-system/MASTER.md](./design-system/MASTER.md)
-- [PRD.md](./PRD.md)
-- [APP_FLOW.md](./APP_FLOW.md)
-- [TECH_STACK.md](./TECH_STACK.md)
-- [BACKEND_STRUCTURE.md](./BACKEND_STRUCTURE.md)
-- [FRONTEND_GUIDELINES.md](./FRONTEND_GUIDELINES.md)
-- [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md)
-- [REPOSITORY_STRATEGY.md](./REPOSITORY_STRATEGY.md)
+- [Documentation/PRD.md](./Documentation/PRD.md)
+- [Documentation/APP_FLOW.md](./Documentation/APP_FLOW.md)
+- [Documentation/TECH_STACK.md](./Documentation/TECH_STACK.md)
+- [Documentation/BACKEND_STRUCTURE.md](./Documentation/BACKEND_STRUCTURE.md)
+- [Documentation/FRONTEND_GUIDELINES.md](./Documentation/FRONTEND_GUIDELINES.md)
+- [Documentation/IMPLEMENTATION_PLAN.md](./Documentation/IMPLEMENTATION_PLAN.md)
+- [Documentation/REPOSITORY_STRATEGY.md](./Documentation/REPOSITORY_STRATEGY.md)
