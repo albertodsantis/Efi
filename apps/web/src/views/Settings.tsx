@@ -83,8 +83,6 @@ export default function Settings() {
       name: 'Actual',
       value: accentColor,
     };
-  const templatesLabel =
-    templates.length === 1 ? '1 plantilla activa' : `${templates.length} plantillas activas`;
 
   useEffect(() => {
     fetch('/api/auth/status')
@@ -279,8 +277,9 @@ export default function Settings() {
         </div>
       </SurfaceCard>
 
-      <div className="grid gap-4 xl:grid-cols-[minmax(260px,0.72fr)_minmax(0,1.28fr)]">
-        <SurfaceCard tone="muted" className="p-6 lg:p-7">
+      <SurfaceCard className="overflow-hidden p-0">
+        <div className="grid xl:grid-cols-[minmax(260px,0.72fr)_minmax(0,1.28fr)]">
+          <div className="p-6 lg:p-7">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-4">
             <div className="flex shrink-0 items-baseline gap-3">
               <h2 className="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
@@ -290,26 +289,9 @@ export default function Settings() {
                 Plantillas
               </span>
             </div>
-            <div className="hidden h-4 w-px bg-[var(--line-soft)] sm:block" />
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Guarda bases de outreach y personalizalas luego desde el directorio.
-            </p>
           </div>
 
           <div className="mt-5 space-y-4">
-            <div className="rounded-[1rem] border border-white/70 bg-white/88 p-4 shadow-[0_16px_34px_-28px_rgba(59,43,34,0.2)] dark:border-slate-700/60 dark:bg-slate-950/28">
-              <p className="text-[10px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
-                Biblioteca
-              </p>
-              <p className="mt-2 text-base font-bold text-slate-800 dark:text-slate-100">
-                {templatesLabel}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                Usa plantillas cortas, faciles de adaptar y con variables claras para acelerar las
-                conversaciones sin sonar rigida.
-              </p>
-            </div>
-
             <Button
               accentColor={accentColor}
               onClick={() => {
@@ -332,9 +314,9 @@ export default function Settings() {
               </p>
             </div>
           </div>
-        </SurfaceCard>
+          </div>
 
-        <SurfaceCard className="overflow-hidden p-0">
+          <div className="border-t border-slate-200/70 xl:border-t-0 xl:border-l dark:border-slate-700/60">
           {templates.length > 0 ? (
             <div className="divide-y divide-slate-200/70 dark:divide-slate-700/60">
               {templates.map((template) => (
@@ -399,8 +381,9 @@ export default function Settings() {
               />
             </div>
           )}
-        </SurfaceCard>
-      </div>
+          </div>
+        </div>
+      </SurfaceCard>
 
       <SurfaceCard tone="muted" className="p-4 sm:p-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

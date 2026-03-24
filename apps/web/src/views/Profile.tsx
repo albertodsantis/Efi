@@ -650,7 +650,7 @@ export default function Profile() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-3">
+            <div className="flex w-full shrink-0 flex-col gap-3 sm:max-w-sm xl:w-[22rem]">
               <button
                 type="button"
                 onClick={() => setIsGoalsModalOpen(true)}
@@ -691,10 +691,10 @@ export default function Profile() {
                 </div>
               </button>
 
-              <div className="flex flex-wrap gap-2">
+              <div className="flex items-center justify-between gap-3 sm:justify-end">
                 <div
                   className={cx(
-                    'flex items-center gap-1.5 rounded-[0.85rem] px-3 py-1.5 text-[11px] font-bold transition-all',
+                    'mr-auto flex items-center gap-1.5 rounded-[0.85rem] px-3 py-1.5 text-[11px] font-bold transition-all',
                     saveStatus === 'saving'
                       ? 'bg-[var(--surface-muted)] text-[var(--text-secondary)]'
                       : saveStatus === 'saved'
@@ -710,7 +710,11 @@ export default function Profile() {
                   {saveStatus === 'saving' ? 'Guardando...' : saveStatus === 'saved' ? 'Guardado' : ''}
                 </div>
 
-                <Button accentColor={accentColor} onClick={handleOpenMediaKit}>
+                <Button
+                  accentColor={accentColor}
+                  onClick={handleOpenMediaKit}
+                  className="flex-1 justify-center sm:flex-none"
+                >
                   <ExternalLink size={16} />
                   Abrir Media Kit
                 </Button>

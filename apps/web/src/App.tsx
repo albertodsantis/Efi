@@ -471,6 +471,27 @@ const MainLayout = () => {
 
               <div className="relative z-10 flex flex-1 min-h-0 flex-col">
                 <div
+                  className={cx(
+                    'min-w-0 flex flex-wrap items-baseline gap-4',
+                    isDesktop ? 'px-8 py-5' : 'px-4 pb-3 pt-4',
+                  )}
+                  style={
+                    isDesktop
+                      ? undefined
+                      : {
+                          paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.55rem)',
+                        }
+                  }
+                >
+                  <h2 className={cx('font-bold tracking-tight text-[var(--text-primary)] whitespace-nowrap', isDesktop ? 'text-[1.5rem]' : 'text-lg')}>
+                    {activeTabConfig.label}
+                  </h2>
+                  <p className={cx('text-[var(--text-secondary)] flex-1 min-w-0', isDesktop ? 'text-sm leading-6' : 'text-xs leading-5')}>
+                    {activeTabConfig.description}
+                  </p>
+                </div>
+
+                <div
                   className="hide-scrollbar flex-1 min-h-0"
                   style={
                     isDesktop
@@ -482,31 +503,6 @@ const MainLayout = () => {
                         }
                   }
                 >
-                  <div className="border-b bg-[var(--surface-overlay)] backdrop-blur-xl [border-color:var(--line-soft)]">
-                    <div
-                      className={cx(
-                        'min-w-0 flex flex-wrap items-baseline gap-4',
-                        isDesktop ? 'px-8 py-5' : 'px-4 pb-3 pt-4',
-                      )}
-                      style={
-                        isDesktop
-                          ? undefined
-                          : {
-                              paddingTop: 'calc(env(safe-area-inset-top, 0px) + 0.55rem)',
-                            }
-                      }
-                    >
-                      <h2 className={cx('font-bold tracking-tight text-[var(--text-primary)] whitespace-nowrap', isDesktop ? 'text-[1.5rem]' : 'text-lg')}>
-                        {activeTabConfig.label}
-                      </h2>
-                      <p className={cx('text-[var(--text-secondary)] flex-1 min-w-0', isDesktop ? 'text-sm leading-6' : 'text-xs leading-5')}>
-                        {activeTabConfig.description}
-                      </p>
-                    </div>
-                  </div>
-
-
-
                   <div className={cx('min-w-0', isDesktop ? 'w-full' : 'px-0')}>
                     {renderActiveView(activeTab)}
                   </div>
