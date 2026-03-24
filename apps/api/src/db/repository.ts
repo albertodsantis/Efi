@@ -1,0 +1,848 @@
+import { randomUUID } from 'crypto';
+import type pg from 'pg';
+import {
+  createDefaultMediaKitProfile,
+  createEmptySocialProfiles,
+  getPartnerLookupKey,
+} from '@shared';
+import type {
+  AppState,
+  Contact,
+  CreateContactRequest,
+  CreatePartnerRequest,
+  CreateTaskRequest,
+  CreateTemplateRequest,
+  DashboardSummaryResponse,
+  DeleteEntityResponse,
+  Goal,
+  GoalPriority,
+  GoalStatus,
+  MediaKitMetric,
+  MediaKitOffer,
+  Partner,
+  SettingsResponse,
+  Task,
+  Template,
+  UpdateContactRequest,
+  UpdatePartnerRequest,
+  UpdateProfileRequest,
+  UpdateSettingsRequest,
+  UpdateTaskRequest,
+  UserProfile,
+} from '@shared';
+
+/* ================================================================
+   Validation helpers — copied verbatim from InMemoryAppStore
+   ================================================================ */
+
+const SOCIAL_PROFILE_KEYS = ['instagram', 'tiktok', 'x', 'threads', 'youtube'] as const;
+
+function normalizeRequiredText(value: string | undefined, label: string) {
+  const normalized = value?.trim();
+  if (!normalized) {
+    throw new Error(`${label} es obligatorio.`);
+  }
+  return normalized;
+}
+
+function normalizeOptionalText(value: string | undefined) {
+  return value?.trim() || undefined;
+}
+
+function normalizeText(value: string | undefined) {
+  return value?.trim() || '';
+}
+
+function normalizePartnerName(value: string | undefined, label: string) {
+  return normalizeRequiredText(value, label).replace(/\s+/g, ' ');
+}
+
+function normalizeDate(value: string | undefined) {
+  const normalized = normalizeRequiredText(value, 'La fecha');
+  const parsedDate = new Date(normalized);
+  if (Number.isNaN(parsedDate.getTime())) {
+    throw new Error('La fecha no es valida.');
+  }
+  return normalized;
+}
+
+function normalizeMoney(value: number | undefined) {
+  if (typeof value !== 'number' || Number.isNaN(value) || value < 0) {
+    throw new Error('El valor debe ser un numero igual o mayor que 0.');
+  }
+  return value;
+}
+
+function normalizeEmail(email: string | undefined) {
+  const normalized = normalizeRequiredText(email, 'El email');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
+    throw new Error('El email no es valido.');
+  }
+  return normalized.toLowerCase();
+}
+
+function normalizeAccentColor(color: string | undefined) {
+  const normalized = normalizeRequiredText(color, 'El color');
+  if (!/^#[0-9A-Fa-f]{6}$/.test(normalized)) {
+    throw new Error('El color debe ser un hex valido.');
+  }
+  return normalized;
+}
+
+function normalizeMetricList(items: MediaKitMetric[] | undefined, fallback: MediaKitMetric[]) {
+  return (items ?? fallback).map((item, index) => ({
+    label: normalizeText(item?.label) || fallback[index]?.label || '',
+    value: normalizeText(item?.value),
+  }));
+}
+
+function normalizeOfferList(items: MediaKitOffer[] | undefined, fallback: MediaKitOffer[]) {
+  return (items ?? fallback).map((item, index) => ({
+    title: normalizeText(item?.title) || fallback[index]?.title || '',
+    price: normalizeText(item?.price),
+    description: normalizeText(item?.description),
+  }));
+}
+
+function normalizeStringList(values: string[] | undefined, fallback: string[]) {
+  return (values ?? fallback).map((value, index) => normalizeText(value) || fallback[index] || '');
+}
+
+function normalizeMediaKitProfile(
+  mediaKit: Partial<AppState['profile']['mediaKit']> | undefined,
+  currentMediaKit = createDefaultMediaKitProfile(),
+) {
+  const fallback = currentMediaKit;
+  return {
+    periodLabel: normalizeText(mediaKit?.periodLabel) || fallback.periodLabel,
+    updatedLabel: normalizeText(mediaKit?.updatedLabel) || fallback.updatedLabel,
+    tagline: normalizeText(mediaKit?.tagline),
+    contactEmail: normalizeText(mediaKit?.contactEmail),
+    featuredImage: normalizeText(mediaKit?.featuredImage),
+    aboutTitle: normalizeText(mediaKit?.aboutTitle) || fallback.aboutTitle,
+    aboutParagraphs: normalizeStringList(mediaKit?.aboutParagraphs, fallback.aboutParagraphs),
+    topicTags: normalizeStringList(mediaKit?.topicTags, fallback.topicTags),
+    insightStats: normalizeMetricList(mediaKit?.insightStats, fallback.insightStats),
+    audienceGender: normalizeMetricList(mediaKit?.audienceGender, fallback.audienceGender),
+    ageDistribution: normalizeMetricList(mediaKit?.ageDistribution, fallback.ageDistribution),
+    topCountries: normalizeMetricList(mediaKit?.topCountries, fallback.topCountries),
+    portfolioImages: normalizeStringList(mediaKit?.portfolioImages, fallback.portfolioImages),
+    servicesTitle: normalizeText(mediaKit?.servicesTitle) || fallback.servicesTitle,
+    servicesDescription: normalizeText(mediaKit?.servicesDescription),
+    offerings: normalizeOfferList(mediaKit?.offerings, fallback.offerings),
+    brandsTitle: normalizeText(mediaKit?.brandsTitle) || fallback.brandsTitle,
+    trustedBrands: normalizeStringList(mediaKit?.trustedBrands, fallback.trustedBrands),
+    closingTitle: normalizeText(mediaKit?.closingTitle) || fallback.closingTitle,
+    closingDescription: normalizeText(mediaKit?.closingDescription),
+    footerNote: normalizeText(mediaKit?.footerNote) || fallback.footerNote,
+  };
+}
+
+/* ================================================================
+   Row mappers — DB snake_case → API camelCase
+   ================================================================ */
+
+function mapRowToTask(row: any): Task {
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    partnerId: row.partner_id,
+    status: row.status,
+    dueDate: row.due_date,
+    value: Number(row.value),
+    ...(row.gcal_event_id ? { gcalEventId: row.gcal_event_id } : {}),
+  };
+}
+
+function mapRowToContact(row: any): Contact {
+  return {
+    id: row.id,
+    name: row.name,
+    role: row.role,
+    email: row.email,
+    ig: row.ig,
+    phone: row.phone || undefined,
+  };
+}
+
+function mapRowToPartner(row: any): Partner {
+  return {
+    id: row.id,
+    name: row.name,
+    status: row.status,
+    ...(row.logo ? { logo: row.logo } : {}),
+    contacts: [],
+    partnershipType: row.partnership_type,
+    keyTerms: row.key_terms,
+    ...(row.start_date ? { startDate: row.start_date } : {}),
+    ...(row.end_date ? { endDate: row.end_date } : {}),
+    monthlyRevenue: Number(row.monthly_revenue),
+    annualRevenue: Number(row.annual_revenue),
+    mainChannel: row.main_channel,
+  };
+}
+
+function mapRowToGoal(row: any): Goal {
+  return {
+    id: row.id,
+    area: row.area,
+    generalGoal: row.general_goal,
+    successMetric: row.success_metric,
+    specificTarget: row.specific_target,
+    timeframe: row.timeframe,
+    status: row.status,
+    priority: row.priority,
+    revenueEstimation: Number(row.revenue_estimation),
+  };
+}
+
+/* ================================================================
+   PostgresAppStore — drop-in replacement for InMemoryAppStore
+   ================================================================ */
+
+export class PostgresAppStore {
+  constructor(private pool: pg.Pool) {}
+
+  /* ---------- SNAPSHOT (bootstrap) ---------- */
+
+  async getSnapshot(): Promise<AppState> {
+    const [tasks, partners, profile, settings, templates] = await Promise.all([
+      this.listTasks(),
+      this.listPartners(),
+      this.getProfile(),
+      this.getSettings(),
+      this.listTemplates(),
+    ]);
+
+    return {
+      tasks,
+      partners,
+      profile,
+      accentColor: settings.accentColor,
+      templates,
+      theme: settings.theme,
+    };
+  }
+
+  /* ---------- DASHBOARD ---------- */
+
+  async getDashboardSummary(): Promise<DashboardSummaryResponse> {
+    const today = new Date().toISOString().split('T')[0];
+
+    const [valueResult, todayResult, upcomingResult] = await Promise.all([
+      this.pool.query(
+        `SELECT COALESCE(SUM(value), 0) AS total FROM tasks WHERE status != 'Cobrado'`,
+      ),
+      this.pool.query(
+        'SELECT COUNT(*) AS count FROM tasks WHERE due_date = $1',
+        [today],
+      ),
+      this.pool.query(
+        `SELECT id, title, description, partner_id, status, due_date, value, gcal_event_id
+         FROM tasks ORDER BY due_date ASC LIMIT 4`,
+      ),
+    ]);
+
+    return {
+      activePipelineValue: Number(valueResult.rows[0].total),
+      tasksToday: Number(todayResult.rows[0].count),
+      upcomingTasks: upcomingResult.rows.map(mapRowToTask),
+    };
+  }
+
+  /* ---------- TASKS ---------- */
+
+  async listTasks(): Promise<Task[]> {
+    const { rows } = await this.pool.query(
+      `SELECT id, title, description, partner_id, status, due_date, value, gcal_event_id
+       FROM tasks ORDER BY due_date ASC`,
+    );
+    return rows.map(mapRowToTask);
+  }
+
+  async createTask(input: CreateTaskRequest): Promise<Task> {
+    const id = randomUUID();
+    const title = normalizeRequiredText(input.title, 'El titulo');
+    const description = normalizeRequiredText(input.description, 'La descripcion');
+    const partnerId = normalizeRequiredText(input.partnerId, 'La marca');
+    const status = normalizeRequiredText(input.status, 'El estado');
+    const dueDate = normalizeDate(input.dueDate);
+    const value = normalizeMoney(input.value);
+    const gcalEventId = normalizeOptionalText(input.gcalEventId) || null;
+
+    const { rows: partnerRows } = await this.pool.query(
+      'SELECT 1 FROM partners WHERE id = $1',
+      [partnerId],
+    );
+    if (partnerRows.length === 0) {
+      throw new Error('La marca seleccionada no existe.');
+    }
+
+    await this.pool.query(
+      `INSERT INTO tasks (id, title, description, partner_id, status, due_date, value, gcal_event_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [id, title, description, partnerId, status, dueDate, value, gcalEventId],
+    );
+
+    return {
+      id,
+      title,
+      description,
+      partnerId,
+      status: status as Task['status'],
+      dueDate,
+      value,
+      ...(gcalEventId ? { gcalEventId } : {}),
+    };
+  }
+
+  async updateTask(taskId: string, updates: UpdateTaskRequest): Promise<Task | null> {
+    const { rows: existing } = await this.pool.query(
+      'SELECT 1 FROM tasks WHERE id = $1',
+      [taskId],
+    );
+    if (existing.length === 0) return null;
+
+    const setClauses: string[] = [];
+    const values: any[] = [];
+    let idx = 1;
+
+    if (updates.title !== undefined) {
+      setClauses.push(`title = $${idx++}`);
+      values.push(normalizeRequiredText(updates.title, 'El titulo'));
+    }
+    if (updates.description !== undefined) {
+      setClauses.push(`description = $${idx++}`);
+      values.push(normalizeRequiredText(updates.description, 'La descripcion'));
+    }
+    if (updates.partnerId !== undefined) {
+      const pid = normalizeRequiredText(updates.partnerId, 'La marca');
+      const { rows: pr } = await this.pool.query('SELECT 1 FROM partners WHERE id = $1', [pid]);
+      if (pr.length === 0) throw new Error('La marca seleccionada no existe.');
+      setClauses.push(`partner_id = $${idx++}`);
+      values.push(pid);
+    }
+    if (updates.status !== undefined) {
+      setClauses.push(`status = $${idx++}`);
+      values.push(normalizeRequiredText(updates.status, 'El estado'));
+    }
+    if (updates.dueDate !== undefined) {
+      setClauses.push(`due_date = $${idx++}`);
+      values.push(normalizeDate(updates.dueDate));
+    }
+    if (updates.value !== undefined) {
+      setClauses.push(`value = $${idx++}`);
+      values.push(normalizeMoney(updates.value));
+    }
+    if (updates.gcalEventId !== undefined) {
+      setClauses.push(`gcal_event_id = $${idx++}`);
+      values.push(normalizeOptionalText(updates.gcalEventId) || null);
+    }
+
+    if (setClauses.length === 0) {
+      const { rows } = await this.pool.query(
+        `SELECT id, title, description, partner_id, status, due_date, value, gcal_event_id
+         FROM tasks WHERE id = $1`,
+        [taskId],
+      );
+      return mapRowToTask(rows[0]);
+    }
+
+    setClauses.push('updated_at = NOW()');
+    values.push(taskId);
+
+    const { rows: updated } = await this.pool.query(
+      `UPDATE tasks SET ${setClauses.join(', ')} WHERE id = $${idx} RETURNING
+       id, title, description, partner_id, status, due_date, value, gcal_event_id`,
+      values,
+    );
+
+    return mapRowToTask(updated[0]);
+  }
+
+  async deleteTask(taskId: string): Promise<DeleteEntityResponse> {
+    const { rowCount } = await this.pool.query('DELETE FROM tasks WHERE id = $1', [taskId]);
+    return { success: (rowCount ?? 0) > 0 };
+  }
+
+  /* ---------- PARTNERS ---------- */
+
+  async listPartners(): Promise<Partner[]> {
+    const { rows: partnerRows } = await this.pool.query(
+      'SELECT * FROM partners ORDER BY created_at ASC',
+    );
+
+    if (partnerRows.length === 0) return [];
+
+    const partnerIds = partnerRows.map(r => r.id);
+    const { rows: contactRows } = await this.pool.query(
+      'SELECT * FROM contacts WHERE partner_id = ANY($1) ORDER BY created_at ASC',
+      [partnerIds],
+    );
+
+    const contactsByPartner = new Map<string, Contact[]>();
+    for (const row of contactRows) {
+      const list = contactsByPartner.get(row.partner_id) || [];
+      list.push(mapRowToContact(row));
+      contactsByPartner.set(row.partner_id, list);
+    }
+
+    return partnerRows.map(row => ({
+      ...mapRowToPartner(row),
+      contacts: contactsByPartner.get(row.id) || [],
+    }));
+  }
+
+  async createPartner(input: CreatePartnerRequest): Promise<Partner> {
+    const normalizedName = normalizePartnerName(input.name, 'El nombre de la marca');
+    const lookupKey = getPartnerLookupKey(normalizedName);
+
+    // Dedup check
+    const { rows: existing } = await this.pool.query(
+      'SELECT * FROM partners WHERE name_lookup = $1',
+      [lookupKey],
+    );
+
+    if (existing.length > 0) {
+      const partner = mapRowToPartner(existing[0]);
+      const { rows: contactRows } = await this.pool.query(
+        'SELECT * FROM contacts WHERE partner_id = $1 ORDER BY created_at ASC',
+        [partner.id],
+      );
+      partner.contacts = contactRows.map(mapRowToContact);
+      return partner;
+    }
+
+    const id = randomUUID();
+    const status = normalizeRequiredText(input.status, 'El estado');
+    const logo = normalizeOptionalText(input.logo) || null;
+    const partnershipType = normalizeOptionalText((input as any).partnershipType) || 'Por definir';
+    const keyTerms = normalizeText((input as any).keyTerms);
+    const startDate = normalizeOptionalText((input as any).startDate) || null;
+    const endDate = normalizeOptionalText((input as any).endDate) || null;
+    const monthlyRevenue = Number((input as any).monthlyRevenue) || 0;
+    const annualRevenue = Number((input as any).annualRevenue) || 0;
+    const mainChannel = normalizeText((input as any).mainChannel);
+
+    await this.pool.query(
+      `INSERT INTO partners (id, name, name_lookup, status, logo, partnership_type,
+         key_terms, start_date, end_date, monthly_revenue, annual_revenue, main_channel)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
+      [id, normalizedName, lookupKey, status, logo, partnershipType,
+       keyTerms, startDate, endDate, monthlyRevenue, annualRevenue, mainChannel],
+    );
+
+    return {
+      id,
+      name: normalizedName,
+      status: status as Partner['status'],
+      ...(logo ? { logo } : {}),
+      contacts: [],
+      partnershipType: partnershipType as any,
+      keyTerms,
+      ...(startDate ? { startDate } : {}),
+      ...(endDate ? { endDate } : {}),
+      monthlyRevenue,
+      annualRevenue,
+      mainChannel,
+    };
+  }
+
+  async updatePartner(partnerId: string, updates: UpdatePartnerRequest): Promise<Partner | null> {
+    const { rows: existing } = await this.pool.query(
+      'SELECT * FROM partners WHERE id = $1',
+      [partnerId],
+    );
+    if (existing.length === 0) return null;
+
+    const setClauses: string[] = [];
+    const values: any[] = [];
+    let idx = 1;
+
+    if (updates.name !== undefined) {
+      const normalizedName = normalizePartnerName(updates.name, 'El nombre de la marca');
+      const lookupKey = getPartnerLookupKey(normalizedName);
+
+      const { rows: dupes } = await this.pool.query(
+        'SELECT 1 FROM partners WHERE name_lookup = $1 AND id != $2',
+        [lookupKey, partnerId],
+      );
+      if (dupes.length > 0) {
+        throw new Error('Ya existe una marca con ese nombre.');
+      }
+
+      setClauses.push(`name = $${idx++}`);
+      values.push(normalizedName);
+      setClauses.push(`name_lookup = $${idx++}`);
+      values.push(lookupKey);
+    }
+
+    if (updates.status !== undefined) {
+      setClauses.push(`status = $${idx++}`);
+      values.push(normalizeRequiredText(updates.status, 'El estado'));
+    }
+    if (updates.logo !== undefined) {
+      setClauses.push(`logo = $${idx++}`);
+      values.push(normalizeOptionalText(updates.logo) || null);
+    }
+    if ((updates as any).partnershipType !== undefined) {
+      setClauses.push(`partnership_type = $${idx++}`);
+      values.push(normalizeText((updates as any).partnershipType));
+    }
+    if ((updates as any).keyTerms !== undefined) {
+      setClauses.push(`key_terms = $${idx++}`);
+      values.push(normalizeText((updates as any).keyTerms));
+    }
+    if ((updates as any).startDate !== undefined) {
+      setClauses.push(`start_date = $${idx++}`);
+      values.push(normalizeOptionalText((updates as any).startDate) || null);
+    }
+    if ((updates as any).endDate !== undefined) {
+      setClauses.push(`end_date = $${idx++}`);
+      values.push(normalizeOptionalText((updates as any).endDate) || null);
+    }
+    if ((updates as any).monthlyRevenue !== undefined) {
+      setClauses.push(`monthly_revenue = $${idx++}`);
+      values.push(Number((updates as any).monthlyRevenue) || 0);
+    }
+    if ((updates as any).annualRevenue !== undefined) {
+      setClauses.push(`annual_revenue = $${idx++}`);
+      values.push(Number((updates as any).annualRevenue) || 0);
+    }
+    if ((updates as any).mainChannel !== undefined) {
+      setClauses.push(`main_channel = $${idx++}`);
+      values.push(normalizeText((updates as any).mainChannel));
+    }
+
+    if (setClauses.length > 0) {
+      setClauses.push('updated_at = NOW()');
+      values.push(partnerId);
+
+      await this.pool.query(
+        `UPDATE partners SET ${setClauses.join(', ')} WHERE id = $${idx}`,
+        values,
+      );
+    }
+
+    // Re-fetch full partner with contacts
+    const { rows: partnerRows } = await this.pool.query(
+      'SELECT * FROM partners WHERE id = $1',
+      [partnerId],
+    );
+    const partner = mapRowToPartner(partnerRows[0]);
+
+    const { rows: contactRows } = await this.pool.query(
+      'SELECT * FROM contacts WHERE partner_id = $1 ORDER BY created_at ASC',
+      [partnerId],
+    );
+    partner.contacts = contactRows.map(mapRowToContact);
+
+    return partner;
+  }
+
+  /* ---------- CONTACTS ---------- */
+
+  async addContact(partnerId: string, input: CreateContactRequest): Promise<Contact | null> {
+    const { rows: partnerCheck } = await this.pool.query(
+      'SELECT 1 FROM partners WHERE id = $1',
+      [partnerId],
+    );
+    if (partnerCheck.length === 0) return null;
+
+    const id = randomUUID();
+    const name = normalizeRequiredText(input.name, 'El nombre del contacto');
+    const role = normalizeRequiredText(input.role, 'El rol del contacto');
+    const email = normalizeEmail(input.email);
+    const igRaw = normalizeOptionalText(input.ig);
+    const ig = igRaw ? (igRaw.startsWith('@') ? igRaw : `@${igRaw}`) : '';
+    const phone = normalizeOptionalText((input as any).phone) || '';
+
+    await this.pool.query(
+      `INSERT INTO contacts (id, partner_id, name, role, email, ig, phone)
+       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+      [id, partnerId, name, role, email, ig, phone],
+    );
+
+    return { id, name, role, email, ig, phone };
+  }
+
+  async updateContact(contactId: string, updates: UpdateContactRequest): Promise<Contact | null> {
+    const { rows: existing } = await this.pool.query(
+      'SELECT * FROM contacts WHERE id = $1',
+      [contactId],
+    );
+    if (existing.length === 0) return null;
+
+    const setClauses: string[] = [];
+    const values: any[] = [];
+    let idx = 1;
+
+    if (updates.name !== undefined) {
+      setClauses.push(`name = $${idx++}`);
+      values.push(normalizeRequiredText(updates.name, 'El nombre del contacto'));
+    }
+    if (updates.role !== undefined) {
+      setClauses.push(`role = $${idx++}`);
+      values.push(normalizeRequiredText(updates.role, 'El rol del contacto'));
+    }
+    if (updates.email !== undefined) {
+      setClauses.push(`email = $${idx++}`);
+      values.push(normalizeEmail(updates.email));
+    }
+    if (updates.ig !== undefined) {
+      const igRaw = normalizeOptionalText(updates.ig);
+      const ig = igRaw ? (igRaw.startsWith('@') ? igRaw : `@${igRaw}`) : '';
+      setClauses.push(`ig = $${idx++}`);
+      values.push(ig);
+    }
+    if ((updates as any).phone !== undefined) {
+      setClauses.push(`phone = $${idx++}`);
+      values.push(normalizeOptionalText((updates as any).phone) || '');
+    }
+
+    if (setClauses.length === 0) {
+      return mapRowToContact(existing[0]);
+    }
+
+    setClauses.push('updated_at = NOW()');
+    values.push(contactId);
+
+    const { rows: updated } = await this.pool.query(
+      `UPDATE contacts SET ${setClauses.join(', ')} WHERE id = $${idx} RETURNING *`,
+      values,
+    );
+
+    return mapRowToContact(updated[0]);
+  }
+
+  async deleteContact(contactId: string): Promise<DeleteEntityResponse> {
+    const { rowCount } = await this.pool.query('DELETE FROM contacts WHERE id = $1', [contactId]);
+    return { success: (rowCount ?? 0) > 0 };
+  }
+
+  /* ---------- PROFILE ---------- */
+
+  async getProfile(): Promise<UserProfile> {
+    const [profileResult, goalsResult] = await Promise.all([
+      this.pool.query('SELECT * FROM user_profile WHERE id = 1'),
+      this.pool.query('SELECT * FROM goals ORDER BY sort_order ASC'),
+    ]);
+
+    const row = profileResult.rows[0];
+
+    const socialProfiles = {
+      ...createEmptySocialProfiles(),
+      ...(row.social_profiles || {}),
+    };
+
+    const mediaKit = {
+      ...createDefaultMediaKitProfile(),
+      ...(row.media_kit || {}),
+    };
+
+    return {
+      name: row.name,
+      avatar: row.avatar,
+      handle: row.handle,
+      socialProfiles,
+      mediaKit,
+      goals: goalsResult.rows.map(mapRowToGoal),
+      notificationsEnabled: row.notifications_enabled,
+    };
+  }
+
+  async updateProfile(updates: UpdateProfileRequest): Promise<UserProfile> {
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Fetch current state for merge logic
+      const { rows: profileRows } = await client.query(
+        'SELECT * FROM user_profile WHERE id = 1',
+      );
+      const currentRow = profileRows[0];
+      const currentSocialProfiles = {
+        ...createEmptySocialProfiles(),
+        ...(currentRow.social_profiles || {}),
+      };
+      const currentMediaKit = normalizeMediaKitProfile(
+        currentRow.media_kit || {},
+        createDefaultMediaKitProfile(),
+      );
+
+      // Build profile update
+      const setClauses: string[] = [];
+      const values: any[] = [];
+      let idx = 1;
+
+      if (updates.name !== undefined) {
+        setClauses.push(`name = $${idx++}`);
+        values.push(normalizeRequiredText(updates.name, 'El nombre'));
+      }
+      if (updates.avatar !== undefined) {
+        setClauses.push(`avatar = $${idx++}`);
+        values.push(normalizeRequiredText(updates.avatar, 'El avatar'));
+      }
+      if (updates.handle !== undefined) {
+        const handle = normalizeRequiredText(updates.handle, 'El handle');
+        setClauses.push(`handle = $${idx++}`);
+        values.push(handle.startsWith('@') ? handle : `@${handle}`);
+      }
+      if (updates.notificationsEnabled !== undefined) {
+        setClauses.push(`notifications_enabled = $${idx++}`);
+        values.push(Boolean(updates.notificationsEnabled));
+      }
+
+      if (updates.socialProfiles !== undefined) {
+        const merged = SOCIAL_PROFILE_KEYS.reduce(
+          (acc, key) => {
+            if (updates.socialProfiles?.[key] !== undefined) {
+              acc[key] = normalizeOptionalText(updates.socialProfiles[key]) || '';
+            } else {
+              acc[key] = currentSocialProfiles[key];
+            }
+            return acc;
+          },
+          { ...currentSocialProfiles },
+        );
+        setClauses.push(`social_profiles = $${idx++}`);
+        values.push(JSON.stringify(merged));
+      }
+
+      if (updates.mediaKit !== undefined) {
+        const mergedMediaKit = normalizeMediaKitProfile(
+          {
+            ...currentMediaKit,
+            ...updates.mediaKit,
+            aboutParagraphs: updates.mediaKit.aboutParagraphs ?? currentMediaKit.aboutParagraphs,
+            topicTags: updates.mediaKit.topicTags ?? currentMediaKit.topicTags,
+            insightStats: updates.mediaKit.insightStats ?? currentMediaKit.insightStats,
+            audienceGender: updates.mediaKit.audienceGender ?? currentMediaKit.audienceGender,
+            ageDistribution: updates.mediaKit.ageDistribution ?? currentMediaKit.ageDistribution,
+            topCountries: updates.mediaKit.topCountries ?? currentMediaKit.topCountries,
+            portfolioImages: updates.mediaKit.portfolioImages ?? currentMediaKit.portfolioImages,
+            offerings: updates.mediaKit.offerings ?? currentMediaKit.offerings,
+            trustedBrands: updates.mediaKit.trustedBrands ?? currentMediaKit.trustedBrands,
+          },
+          currentMediaKit,
+        );
+        setClauses.push(`media_kit = $${idx++}`);
+        values.push(JSON.stringify(mergedMediaKit));
+      }
+
+      if (setClauses.length > 0) {
+        setClauses.push('updated_at = NOW()');
+        await client.query(
+          `UPDATE user_profile SET ${setClauses.join(', ')} WHERE id = 1`,
+          values,
+        );
+      }
+
+      // Handle goals replacement
+      if (updates.goals !== undefined) {
+        if (!Array.isArray(updates.goals)) {
+          throw new Error('Los objetivos deben ser un array.');
+        }
+
+        await client.query('DELETE FROM goals');
+
+        const normalizedGoals = updates.goals.map((goal: any, index: number) => ({
+          id: normalizeText(goal.id) || randomUUID(),
+          area: normalizeText(goal.area),
+          generalGoal: normalizeText(goal.generalGoal),
+          successMetric: normalizeText(goal.successMetric),
+          specificTarget: normalizeText(goal.specificTarget),
+          timeframe: normalizeText(goal.timeframe),
+          status: (normalizeText(goal.status) as GoalStatus) || 'Pendiente',
+          priority: (normalizeText(goal.priority) as GoalPriority) || 'Media',
+          revenueEstimation: Number(goal.revenueEstimation) || 0,
+          sortOrder: index,
+        }));
+
+        for (const g of normalizedGoals) {
+          await client.query(
+            `INSERT INTO goals (id, area, general_goal, success_metric, specific_target,
+               timeframe, status, priority, revenue_estimation, sort_order)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)`,
+            [g.id, g.area, g.generalGoal, g.successMetric, g.specificTarget,
+             g.timeframe, g.status, g.priority, g.revenueEstimation, g.sortOrder],
+          );
+        }
+      }
+
+      await client.query('COMMIT');
+    } catch (err) {
+      await client.query('ROLLBACK');
+      throw err;
+    } finally {
+      client.release();
+    }
+
+    return this.getProfile();
+  }
+
+  /* ---------- SETTINGS ---------- */
+
+  async getSettings(): Promise<SettingsResponse> {
+    const { rows } = await this.pool.query('SELECT * FROM user_settings WHERE id = 1');
+    return {
+      accentColor: rows[0].accent_color,
+      theme: rows[0].theme as any,
+    };
+  }
+
+  async updateSettings(updates: UpdateSettingsRequest): Promise<SettingsResponse> {
+    const setClauses: string[] = [];
+    const values: any[] = [];
+    let idx = 1;
+
+    if (updates.accentColor) {
+      setClauses.push(`accent_color = $${idx++}`);
+      values.push(normalizeAccentColor(updates.accentColor));
+    }
+    if (updates.theme) {
+      if (updates.theme !== 'light' && updates.theme !== 'dark') {
+        throw new Error('El tema no es valido.');
+      }
+      setClauses.push(`theme = $${idx++}`);
+      values.push(updates.theme);
+    }
+
+    if (setClauses.length > 0) {
+      setClauses.push('updated_at = NOW()');
+      await this.pool.query(
+        `UPDATE user_settings SET ${setClauses.join(', ')} WHERE id = 1`,
+        values,
+      );
+    }
+
+    return this.getSettings();
+  }
+
+  /* ---------- TEMPLATES ---------- */
+
+  async listTemplates(): Promise<Template[]> {
+    const { rows } = await this.pool.query('SELECT * FROM templates ORDER BY created_at ASC');
+    return rows.map(r => ({ id: r.id, name: r.name, subject: r.subject, body: r.body }));
+  }
+
+  async createTemplate(input: CreateTemplateRequest): Promise<Template> {
+    const id = randomUUID();
+    const name = normalizeRequiredText(input.name, 'El nombre de la plantilla');
+    const subject = normalizeRequiredText(input.subject, 'El asunto');
+    const body = normalizeRequiredText(input.body, 'El cuerpo del mensaje');
+
+    await this.pool.query(
+      'INSERT INTO templates (id, name, subject, body) VALUES ($1,$2,$3,$4)',
+      [id, name, subject, body],
+    );
+
+    return { id, name, subject, body };
+  }
+
+  async deleteTemplate(templateId: string): Promise<DeleteEntityResponse> {
+    const { rowCount } = await this.pool.query('DELETE FROM templates WHERE id = $1', [templateId]);
+    return { success: (rowCount ?? 0) > 0 };
+  }
+}
