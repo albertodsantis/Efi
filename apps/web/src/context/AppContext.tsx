@@ -22,6 +22,7 @@ interface AppContextType extends AppState {
   isBootstrapping: boolean;
   bootstrapError: string | null;
   actionError: string | null;
+  onLogout: () => void;
   refreshAppData: () => Promise<void>;
   dismissActionError: () => void;
   reportActionError: (message: string) => void;
@@ -93,7 +94,7 @@ function upsertPartnerInState(partners: Partner[], incomingPartner: Partner) {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => void }> = ({ children, onLogout }) => {
   const [state, setState] = useState<AppState>(emptyState);
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [bootstrapError, setBootstrapError] = useState<string | null>(null);
@@ -482,6 +483,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         isBootstrapping,
         bootstrapError,
         actionError,
+        onLogout,
         refreshAppData,
         dismissActionError,
         reportActionError,

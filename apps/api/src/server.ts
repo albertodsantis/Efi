@@ -69,7 +69,7 @@ async function startServer() {
   });
 
   app.use('/api/v1', createV1Router(appStore));
-  app.use('/api/auth', createAuthRouter(oauth2Client, env.APP_URL));
+  app.use('/api/auth', createAuthRouter(oauth2Client, env.APP_URL, appStore, pool));
   app.use('/api/calendar', createCalendarRouter(oauth2Client));
 
   if (env.NODE_ENV !== 'production') {

@@ -10,9 +10,19 @@ export interface LogoutResponse {
   success: boolean;
 }
 
+export interface DeleteAccountResponse {
+  success: boolean;
+}
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  name: string;
+}
+
 export interface LoginRequest {
   email: string;
-  name: string;
+  password: string;
 }
 
 export interface SessionUser {

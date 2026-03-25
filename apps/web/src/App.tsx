@@ -7,6 +7,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   Home,
   LayoutDashboard,
+  LogOut,
   Settings as SettingsIcon,
   User,
   Users,
@@ -161,6 +162,7 @@ const DesktopSidebar = ({
   activeTab,
   onTabChange,
   onWheelCapture,
+  onLogout,
   accentColor,
   profileAvatar,
   profileName,
@@ -168,6 +170,7 @@ const DesktopSidebar = ({
   activeTab: TabId;
   onTabChange: (tabId: TabId) => void;
   onWheelCapture?: React.WheelEventHandler<HTMLElement>;
+  onLogout: () => void;
   accentColor: string;
   profileAvatar: string;
   profileName: string;
@@ -183,10 +186,18 @@ const DesktopSidebar = ({
           alt={profileName}
           className="h-12 w-12 rounded-[1rem] border object-cover shadow-sm [border-color:var(--line-soft)]"
         />
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-bold text-[var(--text-primary)]">{profileName}</p>
           <p className="mt-1 text-xs text-[var(--text-secondary)]">Workspace personal</p>
         </div>
+        <button
+          type="button"
+          onClick={onLogout}
+          title="Cerrar sesion"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-card-strong)] hover:text-[var(--text-primary)]"
+        >
+          <LogOut size={16} strokeWidth={2.2} />
+        </button>
       </div>
     </div>
 
@@ -304,6 +315,7 @@ const MainLayout = () => {
     actionError,
     dismissActionError,
     refreshAppData,
+    onLogout,
   } = useAppContext();
 
   const activeTabConfig = tabs.find((tab) => tab.id === activeTab) || tabs[0];
@@ -448,6 +460,7 @@ const MainLayout = () => {
                 activeTab={activeTab}
                 onTabChange={setActiveTab}
                 onWheelCapture={handleDesktopSidebarWheelCapture}
+                onLogout={onLogout}
                 accentColor={accentColor}
                 profileAvatar={profile.avatar}
                 profileName={profile.name}
@@ -564,6 +577,12 @@ export default function App() {
     setAuthPhase('authenticated');
   };
 
+  const handleLogout = () => {
+    authApi.logout().catch(() => {});
+    setSessionUser(null);
+    setAuthPhase('unauthenticated');
+  };
+
   if (authPhase === 'checking') {
     return (
       <div className="flex min-h-[100dvh] items-center justify-center bg-[var(--surface-app)]">
@@ -582,7 +601,7 @@ export default function App() {
   }
 
   return (
-    <AppProvider>
+    <AppProvider onLogout={handleLogout}>
       <AppShell />
     </AppProvider>
   );

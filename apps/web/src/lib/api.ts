@@ -6,11 +6,13 @@ import type {
   CreatePartnerRequest,
   CreateTaskRequest,
   CreateTemplateRequest,
+  DeleteAccountResponse,
   DeleteEntityResponse,
   GoogleAuthUrlResponse,
   LoginRequest,
   MeResponse,
   Partner,
+  RegisterRequest,
   SettingsResponse,
   Task,
   Template,
@@ -21,6 +23,14 @@ import type {
   UpdateTaskRequest,
   UserProfile,
 } from '@shared';
+
+export class ApiError extends Error {
+  code?: string;
+  constructor(message: string, code?: string) {
+    super(message);
+    this.code = code;
+  }
+}
 
 async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(path, {
@@ -33,15 +43,17 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (!response.ok) {
     let message = 'Request failed';
+    let code: string | undefined;
 
     try {
       const errorBody = await response.json();
       message = errorBody.error || message;
+      code = errorBody.code;
     } catch {
       message = response.statusText || message;
     }
 
-    throw new Error(message);
+    throw new ApiError(message, code);
   }
 
   return response.json() as Promise<T>;
@@ -49,6 +61,11 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
 
 export const authApi = {
   me: () => apiRequest<MeResponse>('/api/auth/me'),
+  register: (payload: RegisterRequest) =>
+    apiRequest<MeResponse>('/api/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
   login: (payload: LoginRequest) =>
     apiRequest<MeResponse>('/api/auth/login', {
       method: 'POST',
@@ -58,6 +75,8 @@ export const authApi = {
     apiRequest<{ success: boolean }>('/api/auth/logout', { method: 'POST' }),
   googleLoginUrl: () =>
     apiRequest<GoogleAuthUrlResponse>('/api/auth/google/login-url'),
+  deleteAccount: () =>
+    apiRequest<DeleteAccountResponse>('/api/auth/account', { method: 'DELETE' }),
 };
 
 export const appApi = {

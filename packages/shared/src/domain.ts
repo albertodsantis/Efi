@@ -33,6 +33,9 @@ export interface Partner {
   monthlyRevenue?: number;
   annualRevenue?: number;
   mainChannel?: string;
+  createdAt: string;
+  lastContactedAt?: string;
+  source?: string;
 }
 
 export function getPartnerLookupKey(value: string) {
@@ -48,6 +51,26 @@ export interface Task {
   dueDate: string;
   value: number;
   gcalEventId?: string;
+  createdAt: string;
+  completedAt?: string;
+  cobradoAt?: string;
+  actualPayment?: number;
+}
+
+export interface TaskStatusTransition {
+  id: string;
+  taskId: string;
+  fromStatus: TaskStatus | null;
+  toStatus: TaskStatus;
+  changedAt: string;
+}
+
+export interface PartnerStatusTransition {
+  id: string;
+  partnerId: string;
+  fromStatus: PartnerStatus | null;
+  toStatus: PartnerStatus;
+  changedAt: string;
 }
 
 export interface Template {

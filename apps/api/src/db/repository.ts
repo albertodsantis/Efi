@@ -20,8 +20,10 @@ import type {
   MediaKitMetric,
   MediaKitOffer,
   Partner,
+  PartnerStatusTransition,
   SettingsResponse,
   Task,
+  TaskStatusTransition,
   Template,
   UpdateContactRequest,
   UpdatePartnerRequest,
@@ -152,6 +154,10 @@ function mapRowToTask(row: any): Task {
     dueDate: row.due_date,
     value: Number(row.value),
     ...(row.gcal_event_id ? { gcalEventId: row.gcal_event_id } : {}),
+    createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
+    ...(row.completed_at ? { completedAt: row.completed_at instanceof Date ? row.completed_at.toISOString() : row.completed_at } : {}),
+    ...(row.cobrado_at ? { cobradoAt: row.cobrado_at instanceof Date ? row.cobrado_at.toISOString() : row.cobrado_at } : {}),
+    ...(row.actual_payment != null ? { actualPayment: Number(row.actual_payment) } : {}),
   };
 }
 
@@ -180,6 +186,29 @@ function mapRowToPartner(row: any): Partner {
     monthlyRevenue: Number(row.monthly_revenue),
     annualRevenue: Number(row.annual_revenue),
     mainChannel: row.main_channel,
+    createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
+    ...(row.last_contacted_at ? { lastContactedAt: row.last_contacted_at instanceof Date ? row.last_contacted_at.toISOString() : row.last_contacted_at } : {}),
+    ...(row.source ? { source: row.source } : {}),
+  };
+}
+
+function mapRowToTaskStatusTransition(row: any): TaskStatusTransition {
+  return {
+    id: row.id,
+    taskId: row.task_id,
+    fromStatus: row.from_status,
+    toStatus: row.to_status,
+    changedAt: row.changed_at instanceof Date ? row.changed_at.toISOString() : row.changed_at,
+  };
+}
+
+function mapRowToPartnerStatusTransition(row: any): PartnerStatusTransition {
+  return {
+    id: row.id,
+    partnerId: row.partner_id,
+    fromStatus: row.from_status,
+    toStatus: row.to_status,
+    changedAt: row.changed_at instanceof Date ? row.changed_at.toISOString() : row.changed_at,
   };
 }
 
@@ -239,7 +268,8 @@ export class PostgresAppStore {
         [today],
       ),
       this.pool.query(
-        `SELECT id, title, description, partner_id, status, due_date, value, gcal_event_id
+        `SELECT id, title, description, partner_id, status, due_date, value, gcal_event_id,
+                created_at, completed_at, cobrado_at, actual_payment
          FROM tasks ORDER BY due_date ASC LIMIT 4`,
       ),
     ]);
@@ -255,7 +285,8 @@ export class PostgresAppStore {
 
   async listTasks(): Promise<Task[]> {
     const { rows } = await this.pool.query(
-      `SELECT id, title, description, partner_id, status, due_date, value, gcal_event_id
+      `SELECT id, title, description, partner_id, status, due_date, value, gcal_event_id,
+              created_at, completed_at, cobrado_at, actual_payment
        FROM tasks ORDER BY due_date ASC`,
     );
     return rows.map(mapRowToTask);
@@ -270,6 +301,7 @@ export class PostgresAppStore {
     const dueDate = normalizeDate(input.dueDate);
     const value = normalizeMoney(input.value);
     const gcalEventId = normalizeOptionalText(input.gcalEventId) || null;
+    const actualPayment = input.actualPayment !== undefined ? normalizeMoney(input.actualPayment) : null;
 
     const { rows: partnerRows } = await this.pool.query(
       'SELECT 1 FROM partners WHERE id = $1',
@@ -279,10 +311,19 @@ export class PostgresAppStore {
       throw new Error('La marca seleccionada no existe.');
     }
 
+    const { rows } = await this.pool.query(
+      `INSERT INTO tasks (id, title, description, partner_id, status, due_date, value, gcal_event_id, actual_payment)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING created_at`,
+      [id, title, description, partnerId, status, dueDate, value, gcalEventId, actualPayment],
+    );
+
+    const createdAt = rows[0].created_at instanceof Date ? rows[0].created_at.toISOString() : rows[0].created_at;
+
     await this.pool.query(
-      `INSERT INTO tasks (id, title, description, partner_id, status, due_date, value, gcal_event_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [id, title, description, partnerId, status, dueDate, value, gcalEventId],
+      `INSERT INTO task_status_history (task_id, from_status, to_status)
+       VALUES ($1, NULL, $2)`,
+      [id, status],
     );
 
     return {
@@ -293,17 +334,20 @@ export class PostgresAppStore {
       status: status as Task['status'],
       dueDate,
       value,
+      createdAt,
       ...(gcalEventId ? { gcalEventId } : {}),
+      ...(actualPayment != null ? { actualPayment } : {}),
     };
   }
 
   async updateTask(taskId: string, updates: UpdateTaskRequest): Promise<Task | null> {
     const { rows: existing } = await this.pool.query(
-      'SELECT 1 FROM tasks WHERE id = $1',
+      'SELECT status FROM tasks WHERE id = $1',
       [taskId],
     );
     if (existing.length === 0) return null;
 
+    const previousStatus = existing[0].status;
     const setClauses: string[] = [];
     const values: any[] = [];
     let idx = 1;
@@ -324,8 +368,19 @@ export class PostgresAppStore {
       values.push(pid);
     }
     if (updates.status !== undefined) {
+      const newStatus = normalizeRequiredText(updates.status, 'El estado');
       setClauses.push(`status = $${idx++}`);
-      values.push(normalizeRequiredText(updates.status, 'El estado'));
+      values.push(newStatus);
+
+      if (newStatus !== previousStatus) {
+        if (newStatus === 'Completada') {
+          setClauses.push(`completed_at = COALESCE(completed_at, NOW())`);
+        }
+        if (newStatus === 'Cobrado') {
+          setClauses.push(`cobrado_at = COALESCE(cobrado_at, NOW())`);
+          setClauses.push(`completed_at = COALESCE(completed_at, NOW())`);
+        }
+      }
     }
     if (updates.dueDate !== undefined) {
       setClauses.push(`due_date = $${idx++}`);
@@ -339,10 +394,15 @@ export class PostgresAppStore {
       setClauses.push(`gcal_event_id = $${idx++}`);
       values.push(normalizeOptionalText(updates.gcalEventId) || null);
     }
+    if (updates.actualPayment !== undefined) {
+      setClauses.push(`actual_payment = $${idx++}`);
+      values.push(normalizeMoney(updates.actualPayment));
+    }
 
     if (setClauses.length === 0) {
       const { rows } = await this.pool.query(
-        `SELECT id, title, description, partner_id, status, due_date, value, gcal_event_id
+        `SELECT id, title, description, partner_id, status, due_date, value, gcal_event_id,
+                created_at, completed_at, cobrado_at, actual_payment
          FROM tasks WHERE id = $1`,
         [taskId],
       );
@@ -354,9 +414,18 @@ export class PostgresAppStore {
 
     const { rows: updated } = await this.pool.query(
       `UPDATE tasks SET ${setClauses.join(', ')} WHERE id = $${idx} RETURNING
-       id, title, description, partner_id, status, due_date, value, gcal_event_id`,
+       id, title, description, partner_id, status, due_date, value, gcal_event_id,
+       created_at, completed_at, cobrado_at, actual_payment`,
       values,
     );
+
+    if (updates.status !== undefined && updates.status !== previousStatus) {
+      await this.pool.query(
+        `INSERT INTO task_status_history (task_id, from_status, to_status)
+         VALUES ($1, $2, $3)`,
+        [taskId, previousStatus, updates.status],
+      );
+    }
 
     return mapRowToTask(updated[0]);
   }
@@ -424,13 +493,23 @@ export class PostgresAppStore {
     const monthlyRevenue = Number((input as any).monthlyRevenue) || 0;
     const annualRevenue = Number((input as any).annualRevenue) || 0;
     const mainChannel = normalizeText((input as any).mainChannel);
+    const source = normalizeText(input.source);
+
+    const { rows } = await this.pool.query(
+      `INSERT INTO partners (id, name, name_lookup, status, logo, partnership_type,
+         key_terms, start_date, end_date, monthly_revenue, annual_revenue, main_channel, source)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+       RETURNING created_at`,
+      [id, normalizedName, lookupKey, status, logo, partnershipType,
+       keyTerms, startDate, endDate, monthlyRevenue, annualRevenue, mainChannel, source],
+    );
+
+    const createdAt = rows[0].created_at instanceof Date ? rows[0].created_at.toISOString() : rows[0].created_at;
 
     await this.pool.query(
-      `INSERT INTO partners (id, name, name_lookup, status, logo, partnership_type,
-         key_terms, start_date, end_date, monthly_revenue, annual_revenue, main_channel)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
-      [id, normalizedName, lookupKey, status, logo, partnershipType,
-       keyTerms, startDate, endDate, monthlyRevenue, annualRevenue, mainChannel],
+      `INSERT INTO partner_status_history (partner_id, from_status, to_status)
+       VALUES ($1, NULL, $2)`,
+      [id, status],
     );
 
     return {
@@ -446,6 +525,8 @@ export class PostgresAppStore {
       monthlyRevenue,
       annualRevenue,
       mainChannel,
+      createdAt,
+      ...(source ? { source } : {}),
     };
   }
 
@@ -456,6 +537,7 @@ export class PostgresAppStore {
     );
     if (existing.length === 0) return null;
 
+    const previousStatus = existing[0].status;
     const setClauses: string[] = [];
     const values: any[] = [];
     let idx = 1;
@@ -514,6 +596,14 @@ export class PostgresAppStore {
       setClauses.push(`main_channel = $${idx++}`);
       values.push(normalizeText((updates as any).mainChannel));
     }
+    if ((updates as any).lastContactedAt !== undefined) {
+      setClauses.push(`last_contacted_at = $${idx++}`);
+      values.push(normalizeOptionalText((updates as any).lastContactedAt) || null);
+    }
+    if (updates.source !== undefined) {
+      setClauses.push(`source = $${idx++}`);
+      values.push(normalizeText(updates.source));
+    }
 
     if (setClauses.length > 0) {
       setClauses.push('updated_at = NOW()');
@@ -522,6 +612,14 @@ export class PostgresAppStore {
       await this.pool.query(
         `UPDATE partners SET ${setClauses.join(', ')} WHERE id = $${idx}`,
         values,
+      );
+    }
+
+    if (updates.status !== undefined && updates.status !== previousStatus) {
+      await this.pool.query(
+        `INSERT INTO partner_status_history (partner_id, from_status, to_status)
+         VALUES ($1, $2, $3)`,
+        [partnerId, previousStatus, updates.status],
       );
     }
 
@@ -844,5 +942,25 @@ export class PostgresAppStore {
   async deleteTemplate(templateId: string): Promise<DeleteEntityResponse> {
     const { rowCount } = await this.pool.query('DELETE FROM templates WHERE id = $1', [templateId]);
     return { success: (rowCount ?? 0) > 0 };
+  }
+
+  /* ---------- STATUS HISTORY ---------- */
+
+  async getTaskStatusHistory(taskId: string): Promise<TaskStatusTransition[]> {
+    const { rows } = await this.pool.query(
+      `SELECT id, task_id, from_status, to_status, changed_at
+       FROM task_status_history WHERE task_id = $1 ORDER BY changed_at ASC`,
+      [taskId],
+    );
+    return rows.map(mapRowToTaskStatusTransition);
+  }
+
+  async getPartnerStatusHistory(partnerId: string): Promise<PartnerStatusTransition[]> {
+    const { rows } = await this.pool.query(
+      `SELECT id, partner_id, from_status, to_status, changed_at
+       FROM partner_status_history WHERE partner_id = $1 ORDER BY changed_at ASC`,
+      [partnerId],
+    );
+    return rows.map(mapRowToPartnerStatusTransition);
   }
 }

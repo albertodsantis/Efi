@@ -4,6 +4,7 @@ import {
   Bell,
   Calendar as CalendarIcon,
   ChevronDown,
+  LogOut,
   MessageSquare,
   Moon,
   PencilLine,
@@ -13,6 +14,7 @@ import {
   Sun,
   Trash2,
   Type,
+  UserX,
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import OverlayModal from '../components/OverlayModal';
@@ -26,6 +28,7 @@ import {
   ToggleSwitch,
   cx,
 } from '../components/ui';
+import { authApi } from '../lib/api';
 import { toast } from '../lib/toast';
 
 const ACCENT_OPTIONS = [
@@ -71,12 +74,14 @@ export default function Settings() {
     theme,
     setTheme,
     reportActionError,
+    onLogout,
   } = useAppContext();
   const [gcalConnected, setGcalConnected] = useState(false);
   const [isAddingTemplate, setIsAddingTemplate] = useState(false);
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
   const [isAccentPaletteOpen, setIsAccentPaletteOpen] = useState(false);
   const [newTemplate, setNewTemplate] = useState({ name: '', subject: '', body: '' });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const activeAccent =
     ACCENT_OPTIONS.find((option) => option.value.toLowerCase() === accentColor.toLowerCase()) ?? {
@@ -159,6 +164,15 @@ export default function Settings() {
   const handleResetTour = () => {
     localStorage.removeItem('hasSeenOnboardingTour');
     window.location.reload();
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      await authApi.deleteAccount();
+      onLogout();
+    } catch {
+      reportActionError('No pudimos eliminar la cuenta. Intenta de nuevo.');
+    }
   };
 
   return (
@@ -410,6 +424,77 @@ export default function Settings() {
             <RotateCcw size={16} />
             Reiniciar tour
           </Button>
+        </div>
+      </SurfaceCard>
+
+      <SurfaceCard className="overflow-hidden p-0">
+        <div className="p-6 lg:p-7">
+          <div className="flex shrink-0 items-baseline gap-3">
+            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
+              Cuenta
+            </h2>
+            <span className="hidden text-[11px] font-bold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500 sm:inline-block">
+              Sesion
+            </span>
+          </div>
+
+          <div className="mt-5 space-y-3">
+            <SettingRow
+              icon={LogOut}
+              title="Cerrar sesion"
+              description="Cierra tu sesion actual en este dispositivo."
+              onClick={onLogout}
+              trailing={
+                <span className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
+                  Salir
+                </span>
+              }
+              className="px-0 py-3"
+            />
+
+            <div className="border-t border-slate-200/70 pt-3 dark:border-slate-700/60">
+              {showDeleteConfirm ? (
+                <div className="rounded-[1rem] border border-rose-200 bg-rose-50 p-4 dark:border-rose-800/50 dark:bg-rose-950/30">
+                  <p className="text-sm font-bold text-rose-700 dark:text-rose-400">
+                    Estas seguro?
+                  </p>
+                  <p className="mt-1 text-sm text-rose-600/80 dark:text-rose-400/70">
+                    Esta accion cerrara tu sesion y eliminara tus datos. No se puede deshacer.
+                  </p>
+                  <div className="mt-4 flex gap-3">
+                    <Button
+                      tone="danger"
+                      onClick={() => void handleDeleteAccount()}
+                      className="justify-center"
+                    >
+                      <Trash2 size={16} />
+                      Si, eliminar cuenta
+                    </Button>
+                    <Button
+                      tone="secondary"
+                      onClick={() => setShowDeleteConfirm(false)}
+                      className="justify-center"
+                    >
+                      Cancelar
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <SettingRow
+                  icon={UserX}
+                  title="Eliminar cuenta"
+                  description="Elimina tu cuenta y todos los datos asociados de forma permanente."
+                  onClick={() => setShowDeleteConfirm(true)}
+                  trailing={
+                    <span className="text-[11px] font-bold tracking-[0.16em] text-rose-400 uppercase dark:text-rose-500">
+                      Eliminar
+                    </span>
+                  }
+                  className="px-0 py-3"
+                />
+              )}
+            </div>
+          </div>
         </div>
       </SurfaceCard>
 

@@ -5,9 +5,11 @@ import type {
   MediaKitProfile,
   Partner,
   PartnerStatus,
+  PartnerStatusTransition,
   SocialProfiles,
   Task,
   TaskStatus,
+  TaskStatusTransition,
   Template,
   UserProfile,
 } from '../domain';
@@ -30,6 +32,7 @@ export interface CreateTaskRequest {
   dueDate: string;
   value: number;
   gcalEventId?: string;
+  actualPayment?: number;
 }
 
 export type UpdateTaskRequest = Partial<CreateTaskRequest>;
@@ -38,6 +41,7 @@ export interface CreatePartnerRequest {
   name: string;
   status: PartnerStatus;
   logo?: string;
+  source?: string;
 }
 
 export type UpdatePartnerRequest = Partial<CreatePartnerRequest>;
@@ -87,3 +91,5 @@ export type ContactResponse = Contact;
 export type PartnerResponse = Partner;
 export type TaskResponse = Task;
 export type TemplateResponse = Template;
+export type TaskStatusHistoryResponse = TaskStatusTransition[];
+export type PartnerStatusHistoryResponse = PartnerStatusTransition[];

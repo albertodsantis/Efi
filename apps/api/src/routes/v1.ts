@@ -231,5 +231,25 @@ export function createV1Router(appStore: PostgresAppStore) {
     }
   });
 
+  router.get('/tasks/:taskId/status-history', async (req, res) => {
+    try {
+      const history = await appStore.getTaskStatusHistory(req.params.taskId);
+      res.json(history);
+    } catch (error) {
+      console.error('Task status history error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  router.get('/partners/:partnerId/status-history', async (req, res) => {
+    try {
+      const history = await appStore.getPartnerStatusHistory(req.params.partnerId);
+      res.json(history);
+    } catch (error) {
+      console.error('Partner status history error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
   return router;
 }

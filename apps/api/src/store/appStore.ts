@@ -19,8 +19,10 @@ import type {
   MediaKitMetric,
   MediaKitOffer,
   Partner,
+  PartnerStatusTransition,
   SettingsResponse,
   Task,
+  TaskStatusTransition,
   Template,
   UpdateContactRequest,
   UpdatePartnerRequest,
@@ -41,6 +43,7 @@ const initialState: AppState = {
       status: 'En Progreso',
       dueDate: '2026-03-22',
       value: 1500,
+      createdAt: '2026-03-10T10:00:00.000Z',
     },
     {
       id: '2',
@@ -50,6 +53,7 @@ const initialState: AppState = {
       status: 'Pendiente',
       dueDate: '2026-04-05',
       value: 2000,
+      createdAt: '2026-03-12T14:00:00.000Z',
     },
     {
       id: '3',
@@ -59,6 +63,7 @@ const initialState: AppState = {
       status: 'En Revisión',
       dueDate: '2026-03-20',
       value: 800,
+      createdAt: '2026-03-08T09:00:00.000Z',
     },
   ],
   partners: [
@@ -73,6 +78,8 @@ const initialState: AppState = {
       monthlyRevenue: 1200,
       annualRevenue: 14400,
       mainChannel: 'Instagram/TikTok',
+      createdAt: '2025-09-15T10:00:00.000Z',
+      source: 'Referido',
       contacts: [
         {
           id: 'c1',
@@ -88,6 +95,8 @@ const initialState: AppState = {
       id: 'p2',
       name: 'FitLife',
       status: 'En Negociación',
+      createdAt: '2026-03-01T08:00:00.000Z',
+      source: 'DM Instagram',
       contacts: [],
     },
   ],
@@ -314,6 +323,21 @@ function normalizeMediaKitProfile(
 
 class InMemoryAppStore {
   private state: AppState = clone(initialState);
+  private taskStatusHistory: TaskStatusTransition[] = [
+    { id: 'th1', taskId: '1', fromStatus: null, toStatus: 'Pendiente', changedAt: '2026-03-10T10:00:00.000Z' },
+    { id: 'th2', taskId: '1', fromStatus: 'Pendiente', toStatus: 'En Progreso', changedAt: '2026-03-15T11:00:00.000Z' },
+    { id: 'th3', taskId: '2', fromStatus: null, toStatus: 'Pendiente', changedAt: '2026-03-12T14:00:00.000Z' },
+    { id: 'th4', taskId: '3', fromStatus: null, toStatus: 'Pendiente', changedAt: '2026-03-08T09:00:00.000Z' },
+    { id: 'th5', taskId: '3', fromStatus: 'Pendiente', toStatus: 'En Progreso', changedAt: '2026-03-12T10:00:00.000Z' },
+    { id: 'th6', taskId: '3', fromStatus: 'En Progreso', toStatus: 'En Revisión', changedAt: '2026-03-18T16:00:00.000Z' },
+  ];
+  private partnerStatusHistory: PartnerStatusTransition[] = [
+    { id: 'ph1', partnerId: 'p1', fromStatus: null, toStatus: 'Prospecto', changedAt: '2025-09-15T10:00:00.000Z' },
+    { id: 'ph2', partnerId: 'p1', fromStatus: 'Prospecto', toStatus: 'En Negociación', changedAt: '2025-09-20T10:00:00.000Z' },
+    { id: 'ph3', partnerId: 'p1', fromStatus: 'En Negociación', toStatus: 'Activo', changedAt: '2025-10-01T10:00:00.000Z' },
+    { id: 'ph4', partnerId: 'p2', fromStatus: null, toStatus: 'Prospecto', changedAt: '2026-03-01T08:00:00.000Z' },
+    { id: 'ph5', partnerId: 'p2', fromStatus: 'Prospecto', toStatus: 'En Negociación', changedAt: '2026-03-05T09:00:00.000Z' },
+  ];
 
   getSnapshot(): AppState {
     return clone(this.state);
@@ -340,6 +364,7 @@ class InMemoryAppStore {
   }
 
   createTask(input: CreateTaskRequest): Task {
+    const now = new Date().toISOString();
     const task: Task = {
       id: randomUUID(),
       title: normalizeRequiredText(input.title, 'El titulo'),
@@ -349,6 +374,8 @@ class InMemoryAppStore {
       dueDate: normalizeDate(input.dueDate),
       value: normalizeMoney(input.value),
       gcalEventId: normalizeOptionalText(input.gcalEventId),
+      createdAt: now,
+      actualPayment: input.actualPayment !== undefined ? normalizeMoney(input.actualPayment) : undefined,
     };
 
     const partnerExists = this.state.partners.some((partner) => partner.id === task.partnerId);
@@ -357,13 +384,26 @@ class InMemoryAppStore {
     }
 
     this.state.tasks.push(task);
+
+    this.taskStatusHistory.push({
+      id: randomUUID(),
+      taskId: task.id,
+      fromStatus: null,
+      toStatus: task.status,
+      changedAt: now,
+    });
+
     return clone(task);
   }
 
   deleteTask(taskId: string): DeleteEntityResponse {
     const originalLength = this.state.tasks.length;
     this.state.tasks = this.state.tasks.filter((task) => task.id !== taskId);
-    return { success: this.state.tasks.length !== originalLength };
+    const deleted = this.state.tasks.length !== originalLength;
+    if (deleted) {
+      this.taskStatusHistory = this.taskStatusHistory.filter((t) => t.taskId !== taskId);
+    }
+    return { success: deleted };
   }
 
   updateTask(taskId: string, updates: UpdateTaskRequest): Task | null {
@@ -372,7 +412,8 @@ class InMemoryAppStore {
       return null;
     }
 
-    const normalizedUpdates: UpdateTaskRequest = {};
+    const previousStatus = task.status;
+    const normalizedUpdates: Partial<Task> = {};
 
     if (updates.title !== undefined) {
       normalizedUpdates.title = normalizeRequiredText(updates.title, 'El titulo');
@@ -408,7 +449,35 @@ class InMemoryAppStore {
       normalizedUpdates.gcalEventId = normalizeOptionalText(updates.gcalEventId);
     }
 
+    if (updates.actualPayment !== undefined) {
+      normalizedUpdates.actualPayment = normalizeMoney(updates.actualPayment);
+    }
+
     Object.assign(task, normalizedUpdates);
+
+    const newStatus = normalizedUpdates.status;
+    if (newStatus && newStatus !== previousStatus) {
+      const now = new Date().toISOString();
+
+      this.taskStatusHistory.push({
+        id: randomUUID(),
+        taskId,
+        fromStatus: previousStatus,
+        toStatus: newStatus,
+        changedAt: now,
+      });
+
+      if (newStatus === 'Completada' && !task.completedAt) {
+        task.completedAt = now;
+      }
+      if (newStatus === 'Cobrado' && !task.cobradoAt) {
+        task.cobradoAt = now;
+        if (!task.completedAt) {
+          task.completedAt = now;
+        }
+      }
+    }
+
     return clone(task);
   }
 
@@ -424,6 +493,7 @@ class InMemoryAppStore {
       return clone(existingPartner);
     }
 
+    const now = new Date().toISOString();
     const partner: Partner = {
       id: randomUUID(),
       name: normalizedName,
@@ -437,9 +507,20 @@ class InMemoryAppStore {
       monthlyRevenue: Number((input as any).monthlyRevenue) || 0,
       annualRevenue: Number((input as any).annualRevenue) || 0,
       mainChannel: normalizeText((input as any).mainChannel),
+      createdAt: now,
+      source: normalizeText(input.source),
     };
 
     this.state.partners.push(partner);
+
+    this.partnerStatusHistory.push({
+      id: randomUUID(),
+      partnerId: partner.id,
+      fromStatus: null,
+      toStatus: partner.status,
+      changedAt: now,
+    });
+
     return clone(partner);
   }
 
@@ -449,7 +530,8 @@ class InMemoryAppStore {
       return null;
     }
 
-    const normalizedUpdates: UpdatePartnerRequest = {};
+    const previousStatus = partner.status;
+    const normalizedUpdates: Partial<Partner> = {};
 
     if (updates.name !== undefined) {
       normalizedUpdates.name = normalizePartnerName(updates.name, 'El nombre de la marca');
@@ -469,34 +551,54 @@ class InMemoryAppStore {
     }
 
     if ((updates as any).partnershipType !== undefined) {
-      (normalizedUpdates as any).partnershipType = normalizeText((updates as any).partnershipType);
+      normalizedUpdates.partnershipType = normalizeText((updates as any).partnershipType) as any;
     }
 
     if ((updates as any).keyTerms !== undefined) {
-      (normalizedUpdates as any).keyTerms = normalizeText((updates as any).keyTerms);
+      normalizedUpdates.keyTerms = normalizeText((updates as any).keyTerms);
     }
 
     if ((updates as any).startDate !== undefined) {
-      (normalizedUpdates as any).startDate = normalizeOptionalText((updates as any).startDate);
+      normalizedUpdates.startDate = normalizeOptionalText((updates as any).startDate);
     }
 
     if ((updates as any).endDate !== undefined) {
-      (normalizedUpdates as any).endDate = normalizeOptionalText((updates as any).endDate);
+      normalizedUpdates.endDate = normalizeOptionalText((updates as any).endDate);
     }
 
     if ((updates as any).monthlyRevenue !== undefined) {
-      (normalizedUpdates as any).monthlyRevenue = Number((updates as any).monthlyRevenue) || 0;
+      normalizedUpdates.monthlyRevenue = Number((updates as any).monthlyRevenue) || 0;
     }
 
     if ((updates as any).annualRevenue !== undefined) {
-      (normalizedUpdates as any).annualRevenue = Number((updates as any).annualRevenue) || 0;
+      normalizedUpdates.annualRevenue = Number((updates as any).annualRevenue) || 0;
     }
 
     if ((updates as any).mainChannel !== undefined) {
-      (normalizedUpdates as any).mainChannel = normalizeText((updates as any).mainChannel);
+      normalizedUpdates.mainChannel = normalizeText((updates as any).mainChannel);
+    }
+
+    if ((updates as any).lastContactedAt !== undefined) {
+      normalizedUpdates.lastContactedAt = normalizeOptionalText((updates as any).lastContactedAt);
+    }
+
+    if (updates.source !== undefined) {
+      normalizedUpdates.source = normalizeText(updates.source);
     }
 
     Object.assign(partner, normalizedUpdates);
+
+    const newStatus = normalizedUpdates.status;
+    if (newStatus && newStatus !== previousStatus) {
+      this.partnerStatusHistory.push({
+        id: randomUUID(),
+        partnerId,
+        fromStatus: previousStatus,
+        toStatus: newStatus,
+        changedAt: new Date().toISOString(),
+      });
+    }
+
     return clone(partner);
   }
 
@@ -708,6 +810,22 @@ class InMemoryAppStore {
     const originalLength = this.state.templates.length;
     this.state.templates = this.state.templates.filter((template) => template.id !== templateId);
     return { success: this.state.templates.length !== originalLength };
+  }
+
+  getTaskStatusHistory(taskId: string): TaskStatusTransition[] {
+    return clone(
+      this.taskStatusHistory
+        .filter((t) => t.taskId === taskId)
+        .sort((a, b) => new Date(a.changedAt).getTime() - new Date(b.changedAt).getTime()),
+    );
+  }
+
+  getPartnerStatusHistory(partnerId: string): PartnerStatusTransition[] {
+    return clone(
+      this.partnerStatusHistory
+        .filter((t) => t.partnerId === partnerId)
+        .sort((a, b) => new Date(a.changedAt).getTime() - new Date(b.changedAt).getTime()),
+    );
   }
 }
 

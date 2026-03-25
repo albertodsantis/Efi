@@ -3,14 +3,18 @@ import {
   ArrowRight,
   BarChart3,
   CalendarDays,
+  Eye,
+  EyeOff,
   FolderKanban,
   LayoutDashboard,
   Sparkles,
   Users,
 } from 'lucide-react';
 import type { SessionUser } from '@shared';
-import { authApi } from '../lib/api';
+import { authApi, ApiError } from '../lib/api';
 import { cx } from '../components/ui';
+
+type AuthMode = 'login' | 'register';
 
 const features = [
   {
@@ -57,25 +61,49 @@ export default function Landing({
     if (savedAccent) setACCENT(savedAccent);
   }, []);
 
+  const [mode, setMode] = useState<AuthMode>('login');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
+  const switchMode = (newMode: AuthMode) => {
+    setMode(newMode);
+    setError('');
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || !email.trim()) return;
+    if (!email.trim() || !password) return;
+    if (mode === 'register' && !name.trim()) return;
 
     setLoading(true);
     setError('');
 
     try {
-      const { user } = await authApi.login({ email: email.trim(), name: name.trim() });
-      if (user) {
-        onLogin(user);
+      if (mode === 'register') {
+        const { user } = await authApi.register({
+          email: email.trim(),
+          password,
+          name: name.trim(),
+        });
+        if (user) onLogin(user);
+      } else {
+        const { user } = await authApi.login({
+          email: email.trim(),
+          password,
+        });
+        if (user) onLogin(user);
       }
     } catch (err) {
-      setError('No se pudo iniciar sesión. Intenta de nuevo.');
+      if (err instanceof ApiError && err.code === 'USER_NOT_FOUND') {
+        setMode('register');
+        setError('No encontramos una cuenta con ese email. Crea una aqui.');
+        return;
+      }
+      setError(err instanceof Error ? err.message : 'Ocurrio un error. Intenta de nuevo.');
     } finally {
       setLoading(false);
     }
@@ -105,6 +133,8 @@ export default function Landing({
       setError('No se pudo conectar con Google. Intenta de nuevo.');
     }
   };
+
+  const isLogin = mode === 'login';
 
   return (
     <div className="min-h-[100dvh] bg-[var(--surface-app)] font-sans text-[var(--text-primary)]">
@@ -139,7 +169,7 @@ export default function Landing({
             href="#login"
             className="rounded-full border px-4 py-2 text-xs font-bold transition-colors hover:bg-[var(--surface-card)] [border-color:var(--line-soft)]"
           >
-            Iniciar sesión
+            Acceder
           </a>
         </nav>
 
@@ -204,7 +234,7 @@ export default function Landing({
             </div>
           </div>
 
-          {/* Right: Login card */}
+          {/* Right: Auth card */}
           <div id="login" className="w-full lg:sticky lg:top-12">
             <div className="relative overflow-hidden rounded-[1.5rem] border bg-[var(--surface-card-strong)] shadow-[var(--shadow-medium)] backdrop-blur-xl [border-color:var(--line-soft)]">
               {/* Card glow */}
@@ -216,18 +246,45 @@ export default function Landing({
               />
 
               <div className="relative px-6 pb-8 pt-7 sm:px-8 sm:pt-8">
-                <h2 className="text-xl font-extrabold tracking-tight text-[var(--text-primary)] sm:text-2xl">
-                  Iniciar sesión
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-                  Accede a tu workspace personal de Tía.
+                {/* Mode tabs */}
+                <div className="flex gap-1 rounded-[0.85rem] border bg-[var(--surface-card)] p-1 [border-color:var(--line-soft)]">
+                  <button
+                    type="button"
+                    onClick={() => switchMode('login')}
+                    className={cx(
+                      'flex-1 rounded-[0.7rem] py-2.5 text-sm font-bold transition-all',
+                      isLogin
+                        ? 'bg-[var(--surface-card-strong)] shadow-sm text-[var(--text-primary)]'
+                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]',
+                    )}
+                  >
+                    Iniciar sesion
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => switchMode('register')}
+                    className={cx(
+                      'flex-1 rounded-[0.7rem] py-2.5 text-sm font-bold transition-all',
+                      !isLogin
+                        ? 'bg-[var(--surface-card-strong)] shadow-sm text-[var(--text-primary)]'
+                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]',
+                    )}
+                  >
+                    Crear cuenta
+                  </button>
+                </div>
+
+                <p className="mt-4 text-sm leading-6 text-[var(--text-secondary)]">
+                  {isLogin
+                    ? 'Ingresa con tu cuenta existente.'
+                    : 'Crea tu workspace en segundos.'}
                 </p>
 
                 {/* Google login */}
                 <button
                   type="button"
                   onClick={handleGoogleLogin}
-                  className="mt-6 flex w-full items-center justify-center gap-3 rounded-[1rem] border bg-[var(--surface-card)] px-4 py-3.5 text-sm font-bold transition-all hover:shadow-[var(--shadow-soft)] active:scale-[0.98] [border-color:var(--line-soft)]"
+                  className="mt-5 flex w-full items-center justify-center gap-3 rounded-[1rem] border bg-[var(--surface-card)] px-4 py-3.5 text-sm font-bold transition-all hover:shadow-[var(--shadow-soft)] active:scale-[0.98] [border-color:var(--line-soft)]"
                 >
                   <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
                     <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 01-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
@@ -239,50 +296,84 @@ export default function Landing({
                 </button>
 
                 {/* Divider */}
-                <div className="my-6 flex items-center gap-4">
+                <div className="my-5 flex items-center gap-4">
                   <div className="h-px flex-1 bg-[var(--line-soft)]" />
                   <span className="text-[11px] font-bold tracking-[0.14em] text-[var(--text-secondary)]/60 uppercase">
-                    o continúa con email
+                    o con email
                   </span>
                   <div className="h-px flex-1 bg-[var(--line-soft)]" />
                 </div>
 
                 {/* Email form */}
-                <form onSubmit={handleEmailLogin} className="space-y-4">
+                <form onSubmit={handleSubmit} className="space-y-3.5">
+                  {!isLogin ? (
+                    <div>
+                      <label
+                        htmlFor="auth-name"
+                        className="mb-1.5 block text-xs font-bold text-[var(--text-secondary)]"
+                      >
+                        Nombre
+                      </label>
+                      <input
+                        id="auth-name"
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="Tu nombre"
+                        required={!isLogin}
+                        autoComplete="name"
+                        className="w-full rounded-[0.85rem] border bg-[var(--surface-card)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/40 transition-colors focus:bg-[var(--surface-card-strong)] [border-color:var(--line-soft)]"
+                      />
+                    </div>
+                  ) : null}
+
                   <div>
                     <label
-                      htmlFor="login-name"
+                      htmlFor="auth-email"
                       className="mb-1.5 block text-xs font-bold text-[var(--text-secondary)]"
                     >
-                      Nombre
+                      Email
                     </label>
                     <input
-                      id="login-name"
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Tu nombre"
+                      id="auth-email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="tu@email.com"
                       required
+                      autoComplete="email"
                       className="w-full rounded-[0.85rem] border bg-[var(--surface-card)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/40 transition-colors focus:bg-[var(--surface-card-strong)] [border-color:var(--line-soft)]"
                     />
                   </div>
 
                   <div>
                     <label
-                      htmlFor="login-email"
+                      htmlFor="auth-password"
                       className="mb-1.5 block text-xs font-bold text-[var(--text-secondary)]"
                     >
-                      Email
+                      Contraseña
                     </label>
-                    <input
-                      id="login-email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="tu@email.com"
-                      required
-                      className="w-full rounded-[0.85rem] border bg-[var(--surface-card)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/40 transition-colors focus:bg-[var(--surface-card-strong)] [border-color:var(--line-soft)]"
-                    />
+                    <div className="relative">
+                      <input
+                        id="auth-password"
+                        type={showPassword ? 'text' : 'password'}
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder={isLogin ? 'Tu contraseña' : 'Minimo 6 caracteres'}
+                        required
+                        minLength={isLogin ? undefined : 6}
+                        autoComplete={isLogin ? 'current-password' : 'new-password'}
+                        className="w-full rounded-[0.85rem] border bg-[var(--surface-card)] px-4 py-3 pr-12 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/40 transition-colors focus:bg-[var(--surface-card-strong)] [border-color:var(--line-soft)]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        tabIndex={-1}
+                        className="absolute top-1/2 right-3 -translate-y-1/2 p-1 text-[var(--text-secondary)]/50 transition-colors hover:text-[var(--text-secondary)]"
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
                   </div>
 
                   {error ? (
@@ -291,11 +382,13 @@ export default function Landing({
 
                   <button
                     type="submit"
-                    disabled={loading || !name.trim() || !email.trim()}
+                    disabled={loading || !email.trim() || !password || (!isLogin && !name.trim())}
                     className="flex w-full items-center justify-center gap-2 rounded-[1rem] px-4 py-3.5 text-sm font-bold shadow-[0_12px_30px_-16px_var(--accent-glow)] transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                     style={{ backgroundColor: ACCENT, color: '#fff' }}
                   >
-                    {loading ? 'Entrando…' : 'Entrar'}
+                    {loading
+                      ? (isLogin ? 'Ingresando…' : 'Creando cuenta…')
+                      : (isLogin ? 'Iniciar sesion' : 'Crear cuenta')}
                     {!loading ? <ArrowRight size={16} strokeWidth={2.5} /> : null}
                   </button>
                 </form>
