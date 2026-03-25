@@ -140,4 +140,21 @@ export const appApi = {
     apiRequest<DeleteEntityResponse>(`/api/v1/templates/${templateId}`, {
       method: 'DELETE',
     }),
+  getUploadStatus: () => apiRequest<{ enabled: boolean }>('/api/v1/uploads/status'),
+  uploadFile: async (file: File, category: string): Promise<{ url: string; path: string }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('category', category);
+    const res = await fetch('/api/v1/uploads', { method: 'POST', body: formData });
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: 'Error al subir archivo' }));
+      throw new ApiError(body.error || 'Error al subir archivo');
+    }
+    return res.json();
+  },
+  deleteUpload: (path: string) =>
+    apiRequest<{ success: boolean }>('/api/v1/uploads', {
+      method: 'DELETE',
+      body: JSON.stringify({ path }),
+    }),
 };

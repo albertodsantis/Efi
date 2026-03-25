@@ -7,6 +7,8 @@ export interface AppEnv {
   PORT: number;
   NODE_ENV: 'development' | 'production';
   GEMINI_API_KEY?: string;
+  SUPABASE_URL?: string;
+  SUPABASE_SERVICE_KEY?: string;
 }
 
 function requireEnv(name: string): string {
@@ -38,5 +40,7 @@ export function loadEnv(): AppEnv {
     PORT: Number(process.env.PORT || 3000),
     NODE_ENV: (process.env.NODE_ENV === 'production' ? 'production' : 'development'),
     GEMINI_API_KEY: process.env.GEMINI_API_KEY || undefined,
+    SUPABASE_URL: process.env.SUPABASE_URL || undefined,
+    SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY || undefined,
   };
 }

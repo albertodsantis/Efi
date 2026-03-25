@@ -19,6 +19,8 @@ import type { Goal, GoalPriority, GoalStatus, MediaKitMetric, MediaKitOffer, Med
 import { useAppContext } from '../context/AppContext';
 import { Button, SurfaceCard, ModalPanel, cx } from '../components/ui';
 import CustomSelect from '../components/CustomSelect';
+import ImageUpload from '../components/ImageUpload';
+import { appApi } from '../lib/api';
 import { toast } from '../lib/toast';
 
 const GOAL_STATUSES: GoalStatus[] = ['Pendiente', 'En Curso', 'Alcanzado', 'Cancelado'];
@@ -142,8 +144,13 @@ export default function Profile() {
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isGoalsModalOpen, setIsGoalsModalOpen] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [uploadsEnabled, setUploadsEnabled] = useState(false);
   const isMounted = useRef(false);
   const lastSavedProfile = useRef(JSON.stringify(profileForm));
+
+  useEffect(() => {
+    appApi.getUploadStatus().then((res) => setUploadsEnabled(res.enabled)).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!isMounted.current) {
@@ -671,7 +678,7 @@ export default function Profile() {
                     </div>
                     <div className="min-w-0">
                       <p className="truncate text-[10px] font-extrabold tracking-[0.18em] text-[var(--text-secondary)]/80 uppercase">
-                        Plan Estratégico
+                        Metas y objetivos
                       </p>
                       <p className="mt-0.5 truncate text-[1.05rem] font-black tracking-tight text-[var(--text-primary)]">
                         Plan Estratégico
@@ -804,12 +811,15 @@ export default function Profile() {
             </div>
             <div>
               <label className={labelClass}>Avatar</label>
-              <input
+              <ImageUpload
                 value={profileForm.avatar || ''}
-                onChange={(event) => setProfileField('avatar', event.target.value)}
-                className={fieldClass}
-                style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                placeholder="https://..."
+                onChange={(url) => setProfileField('avatar', url)}
+                category="avatar"
+                accentColor={accentColor}
+                uploadsEnabled={uploadsEnabled}
+                aspectRatio="aspect-square"
+                placeholder="Subir avatar"
+                className={!uploadsEnabled ? '' : 'max-w-[160px]'}
               />
             </div>
             <div>
@@ -885,19 +895,14 @@ export default function Profile() {
           <div className="mt-6 grid gap-4">
             <div>
               <label className={labelClass}>Imagen principal</label>
-              <input
+              <ImageUpload
                 value={mediaKit.featuredImage || ''}
-                onChange={(event) => setMediaKitField('featuredImage', event.target.value)}
-                className={fieldClass}
-                style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                placeholder="https://..."
-              />
-            </div>
-            <div className="overflow-hidden rounded-[1.15rem] border border-[var(--line-soft)] bg-[var(--surface-muted)]">
-              <img
-                src={mediaKit.featuredImage || profileForm.avatar || ''}
-                alt={profileForm.name || 'Portada'}
-                className="h-64 w-full object-cover"
+                onChange={(url) => setMediaKitField('featuredImage', url)}
+                category="media-kit"
+                accentColor={accentColor}
+                uploadsEnabled={uploadsEnabled}
+                aspectRatio="aspect-video"
+                placeholder="Subir portada"
               />
             </div>
             <div>
@@ -1168,7 +1173,7 @@ export default function Profile() {
           <div className="mt-6 grid gap-6">
             <div>
               <p className={labelClass}>Imagenes del portfolio</p>
-              <div className="grid gap-4">
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                 {safeArr(mediaKit.portfolioImages).map((image: any, index: number) => (
                   <div key={index} className="group relative">
                     <div className="mb-2 flex items-center justify-between">
@@ -1177,14 +1182,14 @@ export default function Profile() {
                         <Trash2 size={14} />
                       </button>
                     </div>
-                    <input
+                    <ImageUpload
                       value={typeof image === 'string' ? image : ''}
-                      onChange={(event) =>
-                        setStringListField('portfolioImages', index, event.target.value)
-                      }
-                      className={fieldClass}
-                      style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                      placeholder={`https://.../${index + 1}.jpg`}
+                      onChange={(url) => setStringListField('portfolioImages', index, url)}
+                      category="portfolio"
+                      accentColor={accentColor}
+                      uploadsEnabled={uploadsEnabled}
+                      aspectRatio="aspect-[4/3]"
+                      placeholder={`Imagen ${index + 1}`}
                     />
                   </div>
                 ))}
@@ -1192,27 +1197,6 @@ export default function Profile() {
               <button type="button" onClick={() => addStringListItem('portfolioImages')} className="mt-3 flex items-center gap-1.5 text-sm font-bold text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]">
                 <Plus size={14} /> Añadir imagen
               </button>
-            </div>
-
-            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              {safeArr(mediaKit.portfolioImages).map((image: any, index: number) => (
-                <div
-                  key={index}
-                  className="overflow-hidden rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-muted)]"
-                >
-                  {typeof image === 'string' && image.trim() ? (
-                    <img
-                      src={image}
-                      alt={`Portfolio ${index + 1}`}
-                      className="h-36 w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-36 items-center justify-center text-sm font-medium text-[var(--text-secondary)]">
-                      Slot {index + 1}
-                    </div>
-                  )}
-                </div>
-              ))}
             </div>
 
             <div className="border-t border-[var(--line-soft)] pt-5">

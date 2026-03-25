@@ -259,9 +259,8 @@ const MobileBottomNav = ({
   accentColor: string;
 }) => (
   <div
-    className="fixed left-4 right-4 z-[90] flex justify-between rounded-[1.45rem] border bg-[var(--surface-card-strong)] px-3 shadow-[var(--shadow-floating)] backdrop-blur-2xl transition-colors duration-300 [border-color:var(--line-soft)] lg:hidden"
+    className="fixed inset-x-0 bottom-0 z-[90] flex justify-between border-t bg-[var(--surface-card-strong)] px-3 backdrop-blur-2xl transition-colors duration-300 [border-color:var(--line-soft)] lg:hidden"
     style={{
-      bottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.75rem)',
       paddingTop: '0.7rem',
       paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.7rem)',
     }}

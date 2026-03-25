@@ -1,6 +1,8 @@
 import { Router } from 'express';
 import type { Request, Response, NextFunction } from 'express';
+import multer from 'multer';
 import type pg from 'pg';
+import { isStorageConfigured, uploadFile, deleteFile } from '../lib/storage';
 import type {
   AppBootstrapResponse,
   CreateContactRequest,
@@ -273,6 +275,46 @@ export function createV1Router(appStore: PostgresAppStore, _pool: pg.Pool) {
     } catch (error) {
       console.error('Partner status history error:', error);
       res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  /* ── File uploads (Supabase Storage) ─────────────────────── */
+
+  const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024 } });
+
+  router.get('/uploads/status', (_req, res) => {
+    res.json({ enabled: isStorageConfigured() });
+  });
+
+  router.post('/uploads', upload.single('file'), async (req, res) => {
+    try {
+      if (!isStorageConfigured()) {
+        return res.status(503).json({ error: 'Subida de archivos no configurada. Faltan variables de Supabase.' });
+      }
+
+      const file = req.file;
+      if (!file) {
+        return res.status(400).json({ error: 'No se recibió ningún archivo.' });
+      }
+
+      const category = (req.body.category as string) || 'general';
+      const result = await uploadFile(getUserId(req), category, file);
+      res.status(201).json(result);
+    } catch (error) {
+      res.status(400).json({ error: getErrorMessage(error) });
+    }
+  });
+
+  router.delete('/uploads', async (req, res) => {
+    try {
+      const { path } = req.body as { path: string };
+      if (!path) {
+        return res.status(400).json({ error: 'Se requiere el path del archivo.' });
+      }
+      await deleteFile(getUserId(req), path);
+      res.json({ success: true });
+    } catch (error) {
+      res.status(400).json({ error: getErrorMessage(error) });
     }
   });
 

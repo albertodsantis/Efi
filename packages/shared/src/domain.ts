@@ -7,7 +7,7 @@ export type PartnerStatus =
   | 'On Hold'
   | 'Relación Culminada';
 
-export type PartnershipType = 'Permanente' | 'One Time' | 'Por definir';
+export type PartnershipType = 'Permanente' | 'Plazo Fijo' | 'One Time' | 'Por definir';
 
 export type AppTheme = 'light' | 'dark';
 
