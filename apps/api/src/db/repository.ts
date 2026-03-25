@@ -806,7 +806,7 @@ export class PostgresAppStore {
       }
       if (updates.avatar !== undefined) {
         setClauses.push(`avatar = $${idx++}`);
-        values.push(normalizeRequiredText(updates.avatar, 'El avatar'));
+        values.push(normalizeText(updates.avatar));
       }
       if (updates.handle !== undefined) {
         const handle = normalizeRequiredText(updates.handle, 'El handle');

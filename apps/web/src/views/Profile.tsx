@@ -147,6 +147,8 @@ export default function Profile() {
   const [uploadsEnabled, setUploadsEnabled] = useState(false);
   const isMounted = useRef(false);
   const lastSavedProfile = useRef(JSON.stringify(profileForm));
+  const updateProfileRef = useRef(updateProfile);
+  updateProfileRef.current = updateProfile;
 
   useEffect(() => {
     appApi.getUploadStatus().then((res) => setUploadsEnabled(res.enabled)).catch(() => {});
@@ -166,17 +168,17 @@ export default function Profile() {
     setSaveStatus('saving');
     const timer = setTimeout(async () => {
       try {
-        await updateProfile(profileForm);
+        await updateProfileRef.current(profileForm);
         lastSavedProfile.current = currentString;
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus('idle'), 2500);
-      } catch (error) {
+      } catch {
         setSaveStatus('idle');
       }
     }, 1000);
 
     return () => clearTimeout(timer);
-  }, [profileForm, updateProfile]);
+  }, [profileForm]);
 
   const mediaKit = profileForm.mediaKit || ({} as any);
   const configuredPortfolio = getFilledCount(mediaKit.portfolioImages);
@@ -698,25 +700,7 @@ export default function Profile() {
                 </div>
               </button>
 
-              <div className="flex items-center justify-between gap-3 sm:justify-end">
-                <div
-                  className={cx(
-                    'mr-auto flex items-center gap-1.5 rounded-[0.85rem] px-3 py-1.5 text-[11px] font-bold transition-all',
-                    saveStatus === 'saving'
-                      ? 'bg-[var(--surface-muted)] text-[var(--text-secondary)]'
-                      : saveStatus === 'saved'
-                        ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-400'
-                        : 'opacity-0',
-                  )}
-                >
-                  {saveStatus === 'saving' ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : saveStatus === 'saved' ? (
-                    <CheckCircle2 size={14} />
-                  ) : null}
-                  {saveStatus === 'saving' ? 'Guardando...' : saveStatus === 'saved' ? 'Guardado' : ''}
-                </div>
-
+              <div className="flex items-center justify-end gap-3">
                 <Button
                   accentColor={accentColor}
                   onClick={handleOpenMediaKit}
@@ -1541,6 +1525,27 @@ export default function Profile() {
           </div>
         </div>
       )}
+
+      {/* Floating save indicator */}
+      <div
+        className={cx(
+          'fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full px-5 py-2.5 shadow-lg ring-1 transition-all duration-300',
+          saveStatus === 'saving'
+            ? 'translate-y-0 opacity-100 bg-[var(--surface-card)] ring-[var(--line-soft)] text-[var(--text-secondary)]'
+            : saveStatus === 'saved'
+              ? 'translate-y-0 opacity-100 bg-emerald-50 ring-emerald-200 text-emerald-700 dark:bg-emerald-500/15 dark:ring-emerald-500/30 dark:text-emerald-400'
+              : 'pointer-events-none translate-y-4 opacity-0',
+        )}
+      >
+        {saveStatus === 'saving' ? (
+          <Loader2 size={15} className="animate-spin" />
+        ) : saveStatus === 'saved' ? (
+          <CheckCircle2 size={15} />
+        ) : null}
+        <span className="text-[13px] font-bold">
+          {saveStatus === 'saving' ? 'Guardando...' : saveStatus === 'saved' ? 'Guardado' : ''}
+        </span>
+      </div>
     </div>
   );
 }

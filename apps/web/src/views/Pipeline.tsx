@@ -1,4 +1,4 @@
-﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import React, { useEffect, useMemo, useState } from 'react';
+﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   Activity,
   AlignLeft,
@@ -240,6 +240,126 @@ function DraggableTaskWrapper({
   );
 }
 
+/* ── SwipeableTaskCard (mobile only) ─────────────────────────── */
+
+const SWIPE_THRESHOLD = 70;
+
+function SwipeableTaskCard({
+  task,
+  onSwipe,
+  accentColor,
+  children,
+}: {
+  task: Task;
+  onSwipe: (taskId: string, direction: 'left' | 'right') => void;
+  accentColor: string;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const touchRef = useRef({ startX: 0, startY: 0, currentX: 0, swiping: false });
+  const [offset, setOffset] = useState(0);
+  const [released, setReleased] = useState(false);
+
+  const statusIdx = STATUSES.indexOf(task.status);
+  const canSwipeRight = statusIdx < STATUSES.length - 1;
+  const canSwipeLeft = statusIdx > 0;
+  const nextStatus = canSwipeRight ? STATUSES[statusIdx + 1] : null;
+  const prevStatus = canSwipeLeft ? STATUSES[statusIdx - 1] : null;
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    touchRef.current = { startX: touch.clientX, startY: touch.clientY, currentX: touch.clientX, swiping: false };
+    setReleased(false);
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    const dx = touch.clientX - touchRef.current.startX;
+    const dy = touch.clientY - touchRef.current.startY;
+
+    // Lock into horizontal swipe if horizontal movement dominates
+    if (!touchRef.current.swiping && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      touchRef.current.swiping = true;
+    }
+
+    if (!touchRef.current.swiping) return;
+
+    e.preventDefault();
+    touchRef.current.currentX = touch.clientX;
+
+    // Clamp the offset based on available directions
+    let clamped = dx;
+    if (!canSwipeRight && clamped > 0) clamped = 0;
+    if (!canSwipeLeft && clamped < 0) clamped = 0;
+    // Rubber-band effect past threshold
+    if (Math.abs(clamped) > SWIPE_THRESHOLD) {
+      const excess = Math.abs(clamped) - SWIPE_THRESHOLD;
+      clamped = (SWIPE_THRESHOLD + excess * 0.3) * Math.sign(clamped);
+    }
+    setOffset(clamped);
+  }, [canSwipeLeft, canSwipeRight]);
+
+  const handleTouchEnd = useCallback(() => {
+    if (!touchRef.current.swiping) {
+      setOffset(0);
+      return;
+    }
+
+    const dx = touchRef.current.currentX - touchRef.current.startX;
+    setReleased(true);
+
+    if (dx > SWIPE_THRESHOLD && canSwipeRight) {
+      setOffset(0);
+      onSwipe(task.id, 'right');
+    } else if (dx < -SWIPE_THRESHOLD && canSwipeLeft) {
+      setOffset(0);
+      onSwipe(task.id, 'left');
+    } else {
+      setOffset(0);
+    }
+
+    touchRef.current.swiping = false;
+  }, [task.id, canSwipeLeft, canSwipeRight, onSwipe]);
+
+  const showHint = Math.abs(offset) > 20;
+  const hintStatus = offset > 0 ? nextStatus : prevStatus;
+  const hintTone = hintStatus ? getStatusTone(hintStatus) : 'neutral';
+
+  return (
+    <div className="relative overflow-hidden rounded-[1.05rem]">
+      {/* Background hint */}
+      {showHint && hintStatus && (
+        <div
+          className={cx(
+            'absolute inset-0 flex items-center px-4 text-[11px] font-bold uppercase tracking-wide',
+            offset > 0 ? 'justify-start' : 'justify-end',
+          )}
+          style={{
+            backgroundColor: `${accentColor}15`,
+            color: accentColor,
+          }}
+        >
+          <StatusBadge tone={hintTone}>{hintStatus}</StatusBadge>
+        </div>
+      )}
+      {/* Card */}
+      <div
+        ref={ref}
+        className="relative touch-pan-y"
+        style={{
+          transform: `translateX(${offset}px)`,
+          transition: released ? 'transform 0.25s ease-out' : 'none',
+        }}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
+        onTouchEnd={handleTouchEnd}
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export default function Pipeline() {
   const {
     tasks,
@@ -461,6 +581,15 @@ export default function Pipeline() {
     if (!task || task.status === nextStatus || updatingTaskId === taskId) return;
     await changeStatus(taskId, nextStatus);
   };
+
+  const handleSwipe = useCallback((taskId: string, direction: 'left' | 'right') => {
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return;
+    const idx = STATUSES.indexOf(task.status);
+    const nextIdx = direction === 'right' ? idx + 1 : idx - 1;
+    if (nextIdx < 0 || nextIdx >= STATUSES.length) return;
+    void moveTaskToStatus(taskId, STATUSES[nextIdx]);
+  }, [tasks, moveTaskToStatus]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -939,7 +1068,13 @@ export default function Pipeline() {
 
             <div className="mt-3 space-y-3">
               {visibleTasks.length > 0 ? (
-                visibleTasks.map((task) => <div key={task.id}>{renderTaskCard(task)}</div>)
+                visibleTasks.map((task) => (
+                  <React.Fragment key={task.id}>
+                    <SwipeableTaskCard task={task} onSwipe={handleSwipe} accentColor={accentColor}>
+                      {renderTaskCard(task)}
+                    </SwipeableTaskCard>
+                  </React.Fragment>
+                ))
               ) : (
                 <EmptyState
                   icon={Trello}

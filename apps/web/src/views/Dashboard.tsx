@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CalendarClock,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Clock,
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
@@ -40,13 +42,6 @@ const formatCurrency = (v: number) => `$${v.toLocaleString('es-ES')}`;
 
 const formatTaskDate = (task: Task) =>
   parseLocalDate(task.dueDate).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
-
-function getGreeting(): string {
-  const h = new Date().getHours();
-  if (h >= 5 && h < 12) return 'Buenos días';
-  if (h >= 12 && h < 20) return 'Buenas tardes';
-  return 'Buenas noches';
-}
 
 /* ── GoalsMarquee ───────────────────────────────────────────── */
 
@@ -357,7 +352,38 @@ export default function Dashboard() {
   const weekEnd = new Date(startOfToday);
   weekEnd.setDate(weekEnd.getDate() + 6);
 
-  const [period, setPeriod] = useState<'month' | 'last_month' | 'year' | 'all'>('month');
+  const [periodView, setPeriodView] = useState<'month' | 'year' | 'all'>('month');
+  const [periodMonth, setPeriodMonth] = useState(today.getMonth());
+  const [periodYear, setPeriodYear] = useState(today.getFullYear());
+
+  const periodLabel = useMemo(() => {
+    if (periodView === 'all') return 'Todo';
+    if (periodView === 'year') return String(periodYear);
+    return new Date(periodYear, periodMonth).toLocaleDateString('es-ES', {
+      month: 'long',
+      year: 'numeric',
+    }).replace(/^\w/, (c) => c.toUpperCase());
+  }, [periodView, periodMonth, periodYear]);
+
+  const navigatePeriod = (dir: -1 | 1) => {
+    if (periodView === 'month') {
+      const d = new Date(periodYear, periodMonth + dir, 1);
+      setPeriodMonth(d.getMonth());
+      setPeriodYear(d.getFullYear());
+    } else if (periodView === 'year') {
+      setPeriodYear((y) => y + dir);
+    }
+  };
+
+  const cyclePeriodView = () => {
+    if (periodView === 'month') setPeriodView('year');
+    else if (periodView === 'year') setPeriodView('all');
+    else {
+      setPeriodView('month');
+      setPeriodMonth(today.getMonth());
+      setPeriodYear(today.getFullYear());
+    }
+  };
 
   /* ── handlers ─────────────────────────────────────────────── */
 
@@ -373,21 +399,13 @@ export default function Dashboard() {
   /* ── derived data ─────────────────────────────────────────── */
 
   const periodFilteredTasks = useMemo(() => {
-    const now = new Date();
-    const cm = now.getMonth();
-    const cy = now.getFullYear();
     return tasks.filter((t) => {
-      if (period === 'all') return true;
+      if (periodView === 'all') return true;
       const d = parseLocalDate(t.dueDate);
-      if (period === 'year') return d.getFullYear() === cy;
-      if (period === 'month') return d.getMonth() === cm && d.getFullYear() === cy;
-      if (period === 'last_month') {
-        const lm = new Date(cy, cm - 1, 1);
-        return d.getMonth() === lm.getMonth() && d.getFullYear() === lm.getFullYear();
-      }
-      return true;
+      if (periodView === 'year') return d.getFullYear() === periodYear;
+      return d.getMonth() === periodMonth && d.getFullYear() === periodYear;
     });
-  }, [tasks, period]);
+  }, [tasks, periodView, periodMonth, periodYear]);
 
   const generalGoals = useMemo(
     () =>
@@ -406,13 +424,7 @@ export default function Dashboard() {
     [profile?.goals],
   );
 
-  const summary = useMemo(() => {
-    const activePipelineValue = periodFilteredTasks
-      .filter((t) => t.status !== 'Cobrado')
-      .reduce((s, t) => s + t.value, 0);
-    const closedPipelineValue = periodFilteredTasks
-      .filter((t) => t.status === 'Cobrado')
-      .reduce((s, t) => s + (t.actualPayment ?? t.value), 0);
+  const globalSummary = useMemo(() => {
     const overdue = tasks.filter(
       (t) =>
         startOfLocalDay(parseLocalDate(t.dueDate)) < startOfToday &&
@@ -424,19 +436,37 @@ export default function Dashboard() {
       const d = startOfLocalDay(parseLocalDate(t.dueDate));
       return d >= startOfToday && d <= weekEnd && t.status !== 'Cobrado';
     }).length;
-    const activePartners = partners.filter((p) => p.status === 'Activo').length;
-    const totalContacts = partners.reduce((s, p) => s + p.contacts.length, 0);
+    const activePipelineValue = tasks
+      .filter((t) => t.status !== 'Cobrado')
+      .reduce((s, t) => s + t.value, 0);
+    return { overdue, tasksToday, tasksThisWeek, activePipelineValue };
+  }, [tasks, startOfToday, todayIso, weekEnd]);
+
+  const periodSummary = useMemo(() => {
+    const activePipelineValue = periodFilteredTasks
+      .filter((t) => t.status !== 'Cobrado')
+      .reduce((s, t) => s + t.value, 0);
+    const closedPipelineValue = periodFilteredTasks
+      .filter((t) => t.status === 'Cobrado')
+      .reduce((s, t) => s + (t.actualPayment ?? t.value), 0);
+    const pendingPaymentValue = periodFilteredTasks
+      .filter((t) => t.status === 'Completada')
+      .reduce((s, t) => s + t.value, 0);
+    const deliveriesCount = periodFilteredTasks
+      .filter((t) => t.status === 'Completada' || t.status === 'Cobrado').length;
+    const activePartners = new Set(
+      periodFilteredTasks.map((t) => t.partnerId),
+    ).size;
     return {
       activePipelineValue,
       closedPipelineValue,
-      overdue,
-      tasksToday,
-      tasksThisWeek,
+      pendingPaymentValue,
+      deliveriesCount,
       activePartners,
       totalPartners: partners.length,
-      totalContacts,
+      totalContacts: partners.reduce((s, p) => s + p.contacts.length, 0),
     };
-  }, [partners, tasks, periodFilteredTasks, startOfToday, todayIso, weekEnd]);
+  }, [partners, periodFilteredTasks]);
 
   const groupedAgenda = useMemo(() => {
     const overdue: Task[] = [];
@@ -485,26 +515,21 @@ export default function Dashboard() {
         <GoalsMarquee goals={generalGoals} accentColor={accentColor} />
       )}
 
-      {/* Welcome Bar */}
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-        <h1 className="text-[1.1rem] font-bold text-[var(--text-primary)]">
-          {getGreeting()}, {profile?.displayName?.split(' ')[0] || 'ahí'}
-        </h1>
-        <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-[var(--text-secondary)]">
-          {summary.overdue > 0 && (
-            <>
-              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
-                {summary.overdue} retrasadas
-              </span>
-              <span className="text-[var(--line-soft)]">·</span>
-            </>
-          )}
-          <span>{summary.tasksToday} hoy</span>
-          <span className="text-[var(--line-soft)]">·</span>
-          <span>{summary.tasksThisWeek} esta semana</span>
-          <span className="text-[var(--line-soft)]">·</span>
-          <span>{formatCurrency(summary.activePipelineValue)} abierto</span>
-        </div>
+      {/* Quick stats bar */}
+      <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-[var(--text-secondary)]">
+        {globalSummary.overdue > 0 && (
+          <>
+            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
+              {globalSummary.overdue} retrasadas
+            </span>
+            <span className="text-[var(--line-soft)]">·</span>
+          </>
+        )}
+        <span>{globalSummary.tasksToday} hoy</span>
+        <span className="text-[var(--line-soft)]">·</span>
+        <span>{globalSummary.tasksThisWeek} esta semana</span>
+        <span className="text-[var(--line-soft)]">·</span>
+        <span>{formatCurrency(globalSummary.activePipelineValue)} abierto</span>
       </div>
 
       {/* Main 2-col grid */}
@@ -585,45 +610,76 @@ export default function Dashboard() {
               }}
             />
             <div className="relative">
-              <div className="flex flex-wrap items-center justify-between gap-3">
+              {/* Period navigator */}
+              <div className="flex items-center justify-between">
                 <p className="text-[11px] font-bold tracking-[0.18em] text-[var(--text-secondary)] uppercase">
                   Flujo financiero
                 </p>
-                <div className="flex items-center gap-0.5 rounded-[0.7rem] bg-[var(--surface-muted)]/70 p-0.5">
-                  {(['month', 'last_month', 'year', 'all'] as const).map((p) => {
-                    const label =
-                      p === 'month'
-                        ? 'Mes'
-                        : p === 'last_month'
-                          ? 'Anterior'
-                          : p === 'year'
-                            ? 'Año'
-                            : 'Total';
-                    return (
-                      <button
-                        key={p}
-                        onClick={() => setPeriod(p)}
-                        className={cx(
-                          'rounded-[0.5rem] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.1em] transition-all',
-                          period === p
-                            ? 'bg-[var(--surface-card)] text-[var(--text-primary)] shadow-sm'
-                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]',
-                        )}
-                      >
-                        {label}
-                      </button>
-                    );
-                  })}
+              </div>
+              <div className="mt-3 flex flex-col items-center gap-2">
+                <div className="flex items-center gap-1">
+                  {periodView === 'month' && (
+                    <button
+                      type="button"
+                      onClick={() => navigatePeriod(-1)}
+                      className="rounded-lg p-1 text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]"
+                    >
+                      <ChevronLeft size={16} />
+                    </button>
+                  )}
+                  <span className="min-w-[140px] text-center text-[13px] font-bold text-[var(--text-primary)]">
+                    {periodLabel}
+                  </span>
+                  {periodView === 'month' && (
+                    <button
+                      type="button"
+                      onClick={() => navigatePeriod(1)}
+                      className="rounded-lg p-1 text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]"
+                    >
+                      <ChevronRight size={16} />
+                    </button>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 rounded-[0.6rem] bg-[var(--surface-muted)]/70 p-0.5">
+                  {([
+                    { key: 'month' as const, label: 'Mes' },
+                    { key: 'year' as const, label: 'Año' },
+                    { key: 'all' as const, label: 'Todo' },
+                  ]).map((opt) => (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => {
+                        setPeriodView(opt.key);
+                        if (opt.key === 'month') {
+                          setPeriodMonth(today.getMonth());
+                          setPeriodYear(today.getFullYear());
+                        }
+                        if (opt.key === 'year') {
+                          setPeriodYear(today.getFullYear());
+                        }
+                      }}
+                      className={cx(
+                        'rounded-[0.4rem] px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.1em] transition-all',
+                        periodView === opt.key
+                          ? 'bg-[var(--surface-card)] text-[var(--text-primary)] shadow-sm'
+                          : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]',
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              <div className="mt-5 grid grid-cols-2 gap-4">
+              {/* KPIs grid */}
+              <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-4">
                 <div>
                   <p className="text-[10px] font-bold tracking-[0.14em] text-[var(--text-secondary)] uppercase">
                     Abierto
                   </p>
-                  <p className="mt-1 text-2xl font-black tracking-tight text-[var(--text-primary)]">
-                    {formatCurrency(summary.activePipelineValue)}
+                  <p className="mt-1 text-xl font-black tracking-tight text-[var(--text-primary)]">
+                    {formatCurrency(periodSummary.activePipelineValue)}
                   </p>
                 </div>
                 <div>
@@ -631,23 +687,39 @@ export default function Dashboard() {
                     Cobrado
                   </p>
                   <p
-                    className="mt-1 text-2xl font-black tracking-tight"
+                    className="mt-1 text-xl font-black tracking-tight"
                     style={{ color: accentColor }}
                   >
-                    {formatCurrency(summary.closedPipelineValue)}
+                    {formatCurrency(periodSummary.closedPipelineValue)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold tracking-[0.14em] text-[var(--text-secondary)] uppercase">
+                    Por cobrar
+                  </p>
+                  <p className="mt-1 text-xl font-black tracking-tight text-amber-600 dark:text-amber-400">
+                    {formatCurrency(periodSummary.pendingPaymentValue)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold tracking-[0.14em] text-[var(--text-secondary)] uppercase">
+                    Entregas
+                  </p>
+                  <p className="mt-1 text-xl font-black tracking-tight text-[var(--text-primary)]">
+                    {periodSummary.deliveriesCount}
                   </p>
                 </div>
               </div>
 
               {/* Annual goal progress */}
               {estimatedRevenue > 0 && (
-                <div className="mt-5 rounded-[0.7rem] bg-[var(--surface-muted)]/60 px-3.5 py-3">
+                <div className="mt-4 rounded-[0.7rem] bg-[var(--surface-muted)]/60 px-3.5 py-3">
                   <div className="flex items-center justify-between">
                     <p className="text-[10px] font-bold tracking-[0.12em] text-[var(--text-secondary)] uppercase">
                       Meta anual
                     </p>
                     <p className="text-[11px] font-bold text-[var(--text-secondary)]">
-                      {formatCurrency(summary.closedPipelineValue)} /{' '}
+                      {formatCurrency(periodSummary.closedPipelineValue)} /{' '}
                       {formatCurrency(estimatedRevenue)}
                     </p>
                   </div>
@@ -655,13 +727,13 @@ export default function Dashboard() {
                     <div
                       className="h-full rounded-full transition-all duration-500"
                       style={{
-                        width: `${Math.min((summary.closedPipelineValue / estimatedRevenue) * 100, 100)}%`,
+                        width: `${Math.min((periodSummary.closedPipelineValue / estimatedRevenue) * 100, 100)}%`,
                         backgroundColor: accentColor,
                       }}
                     />
                   </div>
                   <p className="mt-1.5 text-[10px] font-medium text-[var(--text-secondary)]">
-                    {Math.round((summary.closedPipelineValue / estimatedRevenue) * 100)}% alcanzado
+                    {Math.round((periodSummary.closedPipelineValue / estimatedRevenue) * 100)}% alcanzado
                   </p>
                 </div>
               )}
@@ -725,10 +797,10 @@ export default function Dashboard() {
             <div className="mt-3 grid grid-cols-2 gap-4">
               <div>
                 <p className="text-xl font-black text-[var(--text-primary)]">
-                  {summary.activePartners}
+                  {periodSummary.activePartners}
                   <span className="text-sm font-medium text-[var(--text-secondary)]">
                     {' '}
-                    / {summary.totalPartners}
+                    / {periodSummary.totalPartners}
                   </span>
                 </p>
                 <p className="mt-0.5 text-[10px] font-medium text-[var(--text-secondary)]">
@@ -737,7 +809,7 @@ export default function Dashboard() {
               </div>
               <div>
                 <p className="text-xl font-black text-[var(--text-primary)]">
-                  {summary.totalContacts}
+                  {periodSummary.totalContacts}
                 </p>
                 <p className="mt-0.5 text-[10px] font-medium text-[var(--text-secondary)]">
                   Contactos

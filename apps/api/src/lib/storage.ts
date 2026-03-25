@@ -2,7 +2,7 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import path from 'path';
 import crypto from 'crypto';
 
-const BUCKET = 'user-assets';
+const BUCKET = 'tiaimages';
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 const ALLOWED_MIME_TYPES = [
   'image/jpeg',
