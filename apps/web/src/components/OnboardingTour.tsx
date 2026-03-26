@@ -5,7 +5,7 @@ import { getAccessibleAccentForeground } from '../lib/accent';
 
 const ONBOARDING_STORAGE_KEY = 'hasSeenOnboardingTour';
 
-export default function OnboardingTour() {
+export default function OnboardingTour({ forceRun }: { forceRun?: boolean }) {
   const { theme, accentColor, accentHex } = useAppContext();
   const [run, setRun] = useState(false);
   const [isDesktop, setIsDesktop] = useState(() =>
@@ -34,7 +34,7 @@ export default function OnboardingTour() {
 
     const hasSeenTour = localStorage.getItem(ONBOARDING_STORAGE_KEY);
 
-    if (hasSeenTour) {
+    if (hasSeenTour && !forceRun) {
       return undefined;
     }
 
@@ -43,7 +43,7 @@ export default function OnboardingTour() {
     }, 700);
 
     return () => window.clearTimeout(timer);
-  }, []);
+  }, [forceRun]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {

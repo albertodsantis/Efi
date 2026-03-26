@@ -637,7 +637,7 @@ const AppShell = () => {
 
   return (
     <>
-      {!isBootstrapping && !bootstrapError ? <OnboardingTour /> : null}
+      {!isBootstrapping && !bootstrapError ? <OnboardingTour forceRun={colorPicked} /> : null}
       <MainLayout />
     </>
   );
