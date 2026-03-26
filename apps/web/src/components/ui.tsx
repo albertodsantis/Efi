@@ -115,7 +115,7 @@ export function MetricCard({
   );
 }
 
-type BadgeTone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger' | 'info';
+type BadgeTone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger' | 'info' | 'review';
 
 const badgeToneClasses: Record<BadgeTone, string> = {
   neutral: 'bg-[var(--surface-muted)] text-[var(--text-secondary)]',
@@ -124,6 +124,7 @@ const badgeToneClasses: Record<BadgeTone, string> = {
   warning: 'bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300',
   danger: 'bg-rose-50 text-rose-600 dark:bg-rose-500/15 dark:text-rose-300',
   info: 'bg-sky-50 text-sky-600 dark:bg-sky-500/15 dark:text-sky-300',
+  review: 'bg-violet-50 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300',
 };
 
 export function StatusBadge({
@@ -348,7 +349,7 @@ export function SettingRow({
   const content = (
     <>
       <div className="flex items-center gap-4">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--surface-muted)] text-[var(--text-secondary)]">
+        <div className="flex shrink-0 items-center justify-center text-[var(--text-secondary)]">
           <Icon size={20} />
         </div>
         <div className="min-w-0">

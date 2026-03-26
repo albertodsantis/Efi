@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   ChevronRight,
   ExternalLink,
+  FolderPlus,
   Image,
   Loader2,
   Plus,
@@ -15,7 +16,7 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import type { Goal, GoalPriority, GoalStatus, MediaKitMetric, MediaKitOffer, MediaKitProfile, SocialProfiles, UserProfile } from '@shared';
+import type { Goal, GoalPriority, GoalStatus, MediaKitMetric, MediaKitOffer, MediaKitProfile, Partner, SocialProfiles, UserProfile } from '@shared';
 import { useAppContext } from '../context/AppContext';
 import { Button, SurfaceCard, ModalPanel, cx } from '../components/ui';
 import CustomSelect from '../components/CustomSelect';
@@ -36,11 +37,11 @@ const socialProfileFields: Array<{
   label: string;
   placeholder: string;
 }> = [
-  { key: 'instagram', label: 'Instagram', placeholder: '@tuinstagram' },
-  { key: 'tiktok', label: 'TikTok', placeholder: '@tutiktok' },
-  { key: 'x', label: 'X', placeholder: '@tuusuario' },
-  { key: 'threads', label: 'Threads', placeholder: '@tuperfil' },
-  { key: 'youtube', label: 'YouTube', placeholder: 'youtube.com/@tucanal' },
+  { key: 'instagram', label: 'Instagram', placeholder: '' },
+  { key: 'tiktok', label: 'TikTok', placeholder: '' },
+  { key: 'x', label: 'X', placeholder: '' },
+  { key: 'threads', label: 'Threads', placeholder: '' },
+  { key: 'youtube', label: 'YouTube', placeholder: '' },
 ];
 
 const labelClass =
@@ -132,7 +133,7 @@ function SectionHeader({
 }
 
 export default function Profile() {
-  const { profile, updateProfile, accentColor } = useAppContext();
+  const { profile, updateProfile, accentColor, partners, addPartner } = useAppContext();
   const [profileForm, setProfileForm] = useState<UserProfile>(() => {
     const safeGoals = safeArr(profile?.goals).map((g: any, i) =>
           typeof g === 'string'
@@ -149,9 +150,21 @@ export default function Profile() {
   const lastSavedProfile = useRef(JSON.stringify(profileForm));
   const updateProfileRef = useRef(updateProfile);
   updateProfileRef.current = updateProfile;
+  const profileFormRef = useRef(profileForm);
+  profileFormRef.current = profileForm;
 
   useEffect(() => {
     appApi.getUploadStatus().then((res) => setUploadsEnabled(res.enabled)).catch(() => {});
+  }, []);
+
+  // Flush any unsaved changes on unmount (e.g. user switches tab)
+  useEffect(() => {
+    return () => {
+      const pending = JSON.stringify(profileFormRef.current);
+      if (pending !== lastSavedProfile.current) {
+        updateProfileRef.current(profileFormRef.current);
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -624,10 +637,9 @@ export default function Profile() {
   };
 
   const handleOpenMediaKit = () => {
-    const mediaKitHtml = generateHtml();
-    const blob = new Blob([mediaKitHtml], { type: 'text/html' });
-    const url = URL.createObjectURL(blob);
-    window.open(url, '_blank');
+    const handle = (profileForm.handle || '').trim().replace(/^@/, '');
+    if (!handle) return;
+    window.open(`/mk/${encodeURIComponent(handle)}`, '_blank');
   };
 
   return (
@@ -685,11 +697,11 @@ export default function Profile() {
                       <p className="mt-0.5 truncate text-[1.05rem] font-black tracking-tight text-[var(--text-primary)]">
                         Plan Estratégico
                       </p>
-                      <p className="mt-1 truncate text-[11px] font-medium text-[var(--text-secondary)]">
-                        {safeArr(profileForm.goals).length > 0
-                          ? `${safeArr(profileForm.goals).length} objetivo${safeArr(profileForm.goals).length > 1 ? 's' : ''} en curso`
-                          : 'Define tus metas ahora'}
-                      </p>
+                      {safeArr(profileForm.goals).length > 0 && (
+                        <p className="mt-1 truncate text-[11px] font-medium text-[var(--text-secondary)]">
+                          {`${safeArr(profileForm.goals).length} objetivo${safeArr(profileForm.goals).length > 1 ? 's' : ''} en curso`}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <div
@@ -764,15 +776,7 @@ export default function Profile() {
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <SurfaceCard className="p-6 lg:p-7">
-          <SectionHeader
-            icon={Target}
-            eyebrow="Portada"
-            title="Identidad y contacto"
-            description="Estos datos alimentan el bloque superior del media kit."
-            accentColor={accentColor}
-          />
-
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label className={labelClass}>Nombre</label>
               <input
@@ -868,15 +872,7 @@ export default function Profile() {
         </SurfaceCard>
 
         <SurfaceCard className="p-6 lg:p-7">
-          <SectionHeader
-            icon={Sparkles}
-            eyebrow="Sobre Ti"
-            title="Historia y tono"
-            description="Equivale al bloque de presentacion, foto principal y tags tematicos."
-            accentColor={accentColor}
-          />
-
-          <div className="mt-6 grid gap-4">
+          <div className="grid gap-4">
             <div>
               <label className={labelClass}>Imagen principal</label>
               <ImageUpload
@@ -950,15 +946,7 @@ export default function Profile() {
       </div>
 
       <SurfaceCard className="p-6 lg:p-7">
-        <SectionHeader
-          icon={BarChart3}
-          eyebrow="Insights"
-          title="Metricas y audiencia"
-          description="Replica las piezas de Community Insights, Audiencia, Rangos de edad y Top Countries."
-          accentColor={accentColor}
-        />
-
-        <div className="mt-6 grid gap-6">
+        <div className="grid gap-6">
           <div>
             <p className={labelClass}>Metricas principales</p>
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -1009,136 +997,141 @@ export default function Profile() {
             </div>
           </div>
 
-          <div className="grid gap-6 xl:grid-cols-[minmax(0,0.68fr)_minmax(0,1.32fr)]">
-            <div>
-              <p className={labelClass}>Audiencia</p>
-              <div className="grid gap-4">
-                {safeArr(mediaKit.audienceGender).map((item: any, index: number) => (
-                  <div
-                    key={index}
-                    className="group relative rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-muted)] p-4"
+          <div>
+            <p className={labelClass}>Audiencia</p>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {safeArr(mediaKit.audienceGender).map((item: any, index: number) => (
+                <div
+                  key={index}
+                  className="group relative rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-muted)] p-4"
+                >
+                  <button
+                    type="button"
+                    onClick={() => removeMetric('audienceGender', index)}
+                    className="absolute right-3 top-3 text-[var(--text-secondary)] opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100"
                   >
-                    <button
-                      type="button"
-                      onClick={() => removeMetric('audienceGender', index)}
-                      className="absolute right-3 top-3 text-[var(--text-secondary)] opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                    <label className={labelClass}>Segmento</label>
-                    <input
-                      value={item?.label || ''}
-                      onChange={(event) =>
-                        setMetricField('audienceGender', index, 'label', event.target.value)
-                      }
-                      className={fieldClass}
-                      style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                      placeholder="Mujeres"
-                    />
-                    <label className={`${labelClass} mt-4`}>Valor</label>
-                    <input
-                      value={item?.value || ''}
-                      onChange={(event) =>
-                        setMetricField('audienceGender', index, 'value', event.target.value)
-                      }
-                      className={fieldClass}
-                      style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                      placeholder="43%"
-                    />
-                  </div>
-                ))}
-                <button type="button" onClick={() => addMetric('audienceGender')} className="flex items-center justify-center gap-2 rounded-[1rem] border border-dashed border-[var(--line-soft)] py-3 text-sm font-bold text-[var(--text-secondary)] transition-all hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]">
-                  <Plus size={16} /> Añadir segmento
-                </button>
-              </div>
+                    <Trash2 size={14} />
+                  </button>
+                  <label className={labelClass}>Segmento</label>
+                  <input
+                    value={item?.label || ''}
+                    onChange={(event) =>
+                      setMetricField('audienceGender', index, 'label', event.target.value)
+                    }
+                    className={fieldClass}
+                    style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                    placeholder=""
+                  />
+                  <label className={`${labelClass} mt-4`}>Valor</label>
+                  <input
+                    value={item?.value || ''}
+                    onChange={(event) =>
+                      setMetricField('audienceGender', index, 'value', event.target.value)
+                    }
+                    className={fieldClass}
+                    style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                    placeholder=""
+                  />
+                </div>
+              ))}
+              <button type="button" onClick={() => addMetric('audienceGender')} className="flex min-h-[120px] items-center justify-center rounded-[1rem] border border-dashed border-[var(--line-soft)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]">
+                <div className="flex flex-col items-center gap-2">
+                  <Plus size={16} />
+                  <span className="text-sm font-bold">Añadir segmento</span>
+                </div>
+              </button>
             </div>
+          </div>
 
-            <div className="grid gap-6">
-              <div>
-                <p className={labelClass}>Rangos de edad</p>
-                <div className="grid gap-4 md:grid-cols-2">
-                  {safeArr(mediaKit.ageDistribution).map((item: any, index: number) => (
-                    <div
-                      key={index}
-                      className="group relative rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-muted)] p-4"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => removeMetric('ageDistribution', index)}
-                        className="absolute right-3 top-3 text-[var(--text-secondary)] opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                      <label className={labelClass}>Rango</label>
-                      <input
-                        value={item?.label || ''}
-                        onChange={(event) =>
-                          setMetricField('ageDistribution', index, 'label', event.target.value)
-                        }
-                        className={fieldClass}
-                        style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                        placeholder="25-34"
-                      />
-                      <label className={`${labelClass} mt-4`}>Valor</label>
-                      <input
-                        value={item?.value || ''}
-                        onChange={(event) =>
-                          setMetricField('ageDistribution', index, 'value', event.target.value)
-                        }
-                        className={fieldClass}
-                        style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                        placeholder="41%"
-                      />
-                    </div>
-                  ))}
-                  <button type="button" onClick={() => addMetric('ageDistribution')} className="flex items-center justify-center gap-2 rounded-[1rem] border border-dashed border-[var(--line-soft)] py-3 text-sm font-bold text-[var(--text-secondary)] transition-all hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]">
-                    <Plus size={16} /> Añadir rango
+          <div>
+            <p className={labelClass}>Rangos de edad</p>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {safeArr(mediaKit.ageDistribution).map((item: any, index: number) => (
+                <div
+                  key={index}
+                  className="group relative rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-muted)] p-4"
+                >
+                  <button
+                    type="button"
+                    onClick={() => removeMetric('ageDistribution', index)}
+                    className="absolute right-3 top-3 text-[var(--text-secondary)] opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100"
+                  >
+                    <Trash2 size={14} />
                   </button>
+                  <label className={labelClass}>Rango</label>
+                  <input
+                    value={item?.label || ''}
+                    onChange={(event) =>
+                      setMetricField('ageDistribution', index, 'label', event.target.value)
+                    }
+                    className={fieldClass}
+                    style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                    placeholder=""
+                  />
+                  <label className={`${labelClass} mt-4`}>Valor</label>
+                  <input
+                    value={item?.value || ''}
+                    onChange={(event) =>
+                      setMetricField('ageDistribution', index, 'value', event.target.value)
+                    }
+                    className={fieldClass}
+                    style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                    placeholder=""
+                  />
                 </div>
-              </div>
+              ))}
+              <button type="button" onClick={() => addMetric('ageDistribution')} className="flex min-h-[120px] items-center justify-center rounded-[1rem] border border-dashed border-[var(--line-soft)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]">
+                <div className="flex flex-col items-center gap-2">
+                  <Plus size={16} />
+                  <span className="text-sm font-bold">Añadir rango</span>
+                </div>
+              </button>
+            </div>
+          </div>
 
-              <div>
-                <p className={labelClass}>Top countries</p>
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {safeArr(mediaKit.topCountries).map((item: any, index: number) => (
-                    <div
-                      key={index}
-                      className="group relative rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-muted)] p-4"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => removeMetric('topCountries', index)}
-                        className="absolute right-3 top-3 text-[var(--text-secondary)] opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                      <label className={labelClass}>Pais</label>
-                      <input
-                        value={item?.label || ''}
-                        onChange={(event) =>
-                          setMetricField('topCountries', index, 'label', event.target.value)
-                        }
-                        className={fieldClass}
-                        style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                        placeholder="Venezuela"
-                      />
-                      <label className={`${labelClass} mt-4`}>Valor</label>
-                      <input
-                        value={item?.value || ''}
-                        onChange={(event) =>
-                          setMetricField('topCountries', index, 'value', event.target.value)
-                        }
-                        className={fieldClass}
-                        style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                        placeholder="43%"
-                      />
-                    </div>
-                  ))}
-                  <button type="button" onClick={() => addMetric('topCountries')} className="flex items-center justify-center gap-2 rounded-[1rem] border border-dashed border-[var(--line-soft)] py-3 text-sm font-bold text-[var(--text-secondary)] transition-all hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]">
-                    <Plus size={16} /> Añadir país
+          <div>
+            <p className={labelClass}>Top countries</p>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {safeArr(mediaKit.topCountries).map((item: any, index: number) => (
+                <div
+                  key={index}
+                  className="group relative rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-muted)] p-4"
+                >
+                  <button
+                    type="button"
+                    onClick={() => removeMetric('topCountries', index)}
+                    className="absolute right-3 top-3 text-[var(--text-secondary)] opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100"
+                  >
+                    <Trash2 size={14} />
                   </button>
+                  <label className={labelClass}>Pais</label>
+                  <input
+                    value={item?.label || ''}
+                    onChange={(event) =>
+                      setMetricField('topCountries', index, 'label', event.target.value)
+                    }
+                    className={fieldClass}
+                    style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                    placeholder=""
+                  />
+                  <label className={`${labelClass} mt-4`}>Valor</label>
+                  <input
+                    value={item?.value || ''}
+                    onChange={(event) =>
+                      setMetricField('topCountries', index, 'value', event.target.value)
+                    }
+                    className={fieldClass}
+                    style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                    placeholder=""
+                  />
                 </div>
-              </div>
+              ))}
+              <button type="button" onClick={() => addMetric('topCountries')} className="flex min-h-[120px] items-center justify-center rounded-[1rem] border border-dashed border-[var(--line-soft)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]">
+                <div className="flex flex-col items-center gap-2">
+                  <Plus size={16} />
+                  <span className="text-sm font-bold">Añadir país</span>
+                </div>
+              </button>
             </div>
           </div>
         </div>
@@ -1146,103 +1139,87 @@ export default function Profile() {
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)]">
         <SurfaceCard className="p-6 lg:p-7">
-          <SectionHeader
-            icon={Image}
-            eyebrow="Portfolio"
-            title="Galeria y marcas"
-            description="Llena la galeria visual y el bloque de marcas que confian en ti."
-            accentColor={accentColor}
-          />
-
-          <div className="mt-6 grid gap-6">
-            <div>
-              <p className={labelClass}>Imagenes del portfolio</p>
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {safeArr(mediaKit.portfolioImages).map((image: any, index: number) => (
-                  <div key={index} className="group relative">
-                    <div className="mb-2 flex items-center justify-between">
-                      <label className="text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/80 uppercase">Imagen {index + 1}</label>
-                      <button type="button" onClick={() => removeStringListItem('portfolioImages', index)} className="text-[var(--text-secondary)] opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100">
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                    <ImageUpload
-                      value={typeof image === 'string' ? image : ''}
-                      onChange={(url) => setStringListField('portfolioImages', index, url)}
-                      category="portfolio"
-                      accentColor={accentColor}
-                      uploadsEnabled={uploadsEnabled}
-                      aspectRatio="aspect-[4/3]"
-                      placeholder={`Imagen ${index + 1}`}
-                    />
-                  </div>
-                ))}
-              </div>
-              <button type="button" onClick={() => addStringListItem('portfolioImages')} className="mt-3 flex items-center gap-1.5 text-sm font-bold text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]">
-                <Plus size={14} /> Añadir imagen
-              </button>
-            </div>
-
-            <div className="border-t border-[var(--line-soft)] pt-5">
-              <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_180px]">
-                <div>
-                  <label className={labelClass}>Titulo del bloque de marcas</label>
-                  <input
-                    value={mediaKit.brandsTitle || ''}
-                    onChange={(event) => setMediaKitField('brandsTitle', event.target.value)}
-                    className={fieldClass}
-                    style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                    placeholder="Marcas que confian en mi"
-                  />
+          <p className={labelClass}>Imagenes del portfolio</p>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {safeArr(mediaKit.portfolioImages).map((image: any, index: number) => (
+              <div key={index} className="group relative">
+                <div className="mb-2 flex items-center justify-between">
+                  <label className="text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/80 uppercase">Imagen {index + 1}</label>
+                  <button type="button" onClick={() => removeStringListItem('portfolioImages', index)} className="text-[var(--text-secondary)] opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100">
+                    <Trash2 size={14} />
+                  </button>
                 </div>
-                <div className="rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-muted)] px-4 py-4">
-                  <p className="text-[10px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/80 uppercase">
-                    Marcas cargadas
-                  </p>
-                  <p className="mt-2 text-2xl font-extrabold tracking-tight text-[var(--text-primary)]">
-                    {configuredBrands}
-                  </p>
-                </div>
+                <ImageUpload
+                  value={typeof image === 'string' ? image : ''}
+                  onChange={(url) => setStringListField('portfolioImages', index, url)}
+                  category="portfolio"
+                  accentColor={accentColor}
+                  uploadsEnabled={uploadsEnabled}
+                  aspectRatio="aspect-[4/3]"
+                  placeholder={`Imagen ${index + 1}`}
+                />
               </div>
-
-              <div className="mt-4 grid gap-4 sm:grid-cols-2">
-                {safeArr(mediaKit.trustedBrands).map((brand: any, index: number) => (
-                  <div key={index} className="group relative">
-                    <div className="mb-2 flex items-center justify-between">
-                      <label className="text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/80 uppercase">Marca {index + 1}</label>
-                      <button type="button" onClick={() => removeStringListItem('trustedBrands', index)} className="text-[var(--text-secondary)] opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100">
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                    <input
-                      value={typeof brand === 'string' ? brand : ''}
-                      onChange={(event) =>
-                        setStringListField('trustedBrands', index, event.target.value)
-                      }
-                      className={fieldClass}
-                      style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                      placeholder="Nombre de la marca"
-                    />
-                  </div>
-                ))}
-              </div>
-              <button type="button" onClick={() => addStringListItem('trustedBrands')} className="mt-3 flex items-center gap-1.5 text-sm font-bold text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]">
-                <Plus size={14} /> Añadir marca
-              </button>
-            </div>
+            ))}
           </div>
+          <button type="button" onClick={() => addStringListItem('portfolioImages')} className="mt-3 flex items-center gap-1.5 text-sm font-bold text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]">
+            <Plus size={14} /> Añadir imagen
+          </button>
         </SurfaceCard>
 
         <SurfaceCard className="p-6 lg:p-7">
-          <SectionHeader
-            icon={BriefcaseBusiness}
-            eyebrow="Colaboraciones"
-            title="Ofertas y cierre"
-            description="Cubre la grilla de tarifas y el bloque final de contacto del media kit."
-            accentColor={accentColor}
-          />
+          <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_180px]">
+            <div>
+              <label className={labelClass}>Titulo del bloque de marcas</label>
+              <input
+                value={mediaKit.brandsTitle || ''}
+                onChange={(event) => setMediaKitField('brandsTitle', event.target.value)}
+                className={fieldClass}
+                style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                placeholder=""
+              />
+            </div>
+            <div className="rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-muted)] px-4 py-4">
+              <p className="text-[10px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/80 uppercase">
+                Marcas cargadas
+              </p>
+              <p className="mt-2 text-2xl font-extrabold tracking-tight text-[var(--text-primary)]">
+                {configuredBrands}
+                <span className="ml-1 text-sm font-medium text-[var(--text-secondary)]">
+                  / {partners.length} en directorio
+                </span>
+              </p>
+            </div>
+          </div>
 
-          <div className="mt-6 grid gap-6">
+          <div className="mt-4 grid gap-4 sm:grid-cols-2">
+            {safeArr(mediaKit.trustedBrands).map((brand: any, index: number) => (
+              <div key={index} className="group relative">
+                <div className="mb-2 flex items-center justify-between">
+                  <label className="text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/80 uppercase">Marca {index + 1}</label>
+                  <button type="button" onClick={() => removeStringListItem('trustedBrands', index)} className="text-[var(--text-secondary)] opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100">
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+                <BrandInput
+                  value={typeof brand === 'string' ? brand : ''}
+                  onChange={(val) => setStringListField('trustedBrands', index, val)}
+                  partners={partners}
+                  onCreateInDirectory={async (name) => {
+                    await addPartner({ name, status: 'Prospecto', contacts: [] } as any);
+                    toast.success(`${name} añadida al directorio`);
+                  }}
+                  accentColor={accentColor}
+                />
+              </div>
+            ))}
+          </div>
+          <button type="button" onClick={() => addStringListItem('trustedBrands')} className="mt-3 flex items-center gap-1.5 text-sm font-bold text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]">
+            <Plus size={14} /> Añadir marca
+          </button>
+        </SurfaceCard>
+
+        <SurfaceCard className="p-6 lg:p-7">
+          <div className="grid gap-6">
             <div>
               <label className={labelClass}>Titulo del bloque de tarifas</label>
               <input
@@ -1250,7 +1227,7 @@ export default function Profile() {
                 onChange={(event) => setMediaKitField('servicesTitle', event.target.value)}
                 className={fieldClass}
                 style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                placeholder="Trabajemos juntos!"
+                placeholder=""
               />
             </div>
             <div>
@@ -1260,7 +1237,7 @@ export default function Profile() {
                 onChange={(event) => setMediaKitField('servicesDescription', event.target.value)}
                 className={textareaClass}
                 style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                placeholder="Describe como colaborar contigo y que esperar de la propuesta."
+                placeholder=""
               />
             </div>
 
@@ -1280,14 +1257,14 @@ export default function Profile() {
                       onChange={(event) => setOfferingField(index, 'title', event.target.value)}
                       className={fieldClass}
                       style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                      placeholder="Nombre del formato"
+                      placeholder=""
                     />
                     <input
                       value={offering?.price || ''}
                       onChange={(event) => setOfferingField(index, 'price', event.target.value)}
                       className={fieldClass}
                       style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                      placeholder="$550"
+                      placeholder=""
                     />
                     <textarea
                       value={offering?.description || ''}
@@ -1296,7 +1273,7 @@ export default function Profile() {
                       }
                       className={textareaClass}
                       style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                      placeholder="Describe el entregable o la colaboracion."
+                      placeholder=""
                     />
                   </div>
                 </div>
@@ -1305,42 +1282,42 @@ export default function Profile() {
                 <Plus size={16} /> <span className="text-sm font-bold">Añadir oferta</span>
               </button>
             </div>
+          </div>
+        </SurfaceCard>
 
-            <div className="border-t border-[var(--line-soft)] pt-5">
-              <div className="grid gap-4">
-                <div>
-                  <label className={labelClass}>Titulo del cierre</label>
-                  <input
-                    value={mediaKit.closingTitle || ''}
-                    onChange={(event) => setMediaKitField('closingTitle', event.target.value)}
-                    className={fieldClass}
-                    style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                    placeholder="Let's create magic."
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Descripcion del cierre</label>
-                  <textarea
-                    value={mediaKit.closingDescription || ''}
-                    onChange={(event) =>
-                      setMediaKitField('closingDescription', event.target.value)
-                    }
-                    className={textareaClass}
-                    style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                    placeholder="Cierre final y llamada a la accion."
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>Texto del footer</label>
-                  <input
-                    value={mediaKit.footerNote || ''}
-                    onChange={(event) => setMediaKitField('footerNote', event.target.value)}
-                    className={fieldClass}
-                    style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                    placeholder="Todos los derechos reservados."
-                  />
-                </div>
-              </div>
+        <SurfaceCard className="p-6 lg:p-7">
+          <div className="grid gap-4">
+            <div>
+              <label className={labelClass}>Titulo del cierre</label>
+              <input
+                value={mediaKit.closingTitle || ''}
+                onChange={(event) => setMediaKitField('closingTitle', event.target.value)}
+                className={fieldClass}
+                style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                placeholder=""
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Descripcion del cierre</label>
+              <textarea
+                value={mediaKit.closingDescription || ''}
+                onChange={(event) =>
+                  setMediaKitField('closingDescription', event.target.value)
+                }
+                className={textareaClass}
+                style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                placeholder=""
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Texto del footer</label>
+              <input
+                value={mediaKit.footerNote || ''}
+                onChange={(event) => setMediaKitField('footerNote', event.target.value)}
+                className={fieldClass}
+                style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+                placeholder=""
+              />
             </div>
           </div>
         </SurfaceCard>
@@ -1404,7 +1381,7 @@ export default function Profile() {
                           onChange={(event) => setGoalField(index, 'area', event.target.value)}
                           className={cx(fieldClass, 'bg-[var(--surface-muted)]')}
                           style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                        placeholder="Ej. Influencer, Host, Asesorías..."
+                        placeholder=""
                         />
                       </div>
                       <div className="sm:col-span-2">
@@ -1414,7 +1391,7 @@ export default function Profile() {
                           onChange={(event) => setGoalField(index, 'generalGoal', event.target.value)}
                           className={cx(fieldClass, 'bg-[var(--surface-muted)]')}
                           style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                          placeholder="Ej. Aumentar y fidelizar la audiencia..."
+                          placeholder=""
                         />
                       </div>
 
@@ -1425,7 +1402,7 @@ export default function Profile() {
                           onChange={(event) => setGoalField(index, 'successMetric', event.target.value)}
                           className={cx(fieldClass, 'bg-[var(--surface-muted)]')}
                           style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                          placeholder="Ej. Número de seguidores"
+                          placeholder=""
                         />
                       </div>
                       <div className="sm:col-span-1">
@@ -1435,7 +1412,7 @@ export default function Profile() {
                           onChange={(event) => setGoalField(index, 'specificTarget', event.target.value)}
                           className={cx(fieldClass, 'bg-[var(--surface-muted)]')}
                           style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                          placeholder="Ej. 300K"
+                          placeholder=""
                         />
                       </div>
                       <div className="sm:col-span-1">
@@ -1481,7 +1458,7 @@ export default function Profile() {
                           onChange={(event) => setGoalField(index, 'revenueEstimation', Number(event.target.value))}
                           className={cx(fieldClass, 'bg-[var(--surface-muted)]')}
                           style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                          placeholder="6000"
+                          placeholder=""
                         />
                       </div>
                     </div>
@@ -1529,7 +1506,7 @@ export default function Profile() {
       {/* Floating save indicator */}
       <div
         className={cx(
-          'fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full px-5 py-2.5 shadow-lg ring-1 transition-all duration-300',
+          'fixed bottom-20 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full px-5 py-2.5 shadow-lg ring-1 transition-all duration-300 lg:bottom-6',
           saveStatus === 'saving'
             ? 'translate-y-0 opacity-100 bg-[var(--surface-card)] ring-[var(--line-soft)] text-[var(--text-secondary)]'
             : saveStatus === 'saved'
@@ -1546,6 +1523,93 @@ export default function Profile() {
           {saveStatus === 'saving' ? 'Guardando...' : saveStatus === 'saved' ? 'Guardado' : ''}
         </span>
       </div>
+    </div>
+  );
+}
+
+/* ── BrandInput – autocomplete with directory suggestions ── */
+
+function BrandInput({
+  value,
+  onChange,
+  partners,
+  onCreateInDirectory,
+  accentColor,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  partners: Partner[];
+  onCreateInDirectory: (name: string) => void;
+  accentColor: string;
+}) {
+  const [focused, setFocused] = useState(false);
+  const [creatingBrand, setCreatingBrand] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputVal = value.trim().toLowerCase();
+
+  const suggestions = inputVal.length > 0
+    ? partners.filter((p) => p.name.toLowerCase().includes(inputVal) && p.name.toLowerCase() !== inputVal)
+    : partners;
+
+  const exactMatch = partners.some((p) => p.name.toLowerCase() === inputVal);
+  const showDropdown = focused && (suggestions.length > 0 || (inputVal.length > 0 && !exactMatch));
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setFocused(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const handleCreate = async () => {
+    setCreatingBrand(true);
+    try {
+      await onCreateInDirectory(value.trim());
+    } finally {
+      setCreatingBrand(false);
+      setFocused(false);
+    }
+  };
+
+  return (
+    <div ref={containerRef} className="relative">
+      <input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onFocus={() => setFocused(true)}
+        className={fieldClass}
+        style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+        placeholder=""
+      />
+      {showDropdown && (
+        <div className="absolute z-[100] mt-2 max-h-52 w-full overflow-auto rounded-[1rem] border bg-[var(--surface-card-strong)] p-1.5 shadow-[var(--shadow-medium)] animate-in fade-in zoom-in-95 duration-100 [border-color:var(--line-soft)]">
+          {suggestions.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => { onChange(p.name); setFocused(false); }}
+              className="flex w-full items-center rounded-[0.75rem] px-3 py-2.5 text-left text-sm font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-muted)]/60 hover:text-[var(--text-primary)]"
+            >
+              {p.name}
+            </button>
+          ))}
+          {inputVal.length > 0 && !exactMatch && (
+            <button
+              type="button"
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={handleCreate}
+              disabled={creatingBrand}
+              className="flex w-full items-center gap-2 rounded-[0.75rem] px-3 py-2.5 text-left text-sm font-bold transition-colors hover:bg-[var(--surface-muted)]/60"
+              style={{ color: accentColor }}
+            >
+              <FolderPlus size={14} />
+              {creatingBrand ? 'Creando...' : `Crear "${value.trim()}" en directorio`}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

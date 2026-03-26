@@ -21,7 +21,6 @@ import {
   Search,
   Trash2,
   Type,
-  Users,
 } from 'lucide-react';
 import { Contact, Partner, PartnershipType, TaskStatus } from '@shared/domain';
 import ConfirmDialog from '../components/ConfirmDialog';
@@ -84,7 +83,7 @@ const taskStatusTone = (
 ): React.ComponentProps<typeof StatusBadge>['tone'] => {
   if (status === 'Pendiente') return 'warning';
   if (status === 'En Progreso') return 'info';
-  if (status === 'En Revisión') return 'accent';
+  if (status === 'En Revisión') return 'review';
   if (status === 'Completada') return 'success';
   return 'neutral';
 };
@@ -121,6 +120,7 @@ export default function Directory() {
   const [addingContactTo, setAddingContactTo] = useState<string | null>(null);
   const [editingContact, setEditingContact] = useState<{ partnerId: string; contact: Contact; prefix: string; number: string } | null>(null);
   const [editingPartner, setEditingPartner] = useState<Partner | null>(null);
+  const [saving, setSaving] = useState(false);
   const [contactPendingDeletion, setContactPendingDeletion] = useState<{
     partnerId: string;
     contact: Contact;
@@ -251,51 +251,61 @@ export default function Directory() {
 
   const handleAddPartner = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (saving) return;
     const name = newPartner.name.trim();
     if (!name) return;
-    const partnerId = await addPartner({
-      name,
-      status: newPartner.status,
-      partnershipType: newPartner.partnershipType,
-      keyTerms: newPartner.keyTerms,
-      startDate: newPartner.startDate,
-      endDate: newPartner.endDate,
-      monthlyRevenue: Number(newPartner.monthlyRevenue) || 0,
-      annualRevenue: Number(newPartner.annualRevenue) || 0,
-      mainChannel: newPartner.mainChannel,
-      contacts: [],
-    } as any);
-    setSelectedPartnerId(partnerId);
-    setIsAddingPartner(false);
-    setNewPartner({ name: '', status: 'Prospecto', partnershipType: 'Por definir', keyTerms: '', startDate: '', endDate: '', monthlyRevenue: '', annualRevenue: '', mainChannel: '' });
-    toast.success(`Marca ${name} añadida al directorio`);
+    setSaving(true);
+    try {
+      const partnerId = await addPartner({
+        name,
+        status: newPartner.status,
+        partnershipType: newPartner.partnershipType,
+        keyTerms: newPartner.keyTerms,
+        startDate: newPartner.startDate,
+        endDate: newPartner.endDate,
+        monthlyRevenue: Number(newPartner.monthlyRevenue) || 0,
+        annualRevenue: Number(newPartner.annualRevenue) || 0,
+        mainChannel: newPartner.mainChannel,
+        contacts: [],
+      } as any);
+      setSelectedPartnerId(partnerId);
+      setIsAddingPartner(false);
+      setNewPartner({ name: '', status: 'Prospecto', partnershipType: 'Por definir', keyTerms: '', startDate: '', endDate: '', monthlyRevenue: '', annualRevenue: '', mainChannel: '' });
+      toast.success(`Marca ${name} añadida al directorio`);
+    } finally { setSaving(false); }
   };
 
   const handleEditPartner = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!editingPartner) return;
-    await updatePartner(editingPartner.id, {
-      name: editingPartner.name,
-      partnershipType: editingPartner.partnershipType,
-      keyTerms: editingPartner.keyTerms,
-      startDate: editingPartner.startDate,
-      endDate: editingPartner.endDate,
-      monthlyRevenue: Number(editingPartner.monthlyRevenue) || 0,
-      annualRevenue: Number(editingPartner.annualRevenue) || 0,
-      mainChannel: editingPartner.mainChannel,
-    } as any);
-    setEditingPartner(null);
-    toast.success('Marca actualizada');
+    if (saving || !editingPartner) return;
+    setSaving(true);
+    try {
+      await updatePartner(editingPartner.id, {
+        name: editingPartner.name,
+        partnershipType: editingPartner.partnershipType,
+        keyTerms: editingPartner.keyTerms,
+        startDate: editingPartner.startDate,
+        endDate: editingPartner.endDate,
+        monthlyRevenue: Number(editingPartner.monthlyRevenue) || 0,
+        annualRevenue: Number(editingPartner.annualRevenue) || 0,
+        mainChannel: editingPartner.mainChannel,
+      } as any);
+      setEditingPartner(null);
+      toast.success('Marca actualizada');
+    } finally { setSaving(false); }
   };
 
   const handleAddContact = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!addingContactTo) return;
-    const finalPhone = newContact.phoneNumber.trim() ? `${newContact.phonePrefix} ${newContact.phoneNumber.trim()}` : '';
-    await addContact(addingContactTo, { ...newContact, phone: finalPhone });
-    setAddingContactTo(null);
-    setNewContact({ name: '', role: '', email: '', ig: '', phonePrefix: '+34', phoneNumber: '' });
-    toast.success('Contacto guardado');
+    if (saving || !addingContactTo) return;
+    setSaving(true);
+    try {
+      const finalPhone = newContact.phoneNumber.trim() ? `${newContact.phonePrefix} ${newContact.phoneNumber.trim()}` : '';
+      await addContact(addingContactTo, { ...newContact, phone: finalPhone });
+      setAddingContactTo(null);
+      setNewContact({ name: '', role: '', email: '', ig: '', phonePrefix: '+34', phoneNumber: '' });
+      toast.success('Contacto guardado');
+    } finally { setSaving(false); }
   };
 
   const handleOpenEditContact = (partnerId: string, contact: Contact) => {
@@ -317,11 +327,14 @@ export default function Directory() {
 
   const handleEditContact = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!editingContact) return;
-    const finalPhone = editingContact.number.trim() ? `${editingContact.prefix} ${editingContact.number.trim()}` : '';
-    await updateContact(editingContact.partnerId, editingContact.contact.id, { ...editingContact.contact, phone: finalPhone });
-    setEditingContact(null);
-    toast.success('Contacto actualizado');
+    if (saving || !editingContact) return;
+    setSaving(true);
+    try {
+      const finalPhone = editingContact.number.trim() ? `${editingContact.prefix} ${editingContact.number.trim()}` : '';
+      await updateContact(editingContact.partnerId, editingContact.contact.id, { ...editingContact.contact, phone: finalPhone });
+      setEditingContact(null);
+      toast.success('Contacto actualizado');
+    } finally { setSaving(false); }
   };
 
   const handleDeleteContact = async () => {
@@ -343,18 +356,12 @@ export default function Directory() {
         <div className="space-y-4 xl:sticky xl:top-4 xl:self-start">
           <div className="flex flex-wrap gap-2">
             {[
-              { icon: Building2, label: 'Marcas', value: String(partners.length), helper: 'En el workspace' },
-              { icon: Users, label: 'Activos', value: String(activePartners), helper: 'Relaciones vivas' },
-              { icon: Mail, label: 'Contactos', value: String(totalContacts), helper: 'Canales listos' },
-            ].map((item, index) => (
+              { icon: Building2, label: 'Marcas', value: `${activePartners} / ${partners.length}` },
+              { icon: Mail, label: 'Contactos', value: String(totalContacts) },
+            ].map((item) => (
               <div
                 key={item.label}
                 className="inline-flex items-center gap-3 px-3 py-2"
-                style={
-                  index === 0
-                    ? { color: accentColor }
-                    : undefined
-                }
               >
                 <div
                   className="flex h-8 w-8 items-center justify-center rounded-full"
@@ -372,33 +379,24 @@ export default function Directory() {
             ))}
           </div>
 
-          <SurfaceCard className="p-4 sm:p-5">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" size={20} />
-              <input
-                type="text"
-                placeholder="Buscar marcas o contactos"
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                className={cx(fieldClass, 'py-4 pl-14 pr-5 text-[15px]')}
-                style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-              />
-            </div>
-          </SurfaceCard>
+          <div className="relative">
+            <Search className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" size={20} />
+            <input
+              type="text"
+              placeholder="Buscar marcas o contactos"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              className={cx(fieldClass, 'py-4 pl-14 pr-5 text-[15px]')}
+              style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
+            />
+          </div>
 
           <SurfaceCard className="p-3 sm:p-4">
-            <div className="mb-3 flex items-center justify-between px-2 pt-1">
-              <div className="flex items-baseline gap-3">
-                <h2 className="text-lg font-bold text-[var(--text-primary)]">Marcas y contactos</h2>
-                <span className="hidden text-[10px] font-bold uppercase tracking-[0.24em] text-[var(--text-secondary)]/70 sm:inline-block">Lista</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <StatusBadge tone="neutral">{filteredPartners.length} resultados</StatusBadge>
-                <Button accentColor={accentColor} onClick={() => setIsAddingPartner(true)} className="px-3 py-2 text-xs">
-                  <Plus size={14} />
-                  Añadir
-                </Button>
-              </div>
+            <div className="mb-3 px-2 pt-1">
+              <Button accentColor={accentColor} onClick={() => setIsAddingPartner(true)} className="w-full py-2.5 text-xs">
+                <Plus size={14} />
+                Añadir
+              </Button>
             </div>
 
             <div className="space-y-2">
@@ -467,7 +465,6 @@ export default function Directory() {
                   <div className="min-w-0">
                     <div className="flex items-center gap-3">
                       <h2 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">{activePartner.name}</h2>
-                      <span className="hidden text-[10px] font-bold uppercase tracking-[0.24em] text-[var(--text-secondary)]/70 sm:inline-block">Marca activa</span>
                       <IconButton
                         icon={PencilLine}
                         label={`Editar ${activePartner.name}`}
@@ -530,7 +527,7 @@ export default function Directory() {
                       <p className="mt-1 text-sm font-semibold text-[var(--text-primary)]">{activePartner.annualRevenue ? formatCurrency(activePartner.annualRevenue) : '-'}</p>
                     </div>
                     <div className="sm:col-span-2 lg:col-span-4 mt-2 border-t border-[color:var(--line-soft)] pt-4">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--text-secondary)]/80">Condiciones Clave</p>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--text-secondary)]/80">Condiciones del acuerdo</p>
                       <p className="mt-1 text-sm leading-relaxed text-[var(--text-secondary)]">{activePartner.keyTerms || 'Aún no se han definido condiciones.'}</p>
                     </div>
                   </div>
@@ -551,24 +548,6 @@ export default function Directory() {
                   </div>
                 </div>
 
-                {nextDueTask ? (
-                  <div className="mt-5 rounded-[1.1rem] border border-[color:var(--line-soft)] bg-[var(--surface-card)]/85 px-4 py-4 shadow-[var(--shadow-soft)]">
-                    <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-[var(--text-secondary)]/70">Próximo movimiento</p>
-                    <div className="mt-3 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                      <div className="min-w-0">
-                        <p className="text-base font-bold text-[var(--text-primary)]">{nextDueTask.title}</p>
-                        <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-                          {nextDueTask.description || 'Añade una descripción para dejar claro el siguiente paso con esta marca.'}
-                        </p>
-                      </div>
-                      <div className="flex shrink-0 flex-wrap gap-2">
-                        <StatusBadge tone={taskStatusTone(nextDueTask.status)}>{nextDueTask.status}</StatusBadge>
-                        <StatusBadge tone="neutral">{formatTaskDate(nextDueTask.dueDate)}</StatusBadge>
-                        <StatusBadge tone="accent">{formatCurrency(nextDueTask.value)}</StatusBadge>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
               </div>
 
               <div className="border-t border-[color:var(--line-soft)] bg-[var(--surface-muted)]/50 p-5 sm:p-6">
@@ -726,19 +705,19 @@ export default function Directory() {
                       <Building2 size={14} />
                       Nombre
                     </label>
-                    <input required value={editingPartner.name} onChange={(event) => setEditingPartner({ ...editingPartner, name: event.target.value })} className={fieldClass} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="Ej. Nike, Samsung, Zara" />
+                    <input required value={editingPartner.name} onChange={(event) => setEditingPartner({ ...editingPartner, name: event.target.value })} className={fieldClass} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="" />
                   </div>
                   <div>
                     <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
                       <Layers size={14} />
                       Canal Principal
                     </label>
-                    <input value={editingPartner.mainChannel || ''} onChange={(event) => setEditingPartner({ ...editingPartner, mainChannel: event.target.value })} className={fieldClass} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="Ej. Instagram/TikTok" />
+                    <input value={editingPartner.mainChannel || ''} onChange={(event) => setEditingPartner({ ...editingPartner, mainChannel: event.target.value })} className={fieldClass} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="" />
                   </div>
                   <div>
                     <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
                       <FileText size={14} />
-                      Condiciones Clave
+                      Condiciones del acuerdo
                     </label>
                     <textarea value={editingPartner.keyTerms || ''} onChange={(event) => setEditingPartner({ ...editingPartner, keyTerms: event.target.value })} className={cx(fieldClass, 'min-h-[118px]')} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="Ej. 4 Historias/mes, 1 Reel" />
                   </div>
@@ -803,7 +782,7 @@ export default function Directory() {
                   </div>
                 </div>
               </div>
-              <Button type="submit" accentColor={accentColor} className="w-full">Guardar cambios</Button>
+              <Button type="submit" accentColor={accentColor} className="w-full" disabled={saving}>Guardar cambios</Button>
             </form>
           </ModalPanel>
         </OverlayModal>
@@ -820,19 +799,19 @@ export default function Directory() {
                       <Building2 size={14} />
                       Nombre
                     </label>
-                    <input required value={newPartner.name} onChange={(event) => setNewPartner({ ...newPartner, name: event.target.value })} className={fieldClass} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="Ej. Nike, Samsung, Zara" />
+                    <input required value={newPartner.name} onChange={(event) => setNewPartner({ ...newPartner, name: event.target.value })} className={fieldClass} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="" />
                   </div>
                   <div>
                     <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
                       <Layers size={14} />
                       Canal Principal
                     </label>
-                    <input value={newPartner.mainChannel} onChange={(event) => setNewPartner({ ...newPartner, mainChannel: event.target.value })} className={fieldClass} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="Ej. Instagram/TikTok" />
+                    <input value={newPartner.mainChannel} onChange={(event) => setNewPartner({ ...newPartner, mainChannel: event.target.value })} className={fieldClass} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="" />
                   </div>
                   <div>
                     <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
                       <FileText size={14} />
-                      Condiciones Clave
+                      Condiciones del acuerdo
                     </label>
                     <textarea value={newPartner.keyTerms} onChange={(event) => setNewPartner({ ...newPartner, keyTerms: event.target.value })} className={cx(fieldClass, 'min-h-[118px]')} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="Ej. 4 Historias/mes, 1 Reel" />
                   </div>
@@ -900,7 +879,7 @@ export default function Directory() {
                   </div>
                 </div>
               </div>
-              <Button type="submit" accentColor={accentColor} className="w-full">Crear marca</Button>
+              <Button type="submit" accentColor={accentColor} className="w-full" disabled={saving}>Crear marca</Button>
             </form>
           </ModalPanel>
         </OverlayModal>
@@ -968,14 +947,14 @@ export default function Directory() {
                     <Type size={14} />
                     Nombre
                   </label>
-                  <input required value={newContact.name} onChange={(event) => setNewContact({ ...newContact, name: event.target.value })} className={fieldClass} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="Juan Perez" />
+                  <input required value={newContact.name} onChange={(event) => setNewContact({ ...newContact, name: event.target.value })} className={fieldClass} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="" />
                 </div>
                 <div>
                   <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
                     <Briefcase size={14} />
                     Rol
                   </label>
-                  <input required value={newContact.role} onChange={(event) => setNewContact({ ...newContact, role: event.target.value })} className={fieldClass} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="PR Manager" />
+                  <input required value={newContact.role} onChange={(event) => setNewContact({ ...newContact, role: event.target.value })} className={fieldClass} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="" />
                 </div>
               </div>
               <div className="rounded-[1.2rem] border bg-[var(--surface-muted)]/50 p-4 sm:p-5 [border-color:var(--line-soft)]">
@@ -988,16 +967,16 @@ export default function Directory() {
                       <Mail size={14} />
                       Email
                     </label>
-                    <input type="email" required value={newContact.email} onChange={(event) => setNewContact({ ...newContact, email: event.target.value })} className={cx(fieldClass, 'bg-[var(--surface-card)]')} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="juan@brand.com" />
+                    <input type="email" required value={newContact.email} onChange={(event) => setNewContact({ ...newContact, email: event.target.value })} className={cx(fieldClass, 'bg-[var(--surface-card)]')} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="" />
                   </div>
                   <div>
                     <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
                       <Instagram size={14} />
                       Instagram
                     </label>
-                    <input value={newContact.ig} onChange={(event) => setNewContact({ ...newContact, ig: event.target.value })} className={cx(fieldClass, 'bg-[var(--surface-card)]')} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="@juanperez" />
+                    <input value={newContact.ig} onChange={(event) => setNewContact({ ...newContact, ig: event.target.value })} className={cx(fieldClass, 'bg-[var(--surface-card)]')} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="" />
                   </div>
-                  <div>
+                  <div className="sm:col-span-2">
                     <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
                       <Phone size={14} />
                       WhatsApp
@@ -1008,14 +987,15 @@ export default function Directory() {
                         onChange={(val) => setNewContact({ ...newContact, phonePrefix: val })}
                         options={PHONE_PREFIXES}
                         buttonStyle={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                        buttonClassName="w-[100px] shrink-0 bg-[var(--surface-card)]"
+                        className="!w-[100px] shrink-0"
+                        buttonClassName="bg-[var(--surface-card)]"
                       />
-                      <input type="tel" value={newContact.phoneNumber} onChange={(event) => setNewContact({ ...newContact, phoneNumber: event.target.value })} className={cx(fieldClass, 'flex-1 bg-[var(--surface-card)]')} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="600 123 456" />
+                      <input type="tel" value={newContact.phoneNumber} onChange={(event) => setNewContact({ ...newContact, phoneNumber: event.target.value })} className={cx(fieldClass, 'flex-1 bg-[var(--surface-card)]')} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="" />
                     </div>
                   </div>
                 </div>
               </div>
-              <Button type="submit" accentColor={accentColor} className="w-full">Guardar contacto</Button>
+              <Button type="submit" accentColor={accentColor} className="w-full" disabled={saving}>Guardar contacto</Button>
             </form>
           </ModalPanel>
         </OverlayModal>
@@ -1031,14 +1011,14 @@ export default function Directory() {
                     <Type size={14} />
                     Nombre
                   </label>
-                  <input required value={editingContact.contact.name} onChange={(event) => setEditingContact({ ...editingContact, contact: { ...editingContact.contact, name: event.target.value } })} className={fieldClass} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="Juan Perez" />
+                  <input required value={editingContact.contact.name} onChange={(event) => setEditingContact({ ...editingContact, contact: { ...editingContact.contact, name: event.target.value } })} className={fieldClass} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="" />
                 </div>
                 <div>
                   <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
                     <Briefcase size={14} />
                     Rol
                   </label>
-                  <input required value={editingContact.contact.role} onChange={(event) => setEditingContact({ ...editingContact, contact: { ...editingContact.contact, role: event.target.value } })} className={fieldClass} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="PR Manager" />
+                  <input required value={editingContact.contact.role} onChange={(event) => setEditingContact({ ...editingContact, contact: { ...editingContact.contact, role: event.target.value } })} className={fieldClass} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="" />
                 </div>
               </div>
               <div className="rounded-[1.2rem] border bg-[var(--surface-muted)]/50 p-4 sm:p-5 [border-color:var(--line-soft)]">
@@ -1051,16 +1031,16 @@ export default function Directory() {
                       <Mail size={14} />
                       Email
                     </label>
-                    <input required type="email" value={editingContact.contact.email} onChange={(event) => setEditingContact({ ...editingContact, contact: { ...editingContact.contact, email: event.target.value } })} className={cx(fieldClass, 'bg-[var(--surface-card)]')} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="juan@example.com" />
+                    <input required type="email" value={editingContact.contact.email} onChange={(event) => setEditingContact({ ...editingContact, contact: { ...editingContact.contact, email: event.target.value } })} className={cx(fieldClass, 'bg-[var(--surface-card)]')} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="" />
                   </div>
                   <div>
                     <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
                       <Instagram size={14} />
                       Instagram
                     </label>
-                    <input required value={editingContact.contact.ig} onChange={(event) => setEditingContact({ ...editingContact, contact: { ...editingContact.contact, ig: event.target.value } })} className={cx(fieldClass, 'bg-[var(--surface-card)]')} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="@juanperez" />
+                    <input required value={editingContact.contact.ig} onChange={(event) => setEditingContact({ ...editingContact, contact: { ...editingContact.contact, ig: event.target.value } })} className={cx(fieldClass, 'bg-[var(--surface-card)]')} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="" />
                   </div>
-                  <div>
+                  <div className="sm:col-span-2">
                     <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
                       <Phone size={14} />
                       WhatsApp
@@ -1071,9 +1051,10 @@ export default function Directory() {
                         onChange={(val) => setEditingContact({ ...editingContact, prefix: val })}
                         options={PHONE_PREFIXES}
                         buttonStyle={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                        buttonClassName="w-[100px] shrink-0 bg-[var(--surface-card)]"
+                        className="!w-[100px] shrink-0"
+                        buttonClassName="bg-[var(--surface-card)]"
                       />
-                      <input type="tel" value={editingContact.number} onChange={(event) => setEditingContact({ ...editingContact, number: event.target.value })} className={cx(fieldClass, 'flex-1 bg-[var(--surface-card)]')} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="600 123 456" />
+                      <input type="tel" value={editingContact.number} onChange={(event) => setEditingContact({ ...editingContact, number: event.target.value })} className={cx(fieldClass, 'flex-1 bg-[var(--surface-card)]')} style={{ '--tw-ring-color': accentColor } as React.CSSProperties} placeholder="" />
                     </div>
                   </div>
                 </div>
@@ -1091,7 +1072,7 @@ export default function Directory() {
                 >
                   <Trash2 size={18} />
                 </Button>
-                <Button type="submit" accentColor={accentColor} className="flex-1 justify-center">Guardar cambios</Button>
+                <Button type="submit" accentColor={accentColor} className="flex-1 justify-center" disabled={saving}>Guardar cambios</Button>
               </div>
             </form>
           </ModalPanel>

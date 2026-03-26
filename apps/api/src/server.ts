@@ -1,77 +1,16 @@
-import dotenv from 'dotenv';
 import path from 'path';
+import express from 'express';
+import { createServer as createViteServer } from 'vite';
+import { createApp } from './app';
 
 const repoRoot = process.cwd();
 const webRoot = path.join(repoRoot, 'apps', 'web');
 const webDistPath = path.join(webRoot, 'dist');
 
-dotenv.config({ path: path.join(repoRoot, '.env') });
-
-import { loadEnv } from './config/env';
-
-const env = loadEnv();
-
-import express from 'express';
-import session from 'express-session';
-import connectPgSimple from 'connect-pg-simple';
-import { google } from 'googleapis';
-import { createServer as createViteServer } from 'vite';
-import { createAuthRouter } from './routes/auth';
-import { createCalendarRouter } from './routes/calendar';
-import { createV1Router } from './routes/v1';
-import { initPool, closePool } from './db/connection';
-import { runMigrations } from './db/migrate';
-import { PostgresAppStore } from './db/repository';
-
-const PgSession = connectPgSimple(session);
-
 async function startServer() {
-  // 1. Initialize database
-  const pool = await initPool(env.DATABASE_URL);
+  const { app, env, closePool } = await createApp();
 
-  // 2. Run migrations
-  await runMigrations(pool);
-
-  // 3. Create repository
-  const appStore = new PostgresAppStore(pool);
-
-  // 4. Build Express app
-  const app = express();
-  app.use(express.json());
-
-  app.use(
-    session({
-      store: new PgSession({
-        pool,
-        tableName: 'session',
-        createTableIfMissing: false,
-      }),
-      secret: env.SESSION_SECRET,
-      resave: false,
-      saveUninitialized: false,
-      cookie: {
-        secure: env.NODE_ENV === 'production',
-        sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
-        httpOnly: true,
-        maxAge: 30 * 24 * 60 * 60 * 1000,
-      },
-    }),
-  );
-
-  const oauth2Client = new google.auth.OAuth2(
-    env.GOOGLE_CLIENT_ID,
-    env.GOOGLE_CLIENT_SECRET,
-    `${env.APP_URL}/api/auth/google/callback`,
-  );
-
-  app.get('/api/health', (_req, res) => {
-    res.json({ ok: true });
-  });
-
-  app.use('/api/v1', createV1Router(appStore, pool));
-  app.use('/api/auth', createAuthRouter(oauth2Client, env.APP_URL, pool));
-  app.use('/api/calendar', createCalendarRouter(oauth2Client));
-
+  // Frontend serving
   if (env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       root: webRoot,

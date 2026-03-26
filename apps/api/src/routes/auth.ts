@@ -2,6 +2,7 @@ import { randomUUID } from 'crypto';
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { google } from 'googleapis';
+import { createClient } from '@supabase/supabase-js';
 import type pg from 'pg';
 import type {
   AuthStatusResponse,
@@ -345,6 +346,86 @@ export function createAuthRouter(
     } catch (error) {
       console.error('Error retrieving access token', error);
       res.status(500).send('Authentication failed');
+    }
+  });
+
+  // ── Google OAuth via Supabase ────────────────────────────────
+
+  router.post('/google/supabase', async (req, res) => {
+    const { access_token } = req.body as { access_token?: string };
+
+    if (!access_token) {
+      return res.status(400).json({ error: 'Token requerido.' });
+    }
+
+    const sbUrl = process.env.SUPABASE_URL;
+    const sbKey = process.env.SUPABASE_SERVICE_KEY;
+
+    if (!sbUrl || !sbKey) {
+      return res.status(503).json({ error: 'Supabase no configurado.' });
+    }
+
+    try {
+      const supabaseAdmin = createClient(sbUrl, sbKey);
+      const { data, error: sbError } = await supabaseAdmin.auth.getUser(access_token);
+
+      if (sbError || !data.user) {
+        return res.status(401).json({ error: 'Token invalido o expirado.' });
+      }
+
+      const sbUser = data.user;
+      const googleEmail = (sbUser.email ?? '').toLowerCase();
+      const googleName =
+        sbUser.user_metadata?.full_name ||
+        sbUser.user_metadata?.name ||
+        googleEmail.split('@')[0];
+      const googleAvatar = sbUser.user_metadata?.avatar_url || '';
+
+      if (!googleEmail) {
+        return res.status(400).json({ error: 'No se pudo obtener el email de Google.' });
+      }
+
+      // Upsert user
+      const { rows: existing } = await pool.query(
+        'SELECT id FROM users WHERE LOWER(email) = $1',
+        [googleEmail],
+      );
+
+      let userId: string;
+
+      if (existing.length === 0) {
+        userId = randomUUID();
+        await pool.query(
+          `INSERT INTO users (id, email, password_hash, name, avatar, provider)
+           VALUES ($1, $2, '', $3, $4, 'google')`,
+          [userId, googleEmail, googleName, googleAvatar],
+        );
+      } else {
+        userId = existing[0].id;
+        await pool.query(
+          `UPDATE users SET name = $1, avatar = $2, provider = 'google', updated_at = NOW()
+           WHERE id = $3`,
+          [googleName, googleAvatar, userId],
+        );
+      }
+
+      await ensureUserData(pool, userId, googleName, googleEmail, googleAvatar);
+
+      const user: SessionUser = {
+        id: userId,
+        email: googleEmail,
+        name: googleName,
+        avatar: googleAvatar,
+        provider: 'google',
+      };
+
+      setSessionUser(req, user);
+
+      const response: MeResponse = { user };
+      res.json(response);
+    } catch (error) {
+      console.error('Supabase Google auth error:', error);
+      res.status(500).json({ error: 'Error al autenticar con Google.' });
     }
   });
 

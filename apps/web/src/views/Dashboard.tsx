@@ -22,10 +22,10 @@ const PIPELINE_STATUSES: TaskStatus[] = [
   'Cobrado',
 ];
 
-const statusToneMap: Record<TaskStatus, 'warning' | 'info' | 'accent' | 'success' | 'neutral'> = {
+const statusToneMap: Record<TaskStatus, 'warning' | 'info' | 'review' | 'success' | 'neutral'> = {
   Pendiente: 'warning',
   'En Progreso': 'info',
-  'En Revisión': 'accent',
+  'En Revisión': 'review',
   Completada: 'success',
   Cobrado: 'neutral',
 };
@@ -33,7 +33,7 @@ const statusToneMap: Record<TaskStatus, 'warning' | 'info' | 'accent' | 'success
 const pipelineBarColors: Record<TaskStatus, string> = {
   Pendiente: '#d97706',
   'En Progreso': '#2563eb',
-  'En Revisión': 'var(--accent)',
+  'En Revisión': '#7c3aed',
   Completada: '#059669',
   Cobrado: '#64748b',
 };
@@ -515,90 +515,9 @@ export default function Dashboard() {
         <GoalsMarquee goals={generalGoals} accentColor={accentColor} />
       )}
 
-      {/* Quick stats bar */}
-      <div className="flex flex-wrap items-center gap-2 text-[11px] font-semibold text-[var(--text-secondary)]">
-        {globalSummary.overdue > 0 && (
-          <>
-            <span className="rounded-full bg-amber-100 px-2 py-0.5 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400">
-              {globalSummary.overdue} retrasadas
-            </span>
-            <span className="text-[var(--line-soft)]">·</span>
-          </>
-        )}
-        <span>{globalSummary.tasksToday} hoy</span>
-        <span className="text-[var(--line-soft)]">·</span>
-        <span>{globalSummary.tasksThisWeek} esta semana</span>
-        <span className="text-[var(--line-soft)]">·</span>
-        <span>{formatCurrency(globalSummary.activePipelineValue)} abierto</span>
-      </div>
-
       {/* Main 2-col grid */}
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1.3fr)_minmax(300px,0.7fr)]">
-        {/* ── Left: Tu día ─────────────────────────────────── */}
-        <SurfaceCard className="p-5 lg:p-6">
-          <p className="text-[11px] font-bold tracking-[0.18em] text-[var(--text-secondary)] uppercase">
-            Tu día
-          </p>
-
-          {hasAgendaItems ? (
-            <div className="mt-4 space-y-5">
-              {/* Overdue */}
-              {groupedAgenda.overdue.length > 0 && (
-                <AgendaGroup
-                  label={`Retrasadas (${groupedAgenda.overdue.length})`}
-                  icon={<Clock size={13} className="text-amber-500" />}
-                  labelClassName="text-amber-600 dark:text-amber-400"
-                  tasks={groupedAgenda.overdue}
-                  partners={partners}
-                  accentColor={accentColor}
-                  onComplete={handleCompleteTask}
-                />
-              )}
-
-              {/* Today */}
-              {groupedAgenda.todayTasks.length > 0 && (
-                <AgendaGroup
-                  label={`Hoy (${groupedAgenda.todayTasks.length})`}
-                  tasks={groupedAgenda.todayTasks}
-                  partners={partners}
-                  accentColor={accentColor}
-                  onComplete={handleCompleteTask}
-                />
-              )}
-
-              {/* Tomorrow */}
-              {groupedAgenda.tomorrowTasks.length > 0 && (
-                <AgendaGroup
-                  label={`Mañana (${groupedAgenda.tomorrowTasks.length})`}
-                  tasks={groupedAgenda.tomorrowTasks}
-                  partners={partners}
-                  accentColor={accentColor}
-                  onComplete={handleCompleteTask}
-                />
-              )}
-
-              {/* This week */}
-              {groupedAgenda.thisWeekTasks.length > 0 && (
-                <AgendaGroup
-                  label={`Esta semana (${groupedAgenda.thisWeekTasks.length})`}
-                  tasks={groupedAgenda.thisWeekTasks}
-                  partners={partners}
-                  accentColor={accentColor}
-                  onComplete={handleCompleteTask}
-                />
-              )}
-            </div>
-          ) : (
-            <EmptyState
-              icon={CalendarClock}
-              title="Día libre de entregas"
-              description="Aprovecha el tiempo para prospectar nuevas marcas o planificar contenido."
-              className="py-10"
-            />
-          )}
-        </SurfaceCard>
-
-        {/* ── Right: stacked cards ─────────────────────────── */}
+        {/* ── Left: stacked cards ────────────────────────── */}
         <div className="space-y-5">
           {/* Financial Flow */}
           <SurfaceCard className="relative overflow-hidden p-5 lg:p-6">
@@ -611,12 +530,7 @@ export default function Dashboard() {
             />
             <div className="relative">
               {/* Period navigator */}
-              <div className="flex items-center justify-between">
-                <p className="text-[11px] font-bold tracking-[0.18em] text-[var(--text-secondary)] uppercase">
-                  Flujo financiero
-                </p>
-              </div>
-              <div className="mt-3 flex flex-col items-center gap-2">
+              <div className="flex flex-col items-center gap-2">
                 <div className="flex items-center gap-1">
                   {periodView === 'month' && (
                     <button
@@ -660,10 +574,10 @@ export default function Dashboard() {
                         }
                       }}
                       className={cx(
-                        'rounded-[0.4rem] px-2.5 py-1 text-[9px] font-bold uppercase tracking-[0.1em] transition-all',
+                        'rounded-[0.4rem] px-2.5 py-1 text-[10px] tracking-wide transition-all',
                         periodView === opt.key
-                          ? 'bg-[var(--surface-card)] text-[var(--text-primary)] shadow-sm'
-                          : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]',
+                          ? 'bg-[var(--surface-card)] font-extrabold text-[var(--text-primary)] shadow-sm'
+                          : 'font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)]',
                       )}
                     >
                       {opt.label}
@@ -673,7 +587,7 @@ export default function Dashboard() {
               </div>
 
               {/* KPIs grid */}
-              <div className="mt-4 grid grid-cols-2 gap-x-4 gap-y-4">
+              <div className="mt-4 grid grid-cols-3 gap-x-4 gap-y-4">
                 <div>
                   <p className="text-[10px] font-bold tracking-[0.14em] text-[var(--text-secondary)] uppercase">
                     Abierto
@@ -707,6 +621,25 @@ export default function Dashboard() {
                   </p>
                   <p className="mt-1 text-xl font-black tracking-tight text-[var(--text-primary)]">
                     {periodSummary.deliveriesCount}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold tracking-[0.14em] text-[var(--text-secondary)] uppercase">
+                    Marcas
+                  </p>
+                  <p className="mt-1 text-xl font-black tracking-tight text-[var(--text-primary)]">
+                    {periodSummary.activePartners}
+                    <span className="text-sm font-medium text-[var(--text-secondary)]">
+                      {' '}/ {periodSummary.totalPartners}
+                    </span>
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold tracking-[0.14em] text-[var(--text-secondary)] uppercase">
+                    Contactos
+                  </p>
+                  <p className="mt-1 text-xl font-black tracking-tight text-[var(--text-primary)]">
+                    {periodSummary.totalContacts}
                   </p>
                 </div>
               </div>
@@ -789,35 +722,71 @@ export default function Dashboard() {
             </div>
           </SurfaceCard>
 
-          {/* Network */}
-          <SurfaceCard className="p-5 lg:p-6">
-            <p className="text-[11px] font-bold tracking-[0.18em] text-[var(--text-secondary)] uppercase">
-              Tu red
-            </p>
-            <div className="mt-3 grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-xl font-black text-[var(--text-primary)]">
-                  {periodSummary.activePartners}
-                  <span className="text-sm font-medium text-[var(--text-secondary)]">
-                    {' '}
-                    / {periodSummary.totalPartners}
-                  </span>
-                </p>
-                <p className="mt-0.5 text-[10px] font-medium text-[var(--text-secondary)]">
-                  Marcas activas
-                </p>
-              </div>
-              <div>
-                <p className="text-xl font-black text-[var(--text-primary)]">
-                  {periodSummary.totalContacts}
-                </p>
-                <p className="mt-0.5 text-[10px] font-medium text-[var(--text-secondary)]">
-                  Contactos
-                </p>
-              </div>
-            </div>
-          </SurfaceCard>
         </div>
+
+        {/* ── Right: Tu día ──────────────────────────────── */}
+        <SurfaceCard className="p-5 lg:p-6">
+          <p className="text-[11px] font-bold tracking-[0.18em] text-[var(--text-secondary)] uppercase">
+            Tu día
+          </p>
+
+          {hasAgendaItems ? (
+            <div className="mt-4 space-y-5">
+              {/* Overdue */}
+              {groupedAgenda.overdue.length > 0 && (
+                <AgendaGroup
+                  label={`Retrasadas (${groupedAgenda.overdue.length})`}
+                  icon={<Clock size={13} className="text-amber-500" />}
+                  labelClassName="text-amber-600 dark:text-amber-400"
+                  tasks={groupedAgenda.overdue}
+                  partners={partners}
+                  accentColor={accentColor}
+                  onComplete={handleCompleteTask}
+                />
+              )}
+
+              {/* Today */}
+              {groupedAgenda.todayTasks.length > 0 && (
+                <AgendaGroup
+                  label={`Hoy (${groupedAgenda.todayTasks.length})`}
+                  tasks={groupedAgenda.todayTasks}
+                  partners={partners}
+                  accentColor={accentColor}
+                  onComplete={handleCompleteTask}
+                />
+              )}
+
+              {/* Tomorrow */}
+              {groupedAgenda.tomorrowTasks.length > 0 && (
+                <AgendaGroup
+                  label={`Mañana (${groupedAgenda.tomorrowTasks.length})`}
+                  tasks={groupedAgenda.tomorrowTasks}
+                  partners={partners}
+                  accentColor={accentColor}
+                  onComplete={handleCompleteTask}
+                />
+              )}
+
+              {/* This week */}
+              {groupedAgenda.thisWeekTasks.length > 0 && (
+                <AgendaGroup
+                  label={`Esta semana (${groupedAgenda.thisWeekTasks.length})`}
+                  tasks={groupedAgenda.thisWeekTasks}
+                  partners={partners}
+                  accentColor={accentColor}
+                  onComplete={handleCompleteTask}
+                />
+              )}
+            </div>
+          ) : (
+            <EmptyState
+              icon={CalendarClock}
+              title="Día libre de entregas"
+              description="Aprovecha el tiempo para prospectar nuevas marcas o planificar contenido."
+              className="py-10"
+            />
+          )}
+        </SurfaceCard>
       </section>
 
       {/* Revenue Chart – full width */}

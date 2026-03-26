@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AlignLeft,
   Bell,
@@ -36,27 +36,20 @@ const ACCENT_OPTIONS = [
   { name: 'Terracota', value: '#C65D4B' },
   { name: 'Cobre', value: '#B86A45' },
   { name: 'Eucalipto', value: '#5D8D7B' },
-  { name: 'Salvia', value: '#6F8A74' },
   { name: 'Violeta', value: '#8B5CF6' },
   { name: 'Indigo', value: '#6366F1' },
-  { name: 'Azul', value: '#2563EB' },
   { name: 'Cielo', value: '#0EA5E9' },
   { name: 'Turquesa', value: '#06B6D4' },
-  { name: 'Menta', value: '#14B8A6' },
-  { name: 'Esmeralda', value: '#10B981' },
-  { name: 'Verde', value: '#22C55E' },
-  { name: 'Lima', value: '#84CC16' },
-  { name: 'Limon', value: '#A3E635' },
-  { name: 'Amarillo', value: '#EAB308' },
-  { name: 'Ambar', value: '#F59E0B' },
-  { name: 'Naranja', value: '#FC4C00' },
-  { name: 'Coral', value: '#FB7185' },
-  { name: 'Rojo', value: '#EF4444' },
-  { name: 'Cereza', value: '#E11D48' },
   { name: 'Rosa', value: '#EC4899' },
   { name: 'Fucsia', value: '#D946EF' },
-  { name: 'Pizarra', value: '#475569' },
-  { name: 'Grafito', value: '#334155' },
+] as const;
+
+const TEMPLATE_VARIABLES = [
+  { key: 'brandName', label: 'Marca' },
+  { key: 'contactName', label: 'Contacto' },
+  { key: 'creatorName', label: 'Creador' },
+  { key: 'deliverable', label: 'Entregable' },
+  { key: 'mediaKitLink', label: 'Media Kit' },
 ] as const;
 
 const fieldClass =
@@ -76,25 +69,44 @@ export default function Settings() {
     reportActionError,
     onLogout,
   } = useAppContext();
-  const [gcalConnected, setGcalConnected] = useState(false);
   const [isAddingTemplate, setIsAddingTemplate] = useState(false);
   const [editingTemplateId, setEditingTemplateId] = useState<string | null>(null);
   const [isAccentPaletteOpen, setIsAccentPaletteOpen] = useState(false);
   const [newTemplate, setNewTemplate] = useState({ name: '', subject: '', body: '' });
+  const [savingTemplate, setSavingTemplate] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [activeTemplateField, setActiveTemplateField] = useState<'subject' | 'body'>('body');
+  const subjectRef = useRef<HTMLInputElement>(null);
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
+
+  const insertVariable = useCallback(
+    (varKey: string) => {
+      const token = `{{${varKey}}}`;
+      const el = activeTemplateField === 'subject' ? subjectRef.current : bodyRef.current;
+      if (!el) return;
+
+      const start = el.selectionStart ?? el.value.length;
+      const end = el.selectionEnd ?? start;
+      const before = el.value.slice(0, start);
+      const after = el.value.slice(end);
+      const updated = before + token + after;
+
+      setNewTemplate((prev) => ({ ...prev, [activeTemplateField]: updated }));
+
+      requestAnimationFrame(() => {
+        el.focus();
+        const cursor = start + token.length;
+        el.setSelectionRange(cursor, cursor);
+      });
+    },
+    [activeTemplateField],
+  );
 
   const activeAccent =
     ACCENT_OPTIONS.find((option) => option.value.toLowerCase() === accentColor.toLowerCase()) ?? {
       name: 'Actual',
       value: accentColor,
     };
-
-  useEffect(() => {
-    fetch('/api/auth/status')
-      .then((res) => res.json())
-      .then((data) => setGcalConnected(data.connected))
-      .catch((err) => console.error('Failed to fetch gcal status', err));
-  }, []);
 
   const toggleNotifications = async () => {
     if (!profile.notificationsEnabled) {
@@ -116,49 +128,25 @@ export default function Settings() {
     toast.info('Notificaciones desactivadas');
   };
 
-  const connectGoogleCalendar = async () => {
-    if (gcalConnected) {
-      await fetch('/api/auth/logout', { method: 'POST' });
-      setGcalConnected(false);
-      toast.info('Calendar desconectado');
-      return;
-    }
-
-    try {
-      const response = await fetch('/api/auth/google/url');
-      const { url } = await response.json();
-      window.open(url, 'oauth_popup', 'width=600,height=700');
-
-      const handleMessage = (event: MessageEvent) => {
-        if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
-          setGcalConnected(true);
-          window.removeEventListener('message', handleMessage);
-          toast.success('Calendar conectado con éxito');
-        }
-      };
-
-      window.addEventListener('message', handleMessage);
-    } catch (error) {
-      console.error('OAuth error:', error);
-      reportActionError('No pudimos abrir el flujo de Google Calendar.');
-    }
-  };
-
   const handleAddTemplate = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (editingTemplateId) {
-      await deleteTemplate(editingTemplateId);
-      await addTemplate(newTemplate);
-      setIsAddingTemplate(false);
-      setNewTemplate({ name: '', subject: '', body: '' });
-      setEditingTemplateId(null);
-      toast.success('Plantilla actualizada correctamente');
-    } else {
-      await addTemplate(newTemplate);
-      setIsAddingTemplate(false);
-      setNewTemplate({ name: '', subject: '', body: '' });
-      toast.success('Plantilla guardada correctamente');
-    }
+    if (savingTemplate) return;
+    setSavingTemplate(true);
+    try {
+      if (editingTemplateId) {
+        await deleteTemplate(editingTemplateId);
+        await addTemplate(newTemplate);
+        setIsAddingTemplate(false);
+        setNewTemplate({ name: '', subject: '', body: '' });
+        setEditingTemplateId(null);
+        toast.success('Plantilla actualizada correctamente');
+      } else {
+        await addTemplate(newTemplate);
+        setIsAddingTemplate(false);
+        setNewTemplate({ name: '', subject: '', body: '' });
+        toast.success('Plantilla guardada correctamente');
+      }
+    } finally { setSavingTemplate(false); }
   };
 
   const handleResetTour = () => {
@@ -270,14 +258,9 @@ export default function Settings() {
               <SettingRow
                 icon={CalendarIcon}
                 title="Sincronizacion con Calendar"
-                description={
-                  gcalConnected
-                    ? 'Google Calendar esta conectado.'
-                    : 'Conecta tu calendario para sincronizar fechas.'
-                }
-                onClick={() => void connectGoogleCalendar()}
-                trailing={<ToggleSwitch checked={gcalConnected} accentColor={accentColor} />}
-                className="px-0 py-3"
+                description="Proximamente. La integracion con Google Calendar estara disponible en una version futura."
+                trailing={<ToggleSwitch checked={false} accentColor={accentColor} disabled />}
+                className="cursor-not-allowed px-0 py-3 opacity-60"
               />
               <SettingRow
                 icon={Shield}
@@ -321,11 +304,18 @@ export default function Settings() {
 
             <div className="rounded-[1rem] border border-slate-200/70 bg-[var(--surface-card-strong)] p-4 dark:border-slate-700/60">
               <p className="text-[10px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
-                Variables
+                Variables disponibles
               </p>
-              <p className="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">
-                {'{{brandName}}, {{contactName}}, {{creatorName}}, {{deliverable}}, {{mediaKitLink}}'}
-              </p>
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                {TEMPLATE_VARIABLES.map((v) => (
+                  <span
+                    key={v.key}
+                    className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400"
+                  >
+                    {v.label}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
           </div>
@@ -340,8 +330,8 @@ export default function Settings() {
                 >
                   <div className="flex min-w-0 items-start gap-4">
                     <div
-                      className="mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-[0.95rem]"
-                      style={{ backgroundColor: `${accentColor}12`, color: accentColor }}
+                      className="mt-0.5 flex shrink-0 items-center justify-center"
+                      style={{ color: accentColor }}
                     >
                       <MessageSquare size={18} />
                     </div>
@@ -368,7 +358,7 @@ export default function Settings() {
                       setNewTemplate({ name: template.name, subject: template.subject, body: template.body });
                       setIsAddingTemplate(true);
                     }}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--surface-muted)] text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-card-strong)] hover:text-[var(--text-primary)]"
+                    className="flex shrink-0 items-center justify-center text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
                     aria-label={`Editar plantilla ${template.name}`}
                   >
                     <PencilLine size={16} />
@@ -528,7 +518,7 @@ export default function Settings() {
                     <Trash2 size={18} />
                   </Button>
                 )}
-                <Button type="submit" form="template-form" accentColor={accentColor} className="flex-1 justify-center">
+                <Button type="submit" form="template-form" accentColor={accentColor} className="flex-1 justify-center" disabled={savingTemplate}>
                   {editingTemplateId ? 'Guardar cambios' : 'Guardar plantilla'}
                 </Button>
               </div>
@@ -563,12 +553,14 @@ export default function Settings() {
                     Asunto
                   </label>
                   <input
+                    ref={subjectRef}
                     required
                     value={newTemplate.subject}
                     onChange={(event) => setNewTemplate({ ...newTemplate, subject: event.target.value })}
+                    onFocus={() => setActiveTemplateField('subject')}
                     className={cx(fieldClass, 'bg-[var(--surface-card)]')}
                     style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                    placeholder="Usa {{brandName}}, {{creatorName}}"
+                    placeholder="Ej. Propuesta de colaboracion"
                   />
                 </div>
 
@@ -578,16 +570,35 @@ export default function Settings() {
                     Cuerpo del mensaje
                   </label>
                   <textarea
+                    ref={bodyRef}
                     required
                     value={newTemplate.body}
                     onChange={(event) => setNewTemplate({ ...newTemplate, body: event.target.value })}
+                    onFocus={() => setActiveTemplateField('body')}
                     className={cx(fieldClass, 'min-h-[150px] bg-[var(--surface-card)]')}
                     style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                    placeholder="Hola {{contactName}}..."
+                    placeholder="Hola {{contactName}}, me encantaria..."
                   />
-                  <p className="mt-2 text-[11px] font-medium text-[var(--text-secondary)]">
-                    Variables disponibles: {'{{brandName}}, {{contactName}}, {{creatorName}}, {{deliverable}}, {{mediaKitLink}}'}
+                </div>
+
+                <div>
+                  <p className="mb-2 text-[10px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/70 uppercase">
+                    Insertar variable en {activeTemplateField === 'subject' ? 'asunto' : 'cuerpo'}
                   </p>
+                  <div className="flex flex-wrap gap-2">
+                    {TEMPLATE_VARIABLES.map((v) => (
+                      <button
+                        key={v.key}
+                        type="button"
+                        onClick={() => insertVariable(v.key)}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--line-soft)] bg-[var(--surface-card)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] transition-all hover:border-[color:var(--accent)] hover:text-[var(--accent)] active:scale-95"
+                      >
+                        <span className="text-[10px] opacity-60">{'{{'}</span>
+                        {v.label}
+                        <span className="text-[10px] opacity-60">{'}}'}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>

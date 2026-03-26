@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import type { SessionUser } from '@shared';
 import { authApi, ApiError } from '../lib/api';
+import { supabase } from '../lib/supabase';
 import { cx } from '../components/ui';
 
 type AuthMode = 'login' | 'register';
@@ -110,25 +111,22 @@ export default function Landing({
   };
 
   const handleGoogleLogin = async () => {
+    if (!supabase) {
+      setError('Login con Google no disponible. Configuracion pendiente.');
+      return;
+    }
+
     try {
-      const { url } = await authApi.googleLoginUrl();
+      const { error: sbError } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: window.location.origin,
+        },
+      });
 
-      const popup = window.open(url, 'google-login', 'width=500,height=600');
-
-      const handleMessage = async (event: MessageEvent) => {
-        if (event.origin !== window.location.origin) return;
-        if (event.data?.type === 'GOOGLE_LOGIN_SUCCESS') {
-          window.removeEventListener('message', handleMessage);
-          popup?.close();
-
-          const { user } = await authApi.me();
-          if (user) {
-            onLogin(user);
-          }
-        }
-      };
-
-      window.addEventListener('message', handleMessage);
+      if (sbError) {
+        setError('No se pudo conectar con Google. Intenta de nuevo.');
+      }
     } catch {
       setError('No se pudo conectar con Google. Intenta de nuevo.');
     }

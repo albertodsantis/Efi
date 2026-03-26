@@ -14,7 +14,7 @@ export function getPool(): pg.Pool {
 export async function initPool(databaseUrl: string): Promise<pg.Pool> {
   pool = new Pool({
     connectionString: databaseUrl,
-    max: 10,
+    max: 5,
     idleTimeoutMillis: 30000,
     connectionTimeoutMillis: 5000,
   });

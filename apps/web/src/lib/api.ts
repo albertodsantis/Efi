@@ -77,6 +77,11 @@ export const authApi = {
     apiRequest<GoogleAuthUrlResponse>('/api/auth/google/login-url'),
   deleteAccount: () =>
     apiRequest<DeleteAccountResponse>('/api/auth/account', { method: 'DELETE' }),
+  googleSupabase: (accessToken: string) =>
+    apiRequest<MeResponse>('/api/auth/google/supabase', {
+      method: 'POST',
+      body: JSON.stringify({ access_token: accessToken }),
+    }),
 };
 
 export const appApi = {

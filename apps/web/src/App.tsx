@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Home,
+  Loader2,
   LayoutDashboard,
   LogOut,
   Settings as SettingsIcon,
@@ -14,6 +15,7 @@ import {
 } from 'lucide-react';
 import type { SessionUser } from '@shared';
 import { AppProvider, useAppContext } from './context/AppContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import Dashboard from './views/Dashboard';
 import Pipeline from './views/Pipeline';
 import Directory from './views/Directory';
@@ -24,6 +26,7 @@ import AIAssistant from './components/AIAssistant';
 import OnboardingTour from './components/OnboardingTour';
 import { SurfaceCard, cx } from './components/ui';
 import { authApi } from './lib/api';
+import { supabase } from './lib/supabase';
 
 type TabId = 'dashboard' | 'pipeline' | 'directory' | 'profile' | 'settings';
 
@@ -99,6 +102,50 @@ function useIsDesktop() {
   }, []);
 
   return isDesktop;
+}
+
+/* ── Pull-to-refresh (mobile only) ──────────────────────── */
+
+function usePullToRefresh(onRefresh: () => Promise<void>) {
+  const [pullDistance, setPullDistance] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const startY = useRef(0);
+  const pulling = useRef(false);
+  const THRESHOLD = 80;
+
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (window.scrollY === 0 && !refreshing) {
+      startY.current = e.touches[0].clientY;
+      pulling.current = true;
+    }
+  }, [refreshing]);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!pulling.current || refreshing) return;
+    const delta = e.touches[0].clientY - startY.current;
+    if (delta > 0) {
+      setPullDistance(Math.min(delta * 0.5, THRESHOLD * 1.5));
+    }
+  }, [refreshing]);
+
+  const handleTouchEnd = useCallback(async () => {
+    if (!pulling.current) return;
+    pulling.current = false;
+    if (pullDistance >= THRESHOLD && !refreshing) {
+      setRefreshing(true);
+      setPullDistance(THRESHOLD * 0.6);
+      try {
+        await onRefresh();
+      } finally {
+        setRefreshing(false);
+        setPullDistance(0);
+      }
+    } else {
+      setPullDistance(0);
+    }
+  }, [pullDistance, refreshing, onRefresh]);
+
+  return { pullDistance, refreshing, handleTouchStart, handleTouchMove, handleTouchEnd };
 }
 
 function renderActiveView(activeTab: TabId) {
@@ -214,12 +261,11 @@ const DesktopSidebar = ({
               type="button"
               onClick={() => onTabChange(tab.id)}
               className={cx(
-                'w-full rounded-[1.1rem] border px-3 py-3 text-left transition-all [border-color:transparent]',
+                'w-full rounded-[1.1rem] px-3 py-3 text-left transition-all',
                 isActive
-                  ? 'bg-[var(--surface-card-strong)] shadow-[var(--shadow-soft)] [border-color:var(--line-soft)]'
+                  ? 'bg-[var(--surface-card-strong)]'
                   : 'hover:bg-[var(--surface-card)]/80',
               )}
-              style={isActive ? { boxShadow: 'var(--shadow-soft)' } : undefined}
             >
               <div className="flex items-center gap-3">
                 <div
@@ -237,7 +283,7 @@ const DesktopSidebar = ({
                         style={{ backgroundColor: accentColor }}
                       />
                     ) : null}
-                    <p className="truncate text-sm font-bold text-[var(--text-primary)]">{tab.label}</p>
+                    <p className="truncate text-sm font-bold" style={isActive ? { color: accentColor } : { color: 'var(--text-primary)' }}>{tab.label}</p>
                   </div>
                 </div>
               </div>
@@ -281,10 +327,10 @@ const MobileBottomNav = ({
             className={cx(
               'flex w-full max-w-[68px] flex-col items-center gap-1 rounded-[1rem] px-2 py-2.5 transition-all',
               isActive
-                ? 'shadow-[var(--shadow-soft)]'
+                ? ''
                 : 'text-[var(--text-secondary)]',
             )}
-            style={isActive ? { backgroundColor: `${accentColor}16`, color: accentColor } : undefined}
+            style={isActive ? { color: accentColor } : undefined}
           >
             <Icon size={22} strokeWidth={isActive ? 2.5 : 2.1} />
             <span
@@ -318,6 +364,7 @@ const MainLayout = () => {
   } = useAppContext();
 
   const activeTabConfig = tabs.find((tab) => tab.id === activeTab) || tabs[0];
+  const { pullDistance, refreshing, handleTouchStart, handleTouchMove, handleTouchEnd } = usePullToRefresh(refreshAppData);
 
   useEffect(() => {
     if (isDesktop) {
@@ -484,7 +531,26 @@ const MainLayout = () => {
                 }}
               />
 
-              <div className="relative z-10 flex flex-1 min-h-0 flex-col">
+              {/* Pull-to-refresh indicator (mobile) */}
+              {!isDesktop && pullDistance > 0 && (
+                <div
+                  className="relative z-20 flex items-center justify-center overflow-hidden transition-all"
+                  style={{ height: pullDistance }}
+                >
+                  <Loader2
+                    size={20}
+                    className={cx('text-[var(--text-secondary)]', refreshing && 'animate-spin')}
+                    style={{ opacity: Math.min(pullDistance / 80, 1) }}
+                  />
+                </div>
+              )}
+
+              <div
+                className="relative z-10 flex flex-1 min-h-0 flex-col"
+                onTouchStart={!isDesktop ? handleTouchStart : undefined}
+                onTouchMove={!isDesktop ? handleTouchMove : undefined}
+                onTouchEnd={!isDesktop ? handleTouchEnd : undefined}
+              >
                 <div
                   className={cx(
                     'min-w-0 flex flex-wrap items-baseline gap-4',
@@ -501,7 +567,7 @@ const MainLayout = () => {
                   <h2 className={cx('font-bold tracking-tight text-[var(--text-primary)] whitespace-nowrap', isDesktop ? 'text-[1.5rem]' : 'text-lg')}>
                     {activeTabConfig.label}
                   </h2>
-                  <p className={cx('text-[var(--text-secondary)] flex-1 min-w-0', isDesktop ? 'text-sm leading-6' : 'text-xs leading-5')}>
+                  <p className={cx('text-[var(--text-secondary)] flex-1 min-w-0 hidden lg:block', isDesktop ? 'text-sm leading-6' : 'text-xs leading-5')}>
                     {activeTabConfig.description}
                   </p>
                 </div>
@@ -559,16 +625,43 @@ export default function App() {
   const [, setSessionUser] = useState<SessionUser | null>(null);
 
   useEffect(() => {
-    authApi.me().then(({ user }) => {
-      if (user) {
-        setSessionUser(user);
-        setAuthPhase('authenticated');
-      } else {
-        setAuthPhase('unauthenticated');
+    async function checkAuth() {
+      // 1. Check if we already have an express-session
+      try {
+        const { user } = await authApi.me();
+        if (user) {
+          setSessionUser(user);
+          setAuthPhase('authenticated');
+          return;
+        }
+      } catch {
+        // No existing session, continue
       }
-    }).catch(() => {
+
+      // 2. Check if Supabase OAuth just completed (redirect with tokens)
+      if (supabase) {
+        try {
+          const { data } = await supabase.auth.getSession();
+          if (data.session?.access_token) {
+            // Exchange Supabase token for express-session
+            const { user } = await authApi.googleSupabase(data.session.access_token);
+            // Sign out of Supabase — we only needed it for identity
+            await supabase.auth.signOut();
+            if (user) {
+              setSessionUser(user);
+              setAuthPhase('authenticated');
+              return;
+            }
+          }
+        } catch {
+          // Supabase auth failed, fall through to unauthenticated
+        }
+      }
+
       setAuthPhase('unauthenticated');
-    });
+    }
+
+    checkAuth();
   }, []);
 
   const handleLogin = (user: SessionUser) => {
@@ -600,8 +693,10 @@ export default function App() {
   }
 
   return (
-    <AppProvider onLogout={handleLogout}>
-      <AppShell />
-    </AppProvider>
+    <ErrorBoundary>
+      <AppProvider onLogout={handleLogout}>
+        <AppShell />
+      </AppProvider>
+    </ErrorBoundary>
   );
 }

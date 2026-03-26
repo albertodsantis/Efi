@@ -74,10 +74,10 @@ const formatTaskDate = (value: string, options?: Intl.DateTimeFormatOptions) =>
     },
   );
 
-const getStatusTone = (status: TaskStatus): 'warning' | 'info' | 'accent' | 'success' | 'neutral' => {
+const getStatusTone = (status: TaskStatus): 'warning' | 'info' | 'review' | 'success' | 'neutral' => {
   if (status === 'Pendiente') return 'warning';
   if (status === 'En Progreso') return 'info';
-  if (status === REVIEW_STATUS) return 'accent';
+  if (status === REVIEW_STATUS) return 'review';
   if (status === 'Completada') return 'success';
   return 'neutral';
 };
@@ -103,10 +103,10 @@ const getStatusSelectStyle = (status: TaskStatus, accentColor: string): React.CS
 
   if (status === REVIEW_STATUS) {
     return {
-      backgroundColor: `${accentColor}14`,
-      borderColor: `${accentColor}45`,
-      color: accentColor,
-      '--tw-ring-color': accentColor,
+      backgroundColor: 'rgba(124, 58, 237, 0.12)',
+      borderColor: 'rgba(124, 58, 237, 0.32)',
+      color: '#6d28d9',
+      '--tw-ring-color': 'rgba(124, 58, 237, 0.28)',
     } as React.CSSProperties;
   }
 
@@ -137,7 +137,7 @@ const getStatusDotStyle = (status: TaskStatus, accentColor: string): React.CSSPr
   }
 
   if (status === REVIEW_STATUS) {
-    return { backgroundColor: accentColor };
+    return { backgroundColor: '#7c3aed' };
   }
 
   if (status === 'Completada') {
@@ -1356,7 +1356,7 @@ export default function Pipeline() {
                 onChange={(event) => setForm({ ...form, title: event.target.value })}
                 className={fieldClass}
                 style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                placeholder="Ej. Reel de lanzamiento"
+                placeholder=""
               />
             </div>
 
@@ -1371,7 +1371,7 @@ export default function Pipeline() {
                 onChange={(event) => setForm({ ...form, description: event.target.value })}
                 className={cx(fieldClass, 'min-h-[110px]')}
                 style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                placeholder="Define el entregable, formato y cualquier detalle operativo."
+                placeholder=""
               />
             </div>
           </div>
@@ -1465,7 +1465,7 @@ export default function Pipeline() {
                   onChange={(event) => setForm({ ...form, value: event.target.value })}
                   className={cx(fieldClass, 'bg-[var(--surface-card)]')}
                   style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-                  placeholder="1500"
+                  placeholder=""
                 />
               </div>
 
