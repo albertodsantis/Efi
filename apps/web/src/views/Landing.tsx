@@ -165,8 +165,8 @@ export default function Landing({
                   <stop offset="100%" stopColor={BRAND_PURPLE}/>
                 </linearGradient>
               </defs>
-              <ellipse cx="32" cy="22" rx="22" ry="12" fill="url(#logo-grad)"/>
-              <rect x="26" y="22" width="12" height="22" rx="6" fill="url(#logo-grad)" opacity="0.65"/>
+              <rect x="26" y="18" width="12" height="28" rx="6" fill="url(#logo-grad)" opacity="0.65"/>
+              <path d="M10,24 C10,15 18,9 32,9 C46,9 54,15 54,24 C54,27 48,28 40,26 C36,25 34,22 32,22 C30,22 28,25 24,26 C16,28 10,27 10,24Z" fill="url(#logo-grad)"/>
             </svg>
             <span className="text-lg font-extrabold tracking-tight text-[var(--text-primary)]">
               Tia

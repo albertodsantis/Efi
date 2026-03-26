@@ -8,8 +8,8 @@
     </linearGradient>
   </defs>
   <rect width="64" height="64" rx="14" fill="#2A2A2E"/>
-  <!-- Mushroom cap / T top -->
-  <ellipse cx="32" cy="22" rx="20" ry="10" fill="url(#g)"/>
-  <!-- T stem -->
-  <rect x="27" y="22" width="10" height="20" rx="5" fill="url(#g)" opacity="0.7"/>
+  <!-- T stem (drawn first so cap overlaps it) -->
+  <rect x="27" y="18" width="10" height="26" rx="5" fill="url(#g)" opacity="0.7"/>
+  <!-- Mushroom cap -->
+  <path d="M12,24 C12,16 20,11 32,11 C44,11 52,16 52,24 C52,26 47,27 40,25 C36,24 34,22 32,22 C30,22 28,24 24,25 C17,27 12,26 12,24Z" fill="url(#g)"/>
 </svg>
