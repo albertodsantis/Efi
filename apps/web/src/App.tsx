@@ -613,21 +613,20 @@ const MainLayout = () => {
   );
 };
 
-const ONBOARDING_KEY = 'tia_onboarding_done';
+const DEFAULT_ACCENT = '#C96F5B';
 
 const AppShell = () => {
-  const { isBootstrapping, bootstrapError, profile, setAccentColor } = useAppContext();
-  const [showColorPicker, setShowColorPicker] = useState(
-    () => !localStorage.getItem(ONBOARDING_KEY),
-  );
+  const { isBootstrapping, bootstrapError, profile, accentColor, setAccentColor } = useAppContext();
+  const [colorPicked, setColorPicked] = useState(false);
+
+  const needsColorPicker = !isBootstrapping && !bootstrapError && !colorPicked && accentColor === DEFAULT_ACCENT;
 
   const handleColorSelected = async (color: string) => {
     await setAccentColor(color);
-    localStorage.setItem(ONBOARDING_KEY, '1');
-    setShowColorPicker(false);
+    setColorPicked(true);
   };
 
-  if (!isBootstrapping && !bootstrapError && showColorPicker) {
+  if (needsColorPicker) {
     return (
       <WelcomeColorPicker
         userName={profile.name}
