@@ -166,6 +166,27 @@ export default function Profile() {
     };
   }, []);
 
+  // Sincronizar el perfil local si el contexto se actualiza externamente (ej. carga asíncrona)
+  useEffect(() => {
+    if (!profile) return;
+    // No sobrescribir si el usuario está escribiendo activamente o si estamos guardando
+    if (debounceTimerRef.current || saveStatus === 'saving' || isSavingExplicitly.current) return;
+
+    const safeGoals = safeArr(profile.goals).map((g: any, i) =>
+      typeof g === 'string'
+        ? { id: `legacy-${i}`, area: '', generalGoal: g, successMetric: '', specificTarget: '', timeframe: '', status: 'Pendiente' as GoalStatus, priority: 'Media' as GoalPriority, revenueEstimation: 0 }
+        : g,
+    );
+    const incomingProfile = { ...profile, goals: safeGoals } as UserProfile;
+    const incomingString = JSON.stringify(incomingProfile);
+
+    if (incomingString !== lastSavedProfile.current) {
+      setProfileForm(incomingProfile);
+      profileFormRef.current = incomingProfile;
+      lastSavedProfile.current = incomingString;
+    }
+  }, [profile, saveStatus]);
+
   useEffect(() => {
     if (!isMounted.current) {
       isMounted.current = true;
@@ -393,6 +414,18 @@ export default function Profile() {
       isSavingExplicitly.current = false;
       setIsSavingProfile(false);
     }
+  };
+
+  const handleCancelGoals = () => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = null;
+    }
+    // Revertir al último estado guardado para descartar cambios
+    const reverted = JSON.parse(lastSavedProfile.current);
+    setProfileForm(reverted);
+    profileFormRef.current = reverted;
+    setIsGoalsModalOpen(false);
   };
 
   const generateHtml = () => {
@@ -1368,7 +1401,7 @@ export default function Profile() {
                     Define tus metas clave, proyecciones de ingresos y estado general de tus verticales de negocio.
                   </p>
                 </div>
-                <button type="button" onClick={() => setIsGoalsModalOpen(false)} className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--surface-muted)] text-[var(--text-secondary)] transition-transform active:scale-95"
+                <button type="button" onClick={handleCancelGoals} className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--surface-muted)] text-[var(--text-secondary)] transition-transform active:scale-95"
                   aria-label="Cerrar modal"
                 >
                   <X size={18} />
@@ -1502,7 +1535,7 @@ export default function Profile() {
                 <div className="flex gap-3">
                   <button
                     type="button"
-                    onClick={() => setIsGoalsModalOpen(false)}
+                    onClick={handleCancelGoals}
                     className="flex-1 rounded-[1rem] border border-[var(--line-soft)] bg-transparent px-4 py-3 text-sm font-bold text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-muted)]/50"
                   >
                     Cancelar
