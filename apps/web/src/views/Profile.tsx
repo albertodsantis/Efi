@@ -714,7 +714,7 @@ export default function Profile() {
 
               <div className="flex items-center justify-end gap-3">
                 <Button
-                  accentColor={accentHex}
+                  accentColor={accentGradient}
                   onClick={handleOpenMediaKit}
                   className="flex-1 justify-center sm:flex-none"
                 >
@@ -1485,7 +1485,7 @@ export default function Profile() {
                     Cancelar
                   </button>
                   <Button
-                    accentColor={accentHex}
+                    accentColor={accentGradient}
                     onClick={async () => {
                       await handleSaveProfile();
                       setIsGoalsModalOpen(false);

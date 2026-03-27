@@ -42,7 +42,6 @@ const ACCENT_OPTIONS = [
   { name: 'Indigo', value: '#6366F1' },
   { name: 'Cielo', value: '#0EA5E9' },
   { name: 'Turquesa', value: '#06B6D4' },
-  { name: 'Rosa', value: '#EC4899' },
   { name: 'Fucsia', value: '#D946EF' },
 ] as const;
 
@@ -61,6 +60,7 @@ export default function Settings() {
   const {
     accentColor,
     accentHex,
+    accentGradient,
     setAccentColor,
     profile,
     updateProfile,
@@ -242,7 +242,7 @@ export default function Settings() {
                 title="Modo oscuro"
                 description="Cambia la iluminacion general del workspace."
                 onClick={() => void setTheme(theme === 'dark' ? 'light' : 'dark')}
-                trailing={<ToggleSwitch checked={theme === 'dark'} accentColor={accentHex} />}
+                trailing={<ToggleSwitch checked={theme === 'dark'} accentColor={accentGradient} />}
                 className="px-0 py-3"
               />
             </div>
@@ -255,21 +255,21 @@ export default function Settings() {
                 title="Notificaciones push"
                 description="Recibe avisos cuando haya entregas cercanas o cambios relevantes."
                 onClick={() => void toggleNotifications()}
-                trailing={<ToggleSwitch checked={profile.notificationsEnabled} accentColor={accentHex} />}
+                trailing={<ToggleSwitch checked={profile.notificationsEnabled} accentColor={accentGradient} />}
                 className="px-0 py-3"
               />
               <SettingRow
                 icon={CalendarIcon}
                 title="Sincronizacion con Calendar"
                 description="Proximamente. La integracion con Google Calendar estara disponible en una version futura."
-                trailing={<ToggleSwitch checked={false} accentColor={accentHex} disabled />}
+                trailing={<ToggleSwitch checked={false} accentColor={accentGradient} disabled />}
                 className="cursor-not-allowed px-0 py-3 opacity-60"
               />
               <SettingRow
                 icon={Shield}
                 title="Privacidad y seguridad"
                 description="Controla sesiones, permisos y preferencias sensibles."
-                trailing={<ToggleSwitch checked={false} accentColor={accentHex} disabled />}
+                trailing={<ToggleSwitch checked={false} accentColor={accentGradient} disabled />}
                 className="cursor-not-allowed px-0 py-3"
               />
             </div>
@@ -293,7 +293,7 @@ export default function Settings() {
 
           <div className="mt-5 space-y-4">
             <Button
-              accentColor={accentHex}
+              accentColor={accentGradient}
               onClick={() => {
                 setEditingTemplateId(null);
                 setNewTemplate({ name: '', subject: '', body: '' });
@@ -376,7 +376,7 @@ export default function Settings() {
                 title="Aun no hay plantillas"
                 description="Crea una plantilla para acelerar respuestas, follow-ups y primeros contactos."
                 action={
-                  <Button accentColor={accentHex} onClick={() => {
+                  <Button accentColor={accentGradient} onClick={() => {
                     setEditingTemplateId(null);
                     setNewTemplate({ name: '', subject: '', body: '' });
                     setIsAddingTemplate(true);
@@ -521,7 +521,7 @@ export default function Settings() {
                     <Trash2 size={18} />
                   </Button>
                 )}
-                <Button type="submit" form="template-form" accentColor={accentHex} className="flex-1 justify-center" disabled={savingTemplate}>
+                <Button type="submit" form="template-form" accentColor={accentGradient} className="flex-1 justify-center" disabled={savingTemplate}>
                   {editingTemplateId ? 'Guardar cambios' : 'Guardar plantilla'}
                 </Button>
               </div>

@@ -12,7 +12,6 @@ const ACCENT_OPTIONS = [
   { name: 'Indigo', value: '#6366F1' },
   { name: 'Cielo', value: '#0EA5E9' },
   { name: 'Turquesa', value: '#06B6D4' },
-  { name: 'Rosa', value: '#EC4899' },
   { name: 'Fucsia', value: '#D946EF' },
 ] as const;
 

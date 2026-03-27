@@ -1030,7 +1030,7 @@ export default function Pipeline() {
               <DownloadCloud size={16} />
               Actualizar Calendar
             </Button>
-            <Button accentColor={accentHex} onClick={openCreate} className="flex-1 sm:flex-none">
+            <Button accentColor={accentGradient} onClick={openCreate} className="flex-1 sm:flex-none">
               <Plus size={16} />
               Nueva tarea
             </Button>
@@ -1181,7 +1181,7 @@ export default function Pipeline() {
             title="Todavía no hay tareas"
             description="Añade tu primera entrega para empezar a construir el pipeline."
             action={
-              <Button accentColor={accentHex} onClick={openCreate}>
+              <Button accentColor={accentGradient} onClick={openCreate}>
                 <Plus size={16} />
                 Crear tarea
               </Button>
@@ -1332,7 +1332,7 @@ export default function Pipeline() {
                 <Button
                   type="submit"
                   form="pipeline-task-form"
-                  accentColor={accentHex}
+                  accentColor={accentGradient}
                   className="flex-1"
                   disabled={isSubmittingTask}
                 >

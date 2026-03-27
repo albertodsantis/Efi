@@ -103,6 +103,7 @@ export default function Directory() {
     partners,
     accentColor,
     accentHex,
+    accentGradient,
     templates,
     profile,
     addContact,
@@ -394,7 +395,7 @@ export default function Directory() {
 
           <SurfaceCard className="p-3 sm:p-4">
             <div className="mb-3 px-2 pt-1">
-              <Button accentColor={accentHex} onClick={() => setIsAddingPartner(true)} className="w-full py-2.5 text-xs">
+              <Button accentColor={accentGradient} onClick={() => setIsAddingPartner(true)} className="w-full py-2.5 text-xs">
                 <Plus size={14} />
                 Añadir
               </Button>
@@ -447,7 +448,7 @@ export default function Directory() {
                   description="Prueba con otro termino o crea una nueva marca para empezar."
                   className="border-dashed"
                   action={
-                    <Button accentColor={accentHex} onClick={() => setIsAddingPartner(true)}>
+                    <Button accentColor={accentGradient} onClick={() => setIsAddingPartner(true)}>
                       <Plus size={16} />
                       Añadir marca
                     </Button>
@@ -601,7 +602,7 @@ export default function Directory() {
                   <h3 className="text-lg font-bold text-[var(--text-primary)]">Red de la marca</h3>
                   <span className="hidden text-[10px] font-bold uppercase tracking-[0.24em] text-[var(--text-secondary)]/70 sm:inline-block">Contactos</span>
                 </div>
-                <Button accentColor={accentHex} onClick={() => setAddingContactTo(activePartner.id)}>
+                <Button accentColor={accentGradient} onClick={() => setAddingContactTo(activePartner.id)}>
                   <Plus size={16} />
                   Añadir contacto
                 </Button>
@@ -656,7 +657,7 @@ export default function Directory() {
 
                         <div className="flex shrink-0 flex-wrap gap-2 lg:justify-end">
                           <IconButton icon={PencilLine} label={`Editar contacto ${contact.name}`} onClick={() => handleOpenEditContact(activePartner.id, contact)} className="h-10 w-10 rounded-[0.8rem] bg-[var(--surface-muted)] text-[var(--text-secondary)]" />
-                          <IconButton icon={MessageCircle} label={`Redactar WhatsApp para ${contact.name}`} onClick={() => setComposingTo({ contact, partner: activePartner })} tone="primary" accentColor={accentHex} className="h-10 w-10 rounded-[0.8rem]" />
+                          <IconButton icon={MessageCircle} label={`Redactar WhatsApp para ${contact.name}`} onClick={() => setComposingTo({ contact, partner: activePartner })} tone="primary" accentColor={accentGradient} className="h-10 w-10 rounded-[0.8rem]" />
                         </div>
                       </div>
                     </div>
@@ -667,7 +668,7 @@ export default function Directory() {
                     title="Aún no hay contactos"
                     description="Añade el primer contacto para empezar a redactar mensajes y hacer seguimiento."
                     action={
-                      <Button accentColor={accentHex} onClick={() => setAddingContactTo(activePartner.id)}>
+                      <Button accentColor={accentGradient} onClick={() => setAddingContactTo(activePartner.id)}>
                         <Plus size={16} />
                         Añadir contacto
                       </Button>
@@ -783,7 +784,7 @@ export default function Directory() {
                   </div>
                 </div>
               </div>
-              <Button type="submit" accentColor={accentHex} className="w-full" disabled={saving}>Guardar cambios</Button>
+              <Button type="submit" accentColor={accentGradient} className="w-full" disabled={saving}>Guardar cambios</Button>
             </form>
           </ModalPanel>
         </OverlayModal>
@@ -880,7 +881,7 @@ export default function Directory() {
                   </div>
                 </div>
               </div>
-              <Button type="submit" accentColor={accentHex} className="w-full" disabled={saving}>Crear marca</Button>
+              <Button type="submit" accentColor={accentGradient} className="w-full" disabled={saving}>Crear marca</Button>
             </form>
           </ModalPanel>
         </OverlayModal>
@@ -996,7 +997,7 @@ export default function Directory() {
                   </div>
                 </div>
               </div>
-              <Button type="submit" accentColor={accentHex} className="w-full" disabled={saving}>Guardar contacto</Button>
+              <Button type="submit" accentColor={accentGradient} className="w-full" disabled={saving}>Guardar contacto</Button>
             </form>
           </ModalPanel>
         </OverlayModal>
@@ -1073,7 +1074,7 @@ export default function Directory() {
                 >
                   <Trash2 size={18} />
                 </Button>
-                <Button type="submit" accentColor={accentHex} className="flex-1 justify-center" disabled={saving}>Guardar cambios</Button>
+                <Button type="submit" accentColor={accentGradient} className="flex-1 justify-center" disabled={saving}>Guardar cambios</Button>
               </div>
             </form>
           </ModalPanel>
