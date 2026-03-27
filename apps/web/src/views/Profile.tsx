@@ -385,6 +385,7 @@ export default function Profile() {
   const handleSaveGoals = async () => {
     setIsSavingProfile(true);
     try {
+      console.log('[GOALS] Saving goals:', profileFormRef.current.goals);
       const saved = await updateProfile({ goals: profileFormRef.current.goals });
       // Merge only goals back — preserve any unsaved edits to other profile fields
       setProfileForm((prev) => ({ ...prev, goals: saved.goals }));
@@ -394,7 +395,9 @@ export default function Profile() {
       toast.success('Plan Estratégico guardado');
       setIsGoalsModalOpen(false);
     } catch (error) {
-      toast.error('Ocurrió un error al guardar');
+      const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
+      console.error('[GOALS ERROR]', errorMsg);
+      toast.error(`Error al guardar: ${errorMsg}`);
     } finally {
       setIsSavingProfile(false);
     }

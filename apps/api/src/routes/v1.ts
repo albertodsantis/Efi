@@ -204,7 +204,10 @@ export function createV1Router(appStore: PostgresAppStore, _pool: pg.Pool) {
       const profile = await appStore.updateProfile(getUserId(req), req.body as UpdateProfileRequest);
       res.json(profile);
     } catch (error) {
-      res.status(400).json({ error: getErrorMessage(error) });
+      const message = getErrorMessage(error);
+      console.error('[PATCH /profile] Error:', message);
+      console.error('[PATCH /profile] Stack:', (error as any).stack);
+      res.status(400).json({ error: message });
     }
   });
 

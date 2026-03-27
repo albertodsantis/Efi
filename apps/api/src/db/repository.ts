@@ -75,6 +75,11 @@ function normalizeMoney(value: number | undefined) {
   return value;
 }
 
+function isValidUUID(value: string): boolean {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(value);
+}
+
 function normalizeEmail(email: string | undefined) {
   const normalized = normalizeRequiredText(email, 'El email');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
@@ -879,29 +884,60 @@ export class PostgresAppStore {
           throw new Error('Los objetivos deben ser un array.');
         }
 
+        console.log('[DEBUG] Processing goals update. Count:', updates.goals.length);
+        console.log('[DEBUG] Goals payload:', JSON.stringify(updates.goals, null, 2));
+
         await client.query('DELETE FROM goals WHERE user_id = $1', [userId]);
 
-        const normalizedGoals = updates.goals.map((goal: any, index: number) => ({
-          id: normalizeText(goal.id) || randomUUID(),
-          area: normalizeText(goal.area),
-          generalGoal: normalizeText(goal.generalGoal),
-          successMetric: normalizeText(goal.successMetric),
-          specificTarget: normalizeText(goal.specificTarget),
-          timeframe: normalizeText(goal.timeframe),
-          status: (normalizeText(goal.status) as GoalStatus) || 'Pendiente',
-          priority: (normalizeText(goal.priority) as GoalPriority) || 'Media',
-          revenueEstimation: Number(goal.revenueEstimation) || 0,
-          sortOrder: index,
-        }));
+        const normalizedGoals = updates.goals.map((goal: any, index: number) => {
+          const rawId = normalizeText(goal.id);
+          // If id is not a valid UUID, generate a new one
+          const id = (rawId && isValidUUID(rawId)) ? rawId : randomUUID();
+          
+          const normalized = {
+            id,
+            area: normalizeText(goal.area),
+            generalGoal: normalizeText(goal.generalGoal),
+            successMetric: normalizeText(goal.successMetric),
+            specificTarget: normalizeText(goal.specificTarget),
+            timeframe: normalizeText(goal.timeframe),
+            status: (normalizeText(goal.status) as GoalStatus) || 'Pendiente',
+            priority: (normalizeText(goal.priority) as GoalPriority) || 'Media',
+            revenueEstimation: Number(goal.revenueEstimation) || 0,
+            sortOrder: index,
+          };
+          
+          // Validate required fields
+          if (!normalized.id) throw new Error('Goal id es requerido.');
+          if (typeof normalized.status !== 'string' || !['Pendiente', 'En Curso', 'Alcanzado', 'Cancelado'].includes(normalized.status)) {
+            throw new Error(`Status inválido: ${normalized.status}`);
+          }
+          if (typeof normalized.priority !== 'string' || !['Baja', 'Media', 'Alta'].includes(normalized.priority)) {
+            throw new Error(`Priority inválido: ${normalized.priority}`);
+          }
+          if (isNaN(normalized.revenueEstimation)) {
+            throw new Error('Revenue estimation debe ser un número.');
+          }
+          
+          console.log(`[DEBUG] Normalized goal #${index} (ID from ${rawId} converted to ${normalized.id}):`, JSON.stringify(normalized, null, 2));
+          return normalized;
+        });
 
         for (const g of normalizedGoals) {
-          await client.query(
-            `INSERT INTO goals (id, user_id, area, general_goal, success_metric, specific_target,
-               timeframe, status, priority, revenue_estimation, sort_order)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
-            [g.id, userId, g.area, g.generalGoal, g.successMetric, g.specificTarget,
-             g.timeframe, g.status, g.priority, g.revenueEstimation, g.sortOrder],
-          );
+          console.log(`[DEBUG] Inserting goal ${g.id}...`);
+          try {
+            await client.query(
+              `INSERT INTO goals (id, user_id, area, general_goal, success_metric, specific_target,
+                 timeframe, status, priority, revenue_estimation, sort_order)
+               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+              [g.id, userId, g.area, g.generalGoal, g.successMetric, g.specificTarget,
+               g.timeframe, g.status, g.priority, g.revenueEstimation, g.sortOrder],
+            );
+            console.log(`[DEBUG] Successfully inserted goal ${g.id}`);
+          } catch (insertErr) {
+            console.error(`[DEBUG] Failed to insert goal ${g.id}:`, insertErr);
+            throw insertErr;
+          }
         }
       }
 
