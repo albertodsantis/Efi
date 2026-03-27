@@ -365,6 +365,7 @@ export default function Profile() {
 
     try {
       await updateProfile(profileForm);
+      lastSavedProfile.current = JSON.stringify(profileForm);
       toast.success('Perfil guardado correctamente');
     } catch (error) {
       toast.error('Ocurrió un error al guardar');
