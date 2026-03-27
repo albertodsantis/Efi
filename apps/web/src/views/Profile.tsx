@@ -385,10 +385,12 @@ export default function Profile() {
   const handleSaveGoals = async () => {
     setIsSavingProfile(true);
     try {
-      const saved = await updateProfile(profileFormRef.current);
-      setProfileForm(saved);
-      profileFormRef.current = saved;
-      lastSavedProfile.current = JSON.stringify(saved);
+      const saved = await updateProfile({ goals: profileFormRef.current.goals });
+      // Merge only goals back — preserve any unsaved edits to other profile fields
+      setProfileForm((prev) => ({ ...prev, goals: saved.goals }));
+      const merged = { ...profileFormRef.current, goals: saved.goals };
+      profileFormRef.current = merged;
+      lastSavedProfile.current = JSON.stringify(merged);
       toast.success('Plan Estratégico guardado');
       setIsGoalsModalOpen(false);
     } catch (error) {
@@ -676,22 +678,27 @@ export default function Profile() {
   };
 
   return (
-    <div className="space-y-5 p-4 pb-6 lg:space-y-6 lg:px-8 lg:pt-4 lg:pb-8">
-      <div className="flex h-5 items-center justify-end">
-        {saveStatus === 'saving' && (
-          <span className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-secondary)] animate-pulse">
-            <Loader2 size={13} className="animate-spin" />
-            Guardando...
-          </span>
-        )}
-        {saveStatus === 'saved' && (
-          <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-500">
-            <CheckCircle2 size={13} />
-            Guardado
-          </span>
-        )}
-      </div>
-      <SurfaceCard className="relative overflow-hidden p-6 lg:p-7">
+    <div className="relative">
+      {saveStatus !== 'idle' && (
+        <div className="sticky top-0 z-30 flex justify-end px-4 py-2 lg:px-8">
+          <div className="rounded-full border border-[var(--line-soft)] bg-[var(--surface-card-strong)]/95 px-3 py-1.5 shadow-sm backdrop-blur-sm">
+            {saveStatus === 'saving' && (
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-secondary)] animate-pulse">
+                <Loader2 size={13} className="animate-spin" />
+                Guardando...
+              </span>
+            )}
+            {saveStatus === 'saved' && (
+              <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-500">
+                <CheckCircle2 size={13} />
+                Guardado
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+      <div className="space-y-5 p-4 pb-6 lg:space-y-6 lg:px-8 lg:pt-4 lg:pb-8">
+        <SurfaceCard className="relative overflow-hidden p-6 lg:p-7">
         <div
           className="pointer-events-none absolute inset-0"
           style={{
@@ -1547,6 +1554,7 @@ export default function Profile() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

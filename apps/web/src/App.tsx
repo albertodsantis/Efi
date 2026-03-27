@@ -26,6 +26,7 @@ import AIAssistant from './components/AIAssistant';
 import OnboardingTour from './components/OnboardingTour';
 import WelcomeColorPicker from './views/WelcomeColorPicker';
 import RoadmapButton from './components/RoadmapButton';
+import Toaster from './components/Toaster';
 import { Avatar, SurfaceCard, cx } from './components/ui';
 import { authApi } from './lib/api';
 import { supabase } from './lib/supabase';
@@ -651,6 +652,7 @@ const AppShell = () => {
     <>
       {!isBootstrapping && !bootstrapError ? <OnboardingTour forceRun={colorPicked} /> : null}
       <MainLayout />
+      <Toaster />
     </>
   );
 };
