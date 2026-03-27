@@ -144,16 +144,12 @@ export default function Profile() {
   });
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [isGoalsModalOpen, setIsGoalsModalOpen] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [uploadsEnabled, setUploadsEnabled] = useState(false);
-  const isMounted = useRef(false);
   const lastSavedProfile = useRef(JSON.stringify(profileForm));
   const updateProfileRef = useRef(updateProfile);
   updateProfileRef.current = updateProfile;
   const profileFormRef = useRef(profileForm);
   profileFormRef.current = profileForm;
-  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isSavingExplicitly = useRef(false);
 
   useEffect(() => {
     appApi.getUploadStatus().then((res) => setUploadsEnabled(res.enabled)).catch(() => {});
@@ -161,16 +157,9 @@ export default function Profile() {
 
   // Clean up any pending debounce timer on unmount
   useEffect(() => {
-    return () => {
-      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-    };
-  }, []);
-
-  // Sincronizar el perfil local si el contexto se actualiza externamente (ej. carga asíncrona)
-  useEffect(() => {
     if (!profile) return;
-    // No sobrescribir si el usuario está escribiendo activamente o si estamos guardando
-    if (debounceTimerRef.current || saveStatus === 'saving' || isSavingExplicitly.current) return;
+    // No sobrescribir si el usuario está editando en el modal
+    if (isGoalsModalOpen) return;
 
     const safeGoals = safeArr(profile.goals).map((g: any, i) =>
       typeof g === 'string'
@@ -185,43 +174,7 @@ export default function Profile() {
       profileFormRef.current = incomingProfile;
       lastSavedProfile.current = incomingString;
     }
-  }, [profile, saveStatus]);
-
-  useEffect(() => {
-    if (!isMounted.current) {
-      isMounted.current = true;
-      return;
-    }
-
-    const currentString = JSON.stringify(profileForm);
-    if (currentString === lastSavedProfile.current) {
-      return;
-    }
-
-    setSaveStatus('saving');
-    const timer = setTimeout(async () => {
-      // Re-check: explicit save may have already persisted this data
-      if (isSavingExplicitly.current) return;
-      const freshString = JSON.stringify(profileFormRef.current);
-      if (freshString === lastSavedProfile.current) {
-        setSaveStatus('idle');
-        return;
-      }
-      try {
-        const saved = await updateProfileRef.current(profileFormRef.current);
-        setProfileForm(saved);
-        profileFormRef.current = saved;
-        lastSavedProfile.current = JSON.stringify(saved);
-        setSaveStatus('saved');
-        setTimeout(() => setSaveStatus('idle'), 2500);
-      } catch {
-        setSaveStatus('idle');
-      }
-    }, 1000);
-
-    debounceTimerRef.current = timer;
-    return () => { clearTimeout(timer); debounceTimerRef.current = null; };
-  }, [profileForm]);
+  }, [profile, isGoalsModalOpen]);
 
   const mediaKit = profileForm.mediaKit || ({} as any);
   const configuredPortfolio = getFilledCount(mediaKit.portfolioImages);
@@ -390,37 +343,23 @@ export default function Profile() {
     }));
   };
 
-  const handleSaveProfile = async () => {
-    // Cancel any pending auto-save to prevent race conditions
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-      debounceTimerRef.current = null;
-    }
-
+  const handleSaveGoals = async () => {
     setIsSavingProfile(true);
-    isSavingExplicitly.current = true;
-
     try {
       const saved = await updateProfile(profileFormRef.current);
-      // Sync local state from API response so local + context + server are all identical
       setProfileForm(saved);
       profileFormRef.current = saved;
       lastSavedProfile.current = JSON.stringify(saved);
-      setSaveStatus('idle');
-      toast.success('Perfil guardado correctamente');
+      toast.success('Plan Estratégico guardado');
+      setIsGoalsModalOpen(false);
     } catch (error) {
       toast.error('Ocurrió un error al guardar');
     } finally {
-      isSavingExplicitly.current = false;
       setIsSavingProfile(false);
     }
   };
 
   const handleCancelGoals = () => {
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
-      debounceTimerRef.current = null;
-    }
     // Revertir al último estado guardado para descartar cambios
     const reverted = JSON.parse(lastSavedProfile.current);
     setProfileForm(reverted);
@@ -1542,10 +1481,7 @@ export default function Profile() {
                   </button>
                   <Button
                     accentColor={accentGradient}
-                    onClick={async () => {
-                      await handleSaveProfile();
-                      setIsGoalsModalOpen(false);
-                    }}
+                    onClick={handleSaveGoals}
                     disabled={isSavingProfile}
                     className="flex-1"
                   >
@@ -1558,27 +1494,6 @@ export default function Profile() {
           </div>
         </div>
       )}
-
-      {/* Floating save indicator */}
-      <div
-        className={cx(
-          'fixed bottom-20 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full px-5 py-2.5 shadow-lg ring-1 transition-all duration-300 lg:bottom-6',
-          saveStatus === 'saving'
-            ? 'translate-y-0 opacity-100 bg-[var(--surface-card)] ring-[var(--line-soft)] text-[var(--text-secondary)]'
-            : saveStatus === 'saved'
-              ? 'translate-y-0 opacity-100 bg-emerald-50 ring-emerald-200 text-emerald-700 dark:bg-emerald-500/15 dark:ring-emerald-500/30 dark:text-emerald-400'
-              : 'pointer-events-none translate-y-4 opacity-0',
-        )}
-      >
-        {saveStatus === 'saving' ? (
-          <Loader2 size={15} className="animate-spin" />
-        ) : saveStatus === 'saved' ? (
-          <CheckCircle2 size={15} />
-        ) : null}
-        <span className="text-[13px] font-bold">
-          {saveStatus === 'saving' ? 'Guardando...' : saveStatus === 'saved' ? 'Guardado' : ''}
-        </span>
-      </div>
     </div>
   );
 }
