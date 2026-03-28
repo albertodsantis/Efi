@@ -1,27 +1,27 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import {
-  Activity,
-  AlignLeft,
+  Pulse,
+  TextAlignLeft,
   Briefcase,
-  Building2,
-  CalendarDays,
-  ChevronDown,
-  CircleDollarSign,
+  Buildings,
+  CalendarDots,
+  CaretDown,
+  CurrencyCircleDollar,
   Copy,
   FileText,
-  Instagram,
-  Layers,
-  Mail,
-  MessageCircle,
-  MessageSquare,
+  InstagramLogo,
+  Stack,
+  Envelope,
+  ChatCircle,
+  Chat,
   PencilLine,
   Phone,
   Plus,
-  Search,
-  Trash2,
-  Type,
-} from 'lucide-react';
+  MagnifyingGlass,
+  Trash,
+  TextT,
+} from '@phosphor-icons/react';
 import { Contact, Partner, PartnershipType, TaskStatus } from '@shared/domain';
 import ConfirmDialog from '../components/ConfirmDialog';
 import OverlayModal from '../components/OverlayModal';
@@ -113,7 +113,7 @@ export default function Directory() {
     addPartner,
     tasks,
   } = useAppContext();
-  const [search, setSearch] = useState('');
+  const [search, setMagnifyingGlass] = useState('');
   const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(partners[0]?.id ?? null);
   const [composingTo, setComposingTo] = useState<{ contact: Contact; partner: Partner } | null>(null);
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
@@ -358,8 +358,8 @@ export default function Directory() {
         <div className="space-y-4 xl:sticky xl:top-4 xl:self-start">
           <div className="flex flex-wrap gap-2">
             {[
-              { icon: Building2, label: 'Marcas', value: `${activePartners} / ${partners.length}` },
-              { icon: Mail, label: 'Contactos', value: String(totalContacts) },
+              { icon: Buildings, label: 'Marcas', value: `${activePartners} / ${partners.length}` },
+              { icon: Envelope, label: 'Contactos', value: String(totalContacts) },
             ].map((item) => (
               <div
                 key={item.label}
@@ -369,7 +369,7 @@ export default function Directory() {
                   className="flex h-8 w-8 items-center justify-center rounded-full"
                   style={{ backgroundColor: `${accentHex}14`, color: accentHex }}
                 >
-                  <item.icon size={15} strokeWidth={2.4} />
+                  <item.icon size={15} />
                 </div>
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold tracking-[0.18em] text-[var(--text-secondary)]/70 uppercase">
@@ -382,12 +382,12 @@ export default function Directory() {
           </div>
 
           <div className="relative">
-            <Search className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" size={20} />
+            <MagnifyingGlass className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" size={20} />
             <input
               type="text"
               placeholder="Buscar marcas o contactos"
               value={search}
-              onChange={(event) => setSearch(event.target.value)}
+              onChange={(event) => setMagnifyingGlass(event.target.value)}
               className={cx(fieldClass, 'py-4 pl-14 pr-5 text-base sm:text-[15px]')}
               style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
             />
@@ -422,7 +422,7 @@ export default function Directory() {
                       <div className="min-w-0">
                         <div className="flex items-center gap-3">
                           <div className={cx('flex h-11 w-11 items-center justify-center rounded-[0.95rem] text-sm font-black', isActive ? 'bg-white/85 text-[var(--text-primary)]' : 'bg-[var(--surface-muted)] text-[var(--text-secondary)]')}>
-                            <Building2 size={20} />
+                            <Buildings size={20} />
                           </div>
                           <div className="min-w-0">
                             <h3 className="truncate text-base font-bold leading-tight text-[var(--text-primary)]">{partner.name}</h3>
@@ -434,7 +434,7 @@ export default function Directory() {
                       </div>
                       <div className="flex shrink-0 flex-col items-end gap-2">
                         <StatusBadge tone={statusTone(partner.status)}>{statusLabel(partner.status)}</StatusBadge>
-                        <ChevronDown size={18} className={cx('transition-transform', isActive ? 'rotate-180 text-[var(--text-secondary)]' : 'text-[var(--text-secondary)]/80')} />
+                        <CaretDown size={18} className={cx('transition-transform', isActive ? 'rotate-180 text-[var(--text-secondary)]' : 'text-[var(--text-secondary)]/80')} />
                       </div>
                     </div>
                   </button>
@@ -443,7 +443,7 @@ export default function Directory() {
 
               {filteredPartners.length === 0 && (
                 <EmptyState
-                  icon={Building2}
+                  icon={Buildings}
                   title="No hay resultados"
                   description="Prueba con otro termino o crea una nueva marca para empezar."
                   className="border-dashed"
@@ -587,7 +587,7 @@ export default function Directory() {
                   ))
                 ) : (
                   <EmptyState
-                    icon={CalendarDays}
+                    icon={CalendarDots}
                     title="Sin tareas abiertas"
                     description="Esta marca no tiene entregables activos ahora mismo."
                     className="py-10"
@@ -626,7 +626,7 @@ export default function Directory() {
                           <div className="mt-3 flex flex-wrap gap-3">
                             <div className="group flex items-center gap-1">
                               <a href={`mailto:${contact.email}`} className="inline-flex items-center gap-2 text-sm font-bold text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]">
-                                <Mail size={16} /> {contact.email}
+                                <Envelope size={16} /> {contact.email}
                               </a>
                               <button type="button" onClick={() => handleCopy(contact.email, 'Email')} className="opacity-0 transition-opacity group-hover:opacity-100 p-1 text-[var(--text-secondary)] hover:text-[var(--text-primary)]" aria-label="Copiar email">
                                 <Copy size={14} />
@@ -635,9 +635,9 @@ export default function Directory() {
                             {contact.ig.trim() ? (
                               <div className="group flex items-center gap-1">
                                 <a href={`https://instagram.com/${contact.ig.replace('@', '')}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-2 text-sm font-bold text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]">
-                                  <Instagram size={16} /> {contact.ig}
+                                  <InstagramLogo size={16} /> {contact.ig}
                                 </a>
-                                <button type="button" onClick={() => handleCopy(contact.ig, 'Usuario de Instagram')} className="opacity-0 transition-opacity group-hover:opacity-100 p-1 text-[var(--text-secondary)] hover:text-[var(--text-primary)]" aria-label="Copiar Instagram">
+                                <button type="button" onClick={() => handleCopy(contact.ig, 'Usuario de InstagramLogo')} className="opacity-0 transition-opacity group-hover:opacity-100 p-1 text-[var(--text-secondary)] hover:text-[var(--text-primary)]" aria-label="Copiar InstagramLogo">
                                   <Copy size={14} />
                                 </button>
                               </div>
@@ -657,14 +657,14 @@ export default function Directory() {
 
                         <div className="flex shrink-0 flex-wrap gap-2 lg:justify-end">
                           <IconButton icon={PencilLine} label={`Editar contacto ${contact.name}`} onClick={() => handleOpenEditContact(activePartner.id, contact)} className="h-10 w-10 rounded-[0.8rem] bg-[var(--surface-muted)] text-[var(--text-secondary)]" />
-                          <IconButton icon={MessageCircle} label={`Redactar WhatsApp para ${contact.name}`} onClick={() => setComposingTo({ contact, partner: activePartner })} tone="primary" accentColor={accentGradient} className="h-10 w-10 rounded-[0.8rem]" />
+                          <IconButton icon={ChatCircle} label={`Redactar WhatsApp para ${contact.name}`} onClick={() => setComposingTo({ contact, partner: activePartner })} tone="primary" accentColor={accentGradient} className="h-10 w-10 rounded-[0.8rem]" />
                         </div>
                       </div>
                     </div>
                   ))
                 ) : (
                   <EmptyState
-                    icon={MessageSquare}
+                    icon={Chat}
                     title="Aún no hay contactos"
                     description="Añade el primer contacto para empezar a redactar mensajes y hacer seguimiento."
                     action={
@@ -680,7 +680,7 @@ export default function Directory() {
             </SurfaceCard>
           ) : (
             <SurfaceCard className="p-5 sm:p-6">
-              <EmptyState icon={Building2} title="Selecciona una marca" description="Usa la lista de la izquierda para abrir el detalle de un partner." />
+              <EmptyState icon={Buildings} title="Selecciona una marca" description="Usa la lista de la izquierda para abrir el detalle de un partner." />
             </SurfaceCard>
           )}
         </div>
@@ -704,14 +704,14 @@ export default function Directory() {
                 <div className="space-y-4">
                   <div>
                     <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
-                      <Building2 size={14} />
+                      <Buildings size={14} />
                       Nombre
                     </label>
                     <input required value={editingPartner.name} onChange={(event) => setEditingPartner({ ...editingPartner, name: event.target.value })} className={fieldClass} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} placeholder="" />
                   </div>
                   <div>
                     <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
-                      <Layers size={14} />
+                      <Stack size={14} />
                       Canal Principal
                     </label>
                     <input value={editingPartner.mainChannel || ''} onChange={(event) => setEditingPartner({ ...editingPartner, mainChannel: event.target.value })} className={fieldClass} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} placeholder="" />
@@ -732,7 +732,7 @@ export default function Directory() {
                   <div className="grid gap-4">
                     <div>
                       <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
-                        <Activity size={14} />
+                        <Pulse size={14} />
                         Tipo de Partnership
                       </label>
                       <CustomSelect value={editingPartner.partnershipType || 'Por definir'} onChange={(val) => {
@@ -749,7 +749,7 @@ export default function Directory() {
                       <div className={cx('grid gap-4', ((editingPartner.partnershipType || 'Por definir') === 'Permanente' || (editingPartner.partnershipType || 'Por definir') === 'One Time') ? 'grid-cols-1' : 'grid-cols-2')}>
                         <div>
                           <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
-                            <CalendarDays size={14} />
+                            <CalendarDots size={14} />
                             {(editingPartner.partnershipType || 'Por definir') === 'One Time' ? 'Fecha' : 'Inicio'}
                           </label>
                           <input type="date" value={editingPartner.startDate || ''} onChange={(event) => setEditingPartner({ ...editingPartner, startDate: event.target.value })} className={cx(fieldClass, 'bg-[var(--surface-card)] px-3')} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} />
@@ -757,7 +757,7 @@ export default function Directory() {
                         {(editingPartner.partnershipType || 'Por definir') === 'Plazo Fijo' && (
                           <div>
                             <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
-                              <CalendarDays size={14} />
+                              <CalendarDots size={14} />
                               Fin
                             </label>
                             <input type="date" value={editingPartner.endDate || ''} onChange={(event) => setEditingPartner({ ...editingPartner, endDate: event.target.value })} className={cx(fieldClass, 'bg-[var(--surface-card)] px-3')} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} />
@@ -768,14 +768,14 @@ export default function Directory() {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
-                          <CircleDollarSign size={14} />
+                          <CurrencyCircleDollar size={14} />
                           Mensual
                         </label>
                         <input type="number" value={editingPartner.monthlyRevenue || ''} onChange={(event) => setEditingPartner({ ...editingPartner, monthlyRevenue: Number(event.target.value) })} className={cx(fieldClass, 'bg-[var(--surface-card)]')} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} placeholder="1200" />
                       </div>
                       <div>
                         <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
-                          <CircleDollarSign size={14} />
+                          <CurrencyCircleDollar size={14} />
                           Anual
                         </label>
                         <input type="number" value={editingPartner.annualRevenue || ''} onChange={(event) => setEditingPartner({ ...editingPartner, annualRevenue: Number(event.target.value) })} className={cx(fieldClass, 'bg-[var(--surface-card)]')} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} placeholder="14400" />
@@ -798,14 +798,14 @@ export default function Directory() {
                 <div className="space-y-4">
                   <div>
                     <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
-                      <Building2 size={14} />
+                      <Buildings size={14} />
                       Nombre
                     </label>
                     <input required value={newPartner.name} onChange={(event) => setNewPartner({ ...newPartner, name: event.target.value })} className={fieldClass} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} placeholder="" />
                   </div>
                   <div>
                     <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
-                      <Layers size={14} />
+                      <Stack size={14} />
                       Canal Principal
                     </label>
                     <input value={newPartner.mainChannel} onChange={(event) => setNewPartner({ ...newPartner, mainChannel: event.target.value })} className={fieldClass} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} placeholder="" />
@@ -829,7 +829,7 @@ export default function Directory() {
                   <div className="grid gap-4">
                     <div>
                       <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
-                        <Activity size={14} />
+                        <Pulse size={14} />
                         Tipo de Partnership
                       </label>
                       <CustomSelect value={newPartner.partnershipType} onChange={(val) => {
@@ -846,7 +846,7 @@ export default function Directory() {
                       <div className={cx('grid gap-4', (newPartner.partnershipType === 'Permanente' || newPartner.partnershipType === 'One Time') ? 'grid-cols-1' : 'grid-cols-2')}>
                         <div>
                           <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
-                            <CalendarDays size={14} />
+                            <CalendarDots size={14} />
                             {newPartner.partnershipType === 'One Time' ? 'Fecha' : 'Inicio'}
                           </label>
                           <input type="date" value={newPartner.startDate} onChange={(event) => setNewPartner({ ...newPartner, startDate: event.target.value })} className={cx(fieldClass, 'bg-[var(--surface-card)] px-3')} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} />
@@ -854,7 +854,7 @@ export default function Directory() {
                         {newPartner.partnershipType === 'Plazo Fijo' && (
                           <div>
                             <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
-                              <CalendarDays size={14} />
+                              <CalendarDots size={14} />
                               Fin
                             </label>
                             <input type="date" value={newPartner.endDate} onChange={(event) => setNewPartner({ ...newPartner, endDate: event.target.value })} className={cx(fieldClass, 'bg-[var(--surface-card)] px-3')} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} />
@@ -865,14 +865,14 @@ export default function Directory() {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
-                          <CircleDollarSign size={14} />
+                          <CurrencyCircleDollar size={14} />
                           Mensual
                         </label>
                         <input type="number" value={newPartner.monthlyRevenue} onChange={(event) => setNewPartner({ ...newPartner, monthlyRevenue: event.target.value })} className={cx(fieldClass, 'bg-[var(--surface-card)]')} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} placeholder="1200" />
                       </div>
                       <div>
                         <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
-                          <CircleDollarSign size={14} />
+                          <CurrencyCircleDollar size={14} />
                           Anual
                         </label>
                         <input type="number" value={newPartner.annualRevenue} onChange={(event) => setNewPartner({ ...newPartner, annualRevenue: event.target.value })} className={cx(fieldClass, 'bg-[var(--surface-card)]')} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} placeholder="14400" />
@@ -894,7 +894,7 @@ export default function Directory() {
               <div className="rounded-[1.2rem] border bg-[var(--surface-muted)]/50 p-4 sm:p-5 [border-color:var(--line-soft)]">
                 <div>
                   <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
-                    <MessageSquare size={14} />
+                    <Chat size={14} />
                     Usar plantilla
                   </label>
                   <CustomSelect
@@ -913,7 +913,7 @@ export default function Directory() {
               <div className="space-y-4">
                 <div>
                   <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
-                    <AlignLeft size={14} />
+                    <TextAlignLeft size={14} />
                     Mensaje
                   </label>
                   <textarea value={messagePreview.body} onChange={(event) => setMessagePreview({ ...messagePreview, body: event.target.value })} className={cx(fieldClass, 'min-h-[180px]')} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} placeholder="Escribe tu mensaje aquí..." />
@@ -925,11 +925,11 @@ export default function Directory() {
                     className="flex flex-1 items-center justify-center gap-2 rounded-[1rem] px-4 py-3 text-sm font-bold text-white shadow-sm transition-all hover:opacity-90 active:scale-95"
                     style={{ backgroundColor: '#25D366' }}
                   >
-                    <MessageCircle size={18} />
+                    <ChatCircle size={18} />
                     Enviar por WhatsApp
                   </button>
                   <Button onClick={handleSendEmail} tone="secondary" className="flex-1 justify-center">
-                    <Mail size={18} />
+                    <Envelope size={18} />
                     Enviar por Correo
                   </Button>
                 </div>
@@ -946,7 +946,7 @@ export default function Directory() {
               <div className="space-y-4">
                 <div>
                   <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
-                    <Type size={14} />
+                    <TextT size={14} />
                     Nombre
                   </label>
                   <input required value={newContact.name} onChange={(event) => setNewContact({ ...newContact, name: event.target.value })} className={fieldClass} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} placeholder="" />
@@ -966,15 +966,15 @@ export default function Directory() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
-                      <Mail size={14} />
+                      <Envelope size={14} />
                       Email
                     </label>
                     <input type="email" required value={newContact.email} onChange={(event) => setNewContact({ ...newContact, email: event.target.value })} className={cx(fieldClass, 'bg-[var(--surface-card)]')} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} placeholder="" />
                   </div>
                   <div>
                     <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
-                      <Instagram size={14} />
-                      Instagram
+                      <InstagramLogo size={14} />
+                      InstagramLogo
                     </label>
                     <input value={newContact.ig} onChange={(event) => setNewContact({ ...newContact, ig: event.target.value })} className={cx(fieldClass, 'bg-[var(--surface-card)]')} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} placeholder="" />
                   </div>
@@ -1010,7 +1010,7 @@ export default function Directory() {
               <div className="space-y-4">
                 <div>
                   <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
-                    <Type size={14} />
+                    <TextT size={14} />
                     Nombre
                   </label>
                   <input required value={editingContact.contact.name} onChange={(event) => setEditingContact({ ...editingContact, contact: { ...editingContact.contact, name: event.target.value } })} className={fieldClass} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} placeholder="" />
@@ -1030,15 +1030,15 @@ export default function Directory() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
                     <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
-                      <Mail size={14} />
+                      <Envelope size={14} />
                       Email
                     </label>
                     <input required type="email" value={editingContact.contact.email} onChange={(event) => setEditingContact({ ...editingContact, contact: { ...editingContact.contact, email: event.target.value } })} className={cx(fieldClass, 'bg-[var(--surface-card)]')} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} placeholder="" />
                   </div>
                   <div>
                     <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
-                      <Instagram size={14} />
-                      Instagram
+                      <InstagramLogo size={14} />
+                      InstagramLogo
                     </label>
                     <input required value={editingContact.contact.ig} onChange={(event) => setEditingContact({ ...editingContact, contact: { ...editingContact.contact, ig: event.target.value } })} className={cx(fieldClass, 'bg-[var(--surface-card)]')} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} placeholder="" />
                   </div>
@@ -1072,7 +1072,7 @@ export default function Directory() {
                   className="px-4"
                   aria-label="Eliminar contacto"
                 >
-                  <Trash2 size={18} />
+                  <Trash size={18} />
                 </Button>
                 <Button type="submit" accentColor={accentGradient} className="flex-1 justify-center" disabled={saving}>Guardar cambios</Button>
               </div>

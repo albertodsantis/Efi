@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BarChart3, CalendarDays, Image, Rocket, Sparkles, X } from 'lucide-react';
+import { ChartBar, CalendarDots, Image, Rocket, Sparkle, X } from '@phosphor-icons/react';
 
 const BRAND_GOLD = '#FCAF45';
 const BRAND_ORANGE = '#F56040';
@@ -8,13 +8,13 @@ const BRAND_PURPLE = '#833AB4';
 
 const ROADMAP_ITEMS = [
   {
-    icon: Sparkles,
+    icon: Sparkle,
     title: 'Asistente IA',
     description: 'Consultas inteligentes sobre tu pipeline, contactos y metricas con contexto completo.',
     color: BRAND_PURPLE,
   },
   {
-    icon: CalendarDays,
+    icon: CalendarDots,
     title: 'Google Calendar',
     description: 'Sincronizacion bidireccional de entregas y deadlines con tu calendario.',
     color: BRAND_ORANGE,
@@ -26,7 +26,7 @@ const ROADMAP_ITEMS = [
     color: BRAND_PINK,
   },
   {
-    icon: BarChart3,
+    icon: ChartBar,
     title: 'Gamification',
     description: 'Logros, rachas y niveles que premian tu consistencia y productividad.',
     color: BRAND_GOLD,
@@ -49,7 +49,7 @@ export default function RoadmapButton({ compact }: { compact?: boolean }) {
         }}
       >
         <span className="pointer-events-none absolute inset-0 bg-white/0 transition-colors group-hover:bg-white/10" />
-        <Rocket size={compact ? 12 : 13} strokeWidth={2.8} />
+        <Rocket size={compact ? 12 : 13} />
         Lo que se viene
         <span className="relative flex h-2 w-2">
           <span
@@ -83,7 +83,7 @@ export default function RoadmapButton({ compact }: { compact?: boolean }) {
                         background: `linear-gradient(135deg, ${BRAND_ORANGE}, ${BRAND_PINK})`,
                       }}
                     >
-                      <Rocket size={13} strokeWidth={2.5} color="#fff" />
+                      <Rocket size={13} color="#fff" />
                     </div>
                     <div>
                       <p className="text-sm font-extrabold text-[var(--text-primary)]">Roadmap</p>
@@ -118,7 +118,7 @@ export default function RoadmapButton({ compact }: { compact?: boolean }) {
                         className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
                         style={{ backgroundColor: `${item.color}14`, color: item.color }}
                       >
-                        <Icon size={15} strokeWidth={2.3} />
+                        <Icon size={15} />
                       </div>
                       <div className="min-w-0">
                         <p className="text-sm font-bold text-[var(--text-primary)]">{item.title}</p>

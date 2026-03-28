@@ -411,7 +411,7 @@ KPI display card using `SurfaceCard tone="inset"`.
 
 | Prop | Type | Notes |
 |---|---|---|
-| `icon` | `LucideIcon` | required, displayed in tinted container |
+| `icon` | `React.ElementType` | required, displayed in tinted container |
 | `label` | `string` | required, 11px uppercase overline |
 | `value` | `string` | required, text-2xl extrabold |
 | `helper` | `string` | optional subtext |
@@ -434,7 +434,7 @@ Placeholder for empty lists/sections. Uses `SurfaceCard tone="muted"` with `bord
 
 | Prop | Type | Notes |
 |---|---|---|
-| `icon` | `LucideIcon` | optional, displayed in bordered container |
+| `icon` | `React.ElementType` | optional, displayed in bordered container |
 | `title` | `string` | required, base bold |
 | `description` | `string` | optional, sm text, max-w-sm |
 | `action` | `ReactNode` | optional, centered below description |
@@ -465,7 +465,7 @@ Icon-only button with accessible label.
 
 | Prop | Type | Default | Notes |
 |---|---|---|---|
-| `icon` | `LucideIcon` | required | |
+| `icon` | `React.ElementType` | required | |
 | `label` | `string` | required | Used as `aria-label` |
 | `tone` | `'primary' \| 'secondary' \| 'ghost' \| 'danger'` | `'secondary'` | Same tones as Button |
 | `accentColor` | `string` | - | Override for primary tone |
@@ -491,7 +491,7 @@ Row layout for settings screens with icon, title, description, and trailing acti
 
 | Prop | Type | Notes |
 |---|---|---|
-| `icon` | `LucideIcon` | required, in 12x12 muted container |
+| `icon` | `React.ElementType` | required, in 12x12 muted container |
 | `title` | `string` | required, sm bold |
 | `description` | `string` | optional, xs secondary text |
 | `trailing` | `ReactNode` | optional, right-aligned slot |

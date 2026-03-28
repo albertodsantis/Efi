@@ -1,15 +1,14 @@
 import React, { useState } from 'react';
 import {
   ArrowRight,
-  BarChart3,
-  CalendarDays,
+  ChartBar,
+  CalendarDots,
   Eye,
-  EyeOff,
-  FolderKanban,
-  LayoutDashboard,
-  Sparkles,
+  EyeSlash,
+  Kanban,
+  Sparkle,
   Users,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import type { SessionUser } from '@shared';
 import { authApi, ApiError } from '../lib/api';
 import { supabase } from '../lib/supabase';
@@ -26,12 +25,12 @@ const BRAND_PURPLE = '#833AB4';
 
 const features = [
   {
-    icon: LayoutDashboard,
+    icon: Kanban,
     title: 'Dashboard',
     description: 'Métricas, metas y actividad reciente en un solo vistazo.',
   },
   {
-    icon: FolderKanban,
+    icon: Kanban,
     title: 'Pipeline',
     description: 'Gestiona entregas con vistas Kanban, lista y calendario.',
   },
@@ -41,17 +40,17 @@ const features = [
     description: 'Organiza marcas, contactos y seguimiento financiero.',
   },
   {
-    icon: BarChart3,
+    icon: ChartBar,
     title: 'Perfil & Media Kit',
     description: 'Tu identidad profesional y materiales de presentación.',
   },
   {
-    icon: CalendarDays,
+    icon: CalendarDots,
     title: 'Google Calendar',
     description: 'Sincroniza tus entregas con tu calendario personal.',
   },
   {
-    icon: Sparkles,
+    icon: Sparkle,
     title: 'Asistente IA',
     description: 'Consulta asistida por inteligencia artificial integrada.',
   },
@@ -191,7 +190,7 @@ export default function Landing({
               className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[11px] font-bold tracking-[0.14em] uppercase"
               style={{ backgroundColor: `${BRAND_ORANGE}14`, color: BRAND_ORANGE }}
             >
-              <Sparkles size={13} strokeWidth={2.5} />
+              <Sparkle size={13} />
               CRM para creadores
             </div>
 
@@ -229,7 +228,7 @@ export default function Landing({
                         className="flex h-9 w-9 items-center justify-center rounded-lg"
                         style={{ backgroundColor: `${BRAND_PURPLE}18`, color: BRAND_PURPLE }}
                       >
-                        <Icon size={16} strokeWidth={2.2} />
+                        <Icon size={16} />
                       </div>
                       <p className="mt-3 text-sm font-bold text-[var(--text-primary)]">
                         {feat.title}
@@ -379,7 +378,7 @@ export default function Landing({
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute top-1/2 right-3 -translate-y-1/2 p-1 text-[var(--text-secondary)]/50 transition-colors hover:text-[var(--text-secondary)]"
                       >
-                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        {showPassword ? <EyeSlash size={16} /> : <Eye size={16} />}
                       </button>
                     </div>
                   </div>
@@ -400,7 +399,7 @@ export default function Landing({
                     {loading
                       ? (isLogin ? 'Ingresando…' : 'Creando cuenta…')
                       : (isLogin ? 'Iniciar sesion' : 'Crear cuenta')}
-                    {!loading ? <ArrowRight size={16} strokeWidth={2.5} /> : null}
+                    {!loading ? <ArrowRight size={16} /> : null}
                   </button>
                 </form>
 
@@ -429,7 +428,7 @@ export default function Landing({
                     className="flex h-9 w-9 items-center justify-center rounded-lg"
                     style={{ backgroundColor: `${BRAND_PURPLE}18`, color: BRAND_PURPLE }}
                   >
-                    <Icon size={16} strokeWidth={2.2} />
+                    <Icon size={16} />
                   </div>
                   <p className="mt-3 text-sm font-bold text-[var(--text-primary)]">
                     {feat.title}

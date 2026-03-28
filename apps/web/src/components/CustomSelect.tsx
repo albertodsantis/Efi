@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { CaretDown } from '@phosphor-icons/react';
 import { cx } from './ui';
 
 interface Option {
@@ -59,7 +59,7 @@ export default function CustomSelect({
         style={buttonStyle}
       >
         <span className="truncate">{selectedOption ? selectedOption.label : placeholder}</span>
-        <ChevronDown
+        <CaretDown
           size={16}
           className={cx(
             'shrink-0 text-[var(--text-secondary)]/70 transition-transform',

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, Check } from 'lucide-react';
+import { ArrowRight, Check } from '@phosphor-icons/react';
 import { getAccentCssVariables, getAccessibleAccentForeground, getGradientCss, getRepresentativeHex, isGradientAccent } from '../lib/accent';
 
 const ACCENT_OPTIONS = [
@@ -86,7 +86,7 @@ export default function WelcomeColorPicker({
                   }}
                 >
                   {isSelected && (
-                    <Check size={22} strokeWidth={3} color={fg} />
+                    <Check size={22} weight="bold" color={fg} />
                   )}
                 </div>
                 <span
@@ -122,7 +122,7 @@ export default function WelcomeColorPicker({
           }
         >
           {saving ? 'Preparando tu workspace…' : 'Continuar'}
-          {!saving && <ArrowRight size={16} strokeWidth={2.5} />}
+          {!saving && <ArrowRight size={16} />}
         </button>
       </div>
     </div>

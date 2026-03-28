@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle2, XCircle, Info, X } from 'lucide-react';
+import { CheckCircle, XCircle, Info, X } from '@phosphor-icons/react';
 
 interface ToastEvent {
   id: string;
@@ -33,7 +33,7 @@ export default function Toaster() {
           key={t.id}
           className="flex items-center gap-3 rounded-[1rem] border border-[color:var(--line-soft)] bg-[color:var(--surface-card)] px-4 py-3 shadow-[0_16px_32px_-16px_rgba(0,0,0,0.2)] animate-in slide-in-from-right-8 fade-in duration-300 pointer-events-auto"
         >
-          {t.type === 'success' && <CheckCircle2 size={18} className="text-emerald-500" />}
+          {t.type === 'success' && <CheckCircle size={18} className="text-emerald-500" />}
           {t.type === 'error' && <XCircle size={18} className="text-rose-500" />}
           {t.type === 'info' && <Info size={18} className="text-blue-500" />}
           <p className="text-sm font-medium text-[var(--text-primary)]">{t.message}</p>

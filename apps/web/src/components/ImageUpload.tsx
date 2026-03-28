@@ -1,5 +1,5 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { ImagePlus, Trash2, Loader2 } from 'lucide-react';
+import { ImageSquare, Trash, CircleNotch } from '@phosphor-icons/react';
 import { appApi } from '../lib/api';
 import { cx } from './ui';
 
@@ -118,7 +118,7 @@ export default function ImageUpload({
               className="rounded-full bg-white/90 p-2 text-slate-700 shadow transition-transform hover:scale-110"
               title="Cambiar imagen"
             >
-              <ImagePlus size={18} />
+              <ImageSquare size={18} />
             </button>
             <button
               type="button"
@@ -126,7 +126,7 @@ export default function ImageUpload({
               className="rounded-full bg-white/90 p-2 text-red-600 shadow transition-transform hover:scale-110"
               title="Eliminar"
             >
-              <Trash2 size={18} />
+              <Trash size={18} />
             </button>
           </div>
         </div>
@@ -149,9 +149,9 @@ export default function ImageUpload({
           )}
         >
           {uploading ? (
-            <Loader2 size={24} className="animate-spin text-[var(--text-secondary)]" />
+            <CircleNotch size={24} className="animate-spin text-[var(--text-secondary)]" />
           ) : (
-            <ImagePlus size={24} style={{ color: accentColor }} />
+            <ImageSquare size={24} style={{ color: accentColor }} />
           )}
           <span className="text-xs font-medium text-[var(--text-secondary)]">
             {uploading ? 'Subiendo...' : placeholder}

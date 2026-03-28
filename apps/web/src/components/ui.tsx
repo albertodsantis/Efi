@@ -1,5 +1,5 @@
 import React from 'react';
-import { X, type LucideIcon } from 'lucide-react';
+import { X } from '@phosphor-icons/react';
 
 export function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(' ');
@@ -85,7 +85,7 @@ export function MetricCard({
   accentColor,
   className,
 }: {
-  icon: LucideIcon;
+  icon: React.ElementType;
   label: string;
   value: string;
   helper?: string;
@@ -98,7 +98,7 @@ export function MetricCard({
         className="flex h-11 w-11 items-center justify-center rounded-xl"
         style={{ backgroundColor: `${accentColor}14`, color: accentColor }}
       >
-        <Icon size={20} strokeWidth={2.4} />
+        <Icon size={20} />
       </div>
       <p className="mt-4 text-[11px] font-bold tracking-[0.18em] text-[var(--text-secondary)]/80 uppercase">
         {label}
@@ -164,7 +164,7 @@ export function EmptyState({
   action,
   className,
 }: {
-  icon?: LucideIcon;
+  icon?: React.ElementType;
   title: string;
   description?: string;
   action?: React.ReactNode;
@@ -259,7 +259,7 @@ export function IconButton({
   className,
   iconSize = 18,
 }: {
-  icon: LucideIcon;
+  icon: React.ElementType;
   label: string;
   onClick?: () => void;
   disabled?: boolean;
@@ -339,7 +339,7 @@ export function SettingRow({
   onClick,
   className,
 }: {
-  icon: LucideIcon;
+  icon: React.ElementType;
   title: string;
   description?: string;
   trailing?: React.ReactNode;

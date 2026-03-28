@@ -1,21 +1,21 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  AlignLeft,
+  TextAlignLeft,
   Bell,
-  Calendar as CalendarIcon,
-  ChevronDown,
-  LogOut,
-  MessageSquare,
+  CalendarBlank,
+  CaretDown,
+  SignOut,
+  Chat,
   Moon,
   PencilLine,
   Plus,
-  RotateCcw,
-  Shield,
+  ArrowCounterClockwise,
+  ShieldCheck,
   Sun,
-  Trash2,
-  Type,
-  UserX,
-} from 'lucide-react';
+  Trash,
+  TextT,
+  UserMinus,
+} from '@phosphor-icons/react';
 import { useAppContext } from '../context/AppContext';
 import OverlayModal from '../components/OverlayModal';
 import {
@@ -196,7 +196,7 @@ export default function Settings() {
                 <p className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
                   {isAccentPaletteOpen ? 'Ocultar' : 'Cambiar'}
                 </p>
-                <ChevronDown
+                <CaretDown
                   size={18}
                   className={cx(
                     'ml-auto mt-2 text-slate-400 transition-transform dark:text-slate-500',
@@ -259,14 +259,14 @@ export default function Settings() {
                 className="px-0 py-3"
               />
               <SettingRow
-                icon={CalendarIcon}
+                icon={CalendarBlank}
                 title="Sincronizacion con Calendar"
                 description="Proximamente. La integracion con Google Calendar estara disponible en una version futura."
                 trailing={<ToggleSwitch checked={false} accentColor={accentGradient} disabled />}
                 className="cursor-not-allowed px-0 py-3 opacity-60"
               />
               <SettingRow
-                icon={Shield}
+                icon={ShieldCheck}
                 title="Privacidad y seguridad"
                 description="Controla sesiones, permisos y preferencias sensibles."
                 trailing={<ToggleSwitch checked={false} accentColor={accentGradient} disabled />}
@@ -336,7 +336,7 @@ export default function Settings() {
                       className="mt-0.5 flex shrink-0 items-center justify-center"
                       style={{ color: accentHex }}
                     >
-                      <MessageSquare size={18} />
+                      <Chat size={18} />
                     </div>
                     <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
@@ -372,7 +372,7 @@ export default function Settings() {
           ) : (
             <div className="p-6 sm:p-8">
               <EmptyState
-                icon={MessageSquare}
+                icon={Chat}
                 title="Aun no hay plantillas"
                 description="Crea una plantilla para acelerar respuestas, follow-ups y primeros contactos."
                 action={
@@ -414,7 +414,7 @@ export default function Settings() {
             className="justify-center sm:min-w-[12rem]"
             onClick={handleResetTour}
           >
-            <RotateCcw size={16} />
+            <ArrowCounterClockwise size={16} />
             Reiniciar tour
           </Button>
         </div>
@@ -433,7 +433,7 @@ export default function Settings() {
 
           <div className="mt-5 space-y-3">
             <SettingRow
-              icon={LogOut}
+              icon={SignOut}
               title="Cerrar sesion"
               description="Cierra tu sesion actual en este dispositivo."
               onClick={onLogout}
@@ -460,7 +460,7 @@ export default function Settings() {
                       onClick={() => void handleDeleteAccount()}
                       className="justify-center"
                     >
-                      <Trash2 size={16} />
+                      <Trash size={16} />
                       Si, eliminar cuenta
                     </Button>
                     <Button
@@ -474,7 +474,7 @@ export default function Settings() {
                 </div>
               ) : (
                 <SettingRow
-                  icon={UserX}
+                  icon={UserMinus}
                   title="Eliminar cuenta"
                   description="Elimina tu cuenta y todos los datos asociados de forma permanente."
                   onClick={() => setShowDeleteConfirm(true)}
@@ -518,7 +518,7 @@ export default function Settings() {
                     className="px-4"
                     aria-label="Eliminar plantilla"
                   >
-                    <Trash2 size={18} />
+                    <Trash size={18} />
                   </Button>
                 )}
                 <Button type="submit" form="template-form" accentColor={accentGradient} className="flex-1 justify-center" disabled={savingTemplate}>
@@ -531,7 +531,7 @@ export default function Settings() {
             <div className="space-y-4">
               <div>
                 <label className="mb-2 flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
-                  <Type size={14} />
+                  <TextT size={14} />
                   Nombre de la plantilla
                 </label>
                 <input
@@ -552,7 +552,7 @@ export default function Settings() {
               <div className="space-y-4">
                 <div>
                   <label className="mb-2 flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
-                    <Type size={14} />
+                    <TextT size={14} />
                     Asunto
                   </label>
                   <input
@@ -569,7 +569,7 @@ export default function Settings() {
 
                 <div>
                   <label className="mb-2 flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
-                    <AlignLeft size={14} />
+                    <TextAlignLeft size={14} />
                     Cuerpo del mensaje
                   </label>
                   <textarea

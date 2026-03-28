@@ -5,14 +5,14 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  Home,
-  Loader2,
-  LayoutDashboard,
-  LogOut,
-  Settings as SettingsIcon,
+  HouseLine,
+  CircleNotch,
+  Kanban,
+  SignOut,
+  SlidersHorizontal,
   User,
   Users,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import type { SessionUser } from '@shared';
 import { AppProvider, useAppContext } from './context/AppContext';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -38,21 +38,21 @@ const tabs: Array<{
   label: string;
   shortLabel: string;
   description: string;
-  icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
+  icon: React.ElementType;
 }> = [
   {
     id: 'dashboard',
     label: 'Inicio',
     shortLabel: 'Inicio',
     description: 'Resumen general del pipeline, partners y entregables.',
-    icon: Home,
+    icon: HouseLine,
   },
   {
     id: 'pipeline',
     label: 'Pipeline',
     shortLabel: 'Pipeline',
     description: 'Gestiona tareas, estados y calendario comercial.',
-    icon: LayoutDashboard,
+    icon: Kanban,
   },
   {
     id: 'directory',
@@ -73,7 +73,7 @@ const tabs: Array<{
     label: 'Ajustes',
     shortLabel: 'Ajustes',
     description: 'Tema, plantillas, notificaciones e integraciones.',
-    icon: SettingsIcon,
+    icon: SlidersHorizontal,
   },
 ];
 
@@ -249,7 +249,7 @@ const DesktopSidebar = ({
           title="Cerrar sesion"
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-card-strong)] hover:text-[var(--text-primary)]"
         >
-          <LogOut size={16} strokeWidth={2.2} />
+          <SignOut size={16} />
         </button>
       </div>
     </div>
@@ -278,7 +278,7 @@ const DesktopSidebar = ({
                   className="flex h-10 w-10 items-center justify-center rounded-[0.95rem] text-[var(--text-secondary)] transition-colors"
                   style={isActive ? { color: accentColor } : undefined}
                 >
-                  <Icon size={18} strokeWidth={isActive ? 2.4 : 2.05} />
+                  <Icon size={18} weight={isActive ? 'duotone' : 'regular'} />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
@@ -340,7 +340,7 @@ const MobileBottomNav = ({
             )}
             style={isActive ? { color: accentColor } : undefined}
           >
-            <Icon size={22} strokeWidth={isActive ? 2.5 : 2.1} />
+            <Icon size={22} weight={isActive ? 'duotone' : 'regular'} />
             <span
               className={cx(
                 'text-[10px] font-bold tracking-wide',
@@ -548,7 +548,7 @@ const MainLayout = () => {
                   className="relative z-20 flex items-center justify-center overflow-hidden transition-all"
                   style={{ height: pullDistance }}
                 >
-                  <Loader2
+                  <CircleNotch
                     size={20}
                     className={cx('text-[var(--text-secondary)]', refreshing && 'animate-spin')}
                     style={{ opacity: Math.min(pullDistance / 80, 1) }}

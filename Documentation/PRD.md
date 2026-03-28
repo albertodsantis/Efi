@@ -370,7 +370,7 @@ Everything below is explicitly out of scope for v1:
 - Onboarding: react-joyride
 - Animations: motion
 - Color picker: react-colorful
-- Icons: lucide-react
+- Icons: @phosphor-icons/react (duotone weight, globally via IconContext.Provider)
 - Google APIs: googleapis
 - AI: @google/genai (Gemini)
 

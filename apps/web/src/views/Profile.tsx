@@ -1,21 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  BarChart3,
-  BriefcaseBusiness,
-  CheckCircle2,
-  ChevronRight,
-  ExternalLink,
+  ChartBar,
+  BriefcaseMetal,
+  CheckCircle,
+  CaretRight,
+  ArrowSquareOut,
   FolderPlus,
   Image,
-  Loader2,
+  CircleNotch,
   Plus,
-  Save,
-  Sparkles,
+  FloppyDisk,
+  Sparkle,
   Target,
-  Trash2,
+  Trash,
   Users,
   X,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import type { Goal, GoalPriority, GoalStatus, MediaKitMetric, MediaKitOffer, MediaKitProfile, Partner, SocialProfiles, UserProfile } from '@shared';
 import { useAppContext } from '../context/AppContext';
 import { Avatar, Button, SurfaceCard, ModalPanel, cx } from '../components/ui';
@@ -106,7 +106,7 @@ function SectionHeader({
   description,
   accentColor,
 }: {
-  icon: React.ComponentType<{ size?: number; strokeWidth?: number }>;
+  icon: React.ElementType;
   eyebrow: string;
   title: string;
   description?: string;
@@ -119,7 +119,7 @@ function SectionHeader({
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
           style={{ backgroundColor: `${accentColor}20`, color: accentColor }}
         >
-          <Icon size={16} strokeWidth={2.4} />
+          <Icon size={16} />
         </div>
         <div className="min-w-0">
           <p className="text-[10px] font-bold tracking-[0.18em] text-[var(--text-secondary)]/90 uppercase">{eyebrow}</p>
@@ -688,13 +688,13 @@ export default function Profile() {
           <div className="rounded-full border border-[var(--line-soft)] bg-[var(--surface-card-strong)]/95 px-3 py-1.5 shadow-sm backdrop-blur-sm">
             {saveStatus === 'saving' && (
               <span className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-secondary)] animate-pulse">
-                <Loader2 size={13} className="animate-spin" />
+                <CircleNotch size={13} className="animate-spin" />
                 Guardando...
               </span>
             )}
             {saveStatus === 'saved' && (
               <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-500">
-                <CheckCircle2 size={13} />
+                <CheckCircle size={13} />
                 Guardado
               </span>
             )}
@@ -747,7 +747,7 @@ export default function Profile() {
                       className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl shadow-sm transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3"
                       style={{ background: accentGradient, color: '#fff' }}
                     >
-                      <Target size={22} strokeWidth={2.5} />
+                      <Target size={22} />
                     </div>
                     <div className="min-w-0">
                       <p className="truncate text-[10px] font-extrabold tracking-[0.18em] text-[var(--text-secondary)]/80 uppercase">
@@ -766,7 +766,7 @@ export default function Profile() {
                   <div
                     className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--surface-muted)] text-[var(--text-primary)] transition-transform duration-300 group-hover:translate-x-1"
                   >
-                    <ChevronRight size={18} strokeWidth={2.5} style={{ color: accentHex }} />
+                    <CaretRight size={18} style={{ color: accentHex }} />
                   </div>
                 </div>
               </button>
@@ -777,7 +777,7 @@ export default function Profile() {
                   onClick={handleOpenMediaKit}
                   className="flex-1 justify-center sm:flex-none"
                 >
-                  <ExternalLink size={16} />
+                  <ArrowSquareOut size={16} />
                   Abrir Media Kit
                 </Button>
               </div>
@@ -949,7 +949,7 @@ export default function Profile() {
                   <div className="mb-2 flex items-center justify-between">
                     <label className="text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/80 uppercase">Párrafo {index + 1}</label>
                     <button type="button" onClick={() => removeStringListItem('aboutParagraphs', index)} className="text-[var(--text-secondary)] opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100">
-                      <Trash2 size={14} />
+                      <Trash size={14} />
                     </button>
                   </div>
                 <textarea
@@ -1008,7 +1008,7 @@ export default function Profile() {
                     onClick={() => removeMetric('insightStats', index)}
                     className="absolute right-3 top-3 text-[var(--text-secondary)] opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100"
                   >
-                    <Trash2 size={14} />
+                    <Trash size={14} />
                   </button>
                   <label className={labelClass}>Etiqueta</label>
                   <input
@@ -1058,7 +1058,7 @@ export default function Profile() {
                     onClick={() => removeMetric('audienceGender', index)}
                     className="absolute right-3 top-3 text-[var(--text-secondary)] opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100"
                   >
-                    <Trash2 size={14} />
+                    <Trash size={14} />
                   </button>
                   <label className={labelClass}>Segmento</label>
                   <input
@@ -1104,7 +1104,7 @@ export default function Profile() {
                     onClick={() => removeMetric('ageDistribution', index)}
                     className="absolute right-3 top-3 text-[var(--text-secondary)] opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100"
                   >
-                    <Trash2 size={14} />
+                    <Trash size={14} />
                   </button>
                   <label className={labelClass}>Rango</label>
                   <input
@@ -1150,7 +1150,7 @@ export default function Profile() {
                     onClick={() => removeMetric('topCountries', index)}
                     className="absolute right-3 top-3 text-[var(--text-secondary)] opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100"
                   >
-                    <Trash2 size={14} />
+                    <Trash size={14} />
                   </button>
                   <label className={labelClass}>Pais</label>
                   <input
@@ -1194,7 +1194,7 @@ export default function Profile() {
                 <div className="mb-2 flex items-center justify-between">
                   <label className="text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/80 uppercase">Imagen {index + 1}</label>
                   <button type="button" onClick={() => removeStringListItem('portfolioImages', index)} className="text-[var(--text-secondary)] opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100">
-                    <Trash2 size={14} />
+                    <Trash size={14} />
                   </button>
                 </div>
                 <ImageUpload
@@ -1245,7 +1245,7 @@ export default function Profile() {
                 <div className="mb-2 flex items-center justify-between">
                   <label className="text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/80 uppercase">Marca {index + 1}</label>
                   <button type="button" onClick={() => removeStringListItem('trustedBrands', index)} className="text-[var(--text-secondary)] opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100">
-                    <Trash2 size={14} />
+                    <Trash size={14} />
                   </button>
                 </div>
                 <BrandInput
@@ -1297,7 +1297,7 @@ export default function Profile() {
                 >
                   <div className="mb-4 flex items-center justify-between">
                     <p className="text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/80 uppercase">Oferta {index + 1}</p>
-                    <button type="button" onClick={() => removeOffering(index)} className="text-[var(--text-secondary)] opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100"><Trash2 size={14} /></button>
+                    <button type="button" onClick={() => removeOffering(index)} className="text-[var(--text-secondary)] opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100"><Trash size={14} /></button>
                   </div>
                   <div className="grid gap-4">
                     <input
@@ -1402,7 +1402,7 @@ export default function Profile() {
                     disabled={isSavingProfile}
                     className="flex-1"
                   >
-                    <Save size={16} />
+                    <FloppyDisk size={16} />
                     {isSavingProfile ? 'Guardando...' : 'Guardar'}
                   </Button>
                 </div>
@@ -1425,7 +1425,7 @@ export default function Profile() {
                       className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-secondary)] transition-all hover:bg-rose-50 hover:text-rose-500"
                       title="Eliminar objetivo"
                     >
-                      <Trash2 size={16} />
+                      <Trash size={16} />
                     </button>
                   </div>
 

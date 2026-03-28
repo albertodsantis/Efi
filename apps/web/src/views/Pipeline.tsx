@@ -1,24 +1,24 @@
 ﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Activity,
-  AlignLeft,
-  Building2,
-  Calendar as CalendarIcon,
-  CalendarDays,
-  CheckCircle2,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  CircleDollarSign,
-  DownloadCloud,
-  List as ListIcon,
+  Pulse,
+  TextAlignLeft,
+  Buildings,
+  CalendarBlank,
+  CalendarDots,
+  CheckCircle,
+  CaretDown,
+  CaretLeft,
+  CaretRight,
+  CurrencyCircleDollar,
+  CloudArrowDown,
+  List,
   PencilLine,
   Plus,
-  RefreshCw,
-  Search,
-  Trello,
-  Type,
-} from 'lucide-react';
+  ArrowClockwise,
+  MagnifyingGlass,
+  Kanban,
+  TextT,
+} from '@phosphor-icons/react';
 import {
   DndContext,
   DragOverlay,
@@ -393,7 +393,7 @@ export default function Pipeline() {
   const [isWideDesktopCalendar, setIsWideDesktopCalendar] = useState(
     () => typeof window !== 'undefined' && window.innerWidth >= 1536,
   );
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setMagnifyingGlassQuery] = useState('');
 
   const sortedTasks = useMemo(
     () => [...tasks].sort((a, b) => parseLocalDate(a.dueDate).getTime() - parseLocalDate(b.dueDate).getTime()),
@@ -757,9 +757,9 @@ export default function Pipeline() {
             <div className="flex items-center justify-between gap-3 border-t pt-3 [border-color:var(--line-soft)]">
               <span className="inline-flex min-w-0 items-center gap-2 text-xs font-medium text-[var(--text-secondary)]">
                 {task.gcalEventId ? (
-                  <CheckCircle2 size={14} className="shrink-0 text-emerald-500" />
+                  <CheckCircle size={14} className="shrink-0 text-emerald-500" />
                 ) : (
-                  <CalendarIcon size={14} className="shrink-0" />
+                  <CalendarBlank size={14} className="shrink-0" />
                 )}
                 <span className="truncate">{task.gcalEventId ? 'Calendar activo' : 'Sin enlace externo'}</span>
               </span>
@@ -778,11 +778,11 @@ export default function Pipeline() {
                   aria-label={task.gcalEventId ? `Actualizar ${task.title} con Calendar` : `Sincronizar ${task.title}`}
                 >
                   {syncingTaskId === task.id ? (
-                    <RefreshCw size={14} className="animate-spin" />
+                    <ArrowClockwise size={14} className="animate-spin" />
                   ) : task.gcalEventId ? (
-                    <CheckCircle2 size={14} />
+                    <CheckCircle size={14} />
                   ) : (
-                    <CalendarIcon size={14} />
+                    <CalendarBlank size={14} />
                   )}
                 </button>
                 <IconButton
@@ -864,11 +864,11 @@ export default function Pipeline() {
                   )}
                 >
                   {syncingTaskId === task.id ? (
-                    <RefreshCw size={14} className="animate-spin" />
+                    <ArrowClockwise size={14} className="animate-spin" />
               ) : task.gcalEventId ? (
-                <CheckCircle2 size={14} />
+                <CheckCircle size={14} />
               ) : (
-                <CalendarIcon size={14} />
+                <CalendarBlank size={14} />
               )}
             </button>
             <IconButton
@@ -987,9 +987,9 @@ export default function Pipeline() {
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex h-12 items-center gap-1 sm:gap-2">
             {[
-              { id: 'kanban', icon: Trello, label: 'Kanban' },
-              { id: 'list', icon: ListIcon, label: 'Lista' },
-              { id: 'calendar', icon: CalendarIcon, label: 'Mes' },
+              { id: 'kanban', icon: Kanban, label: 'Kanban' },
+              { id: 'list', icon: List, label: 'Lista' },
+              { id: 'calendar', icon: CalendarBlank, label: 'Mes' },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -1009,12 +1009,12 @@ export default function Pipeline() {
           </div>
 
           <div className="relative flex-1 lg:max-w-sm">
-            <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" size={18} />
+            <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" size={18} />
             <input
               type="text"
               placeholder="Buscar en tareas o marcas..."
               value={searchQuery}
-              onChange={(event) => setSearchQuery(event.target.value)}
+              onChange={(event) => setMagnifyingGlassQuery(event.target.value)}
               className="w-full rounded-[1rem] border bg-[var(--surface-muted)] py-3 pl-10 pr-4 text-base sm:text-sm font-medium text-[var(--text-primary)] transition-all placeholder:text-[var(--text-secondary)]/70 focus:border-transparent focus:bg-[var(--surface-card)] focus:outline-none focus:ring-2 [border-color:var(--line-soft)]"
               style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
             />
@@ -1027,7 +1027,7 @@ export default function Pipeline() {
               disabled={isSyncingDown}
               className="flex-1 sm:flex-none"
             >
-              <DownloadCloud size={16} />
+              <CloudArrowDown size={16} />
               Actualizar Calendar
             </Button>
             <Button accentColor={accentGradient} onClick={openCreate} className="flex-1 sm:flex-none">
@@ -1043,7 +1043,7 @@ export default function Pipeline() {
             <SurfaceCard tone="muted" className="p-3">
               <div className="flex items-center justify-between gap-3">
                 <IconButton
-                  icon={ChevronLeft}
+                  icon={CaretLeft}
                   label="Ver fase anterior"
                   onClick={() => setCurrentStatusIdx(Math.max(0, currentStatusIdx - 1))}
                   disabled={currentStatusIdx === 0}
@@ -1059,7 +1059,7 @@ export default function Pipeline() {
                   </div>
                 </div>
                 <IconButton
-                  icon={ChevronRight}
+                  icon={CaretRight}
                   label="Ver siguiente fase"
                   onClick={() => setCurrentStatusIdx(Math.min(STATUSES.length - 1, currentStatusIdx + 1))}
                   disabled={currentStatusIdx === STATUSES.length - 1}
@@ -1079,7 +1079,7 @@ export default function Pipeline() {
                 ))
               ) : (
                 <EmptyState
-                  icon={Trello}
+                  icon={Kanban}
                   title="No hay tareas aquí"
                   description="Cuando muevas tareas o crees una nueva, aparecerán aquí."
                 />
@@ -1177,7 +1177,7 @@ export default function Pipeline() {
           </SurfaceCard>
         ) : (
           <EmptyState
-            icon={ListIcon}
+            icon={List}
             title="Todavía no hay tareas"
             description="Añade tu primera entrega para empezar a construir el pipeline."
             action={
@@ -1195,7 +1195,7 @@ export default function Pipeline() {
           <SurfaceCard className="p-5 lg:p-6">
             <div className="mb-5 flex items-center justify-between gap-3">
               <IconButton
-                icon={ChevronLeft}
+                icon={CaretLeft}
                 label="Mes anterior"
                 onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}
                 tone="ghost"
@@ -1211,7 +1211,7 @@ export default function Pipeline() {
                 </div>
               </div>
               <IconButton
-                icon={ChevronRight}
+                icon={CaretRight}
                 label="Mes siguiente"
                 onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}
                 tone="ghost"
@@ -1269,7 +1269,7 @@ export default function Pipeline() {
                   calendarPanelTasks.map((task) => <div key={task.id}>{renderTaskCard(task, 'calendar')}</div>)
                 ) : (
                   <EmptyState
-                    icon={CalendarDays}
+                    icon={CalendarDots}
                     title="Sin tareas programadas"
                     description="Selecciona otro día o crea una nueva entrega para poblar el calendario."
                     className="px-4 py-6"
@@ -1349,7 +1349,7 @@ export default function Pipeline() {
           <div className="space-y-4">
             <div>
               <label className="mb-2 flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
-                <Type size={14} />
+                <TextT size={14} />
                 Título
               </label>
               <input
@@ -1364,7 +1364,7 @@ export default function Pipeline() {
 
             <div>
               <label className="mb-2 flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
-                <AlignLeft size={14} />
+                <TextAlignLeft size={14} />
                 Descripción
               </label>
               <textarea
@@ -1385,7 +1385,7 @@ export default function Pipeline() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <label className="mb-2 flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
-                  <Building2 size={14} />
+                  <Buildings size={14} />
                   Partner o marca
                 </label>
                 <div className="relative">
@@ -1456,7 +1456,7 @@ export default function Pipeline() {
 
               <div>
                 <label className="mb-2 flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
-                  <CircleDollarSign size={14} />
+                  <CurrencyCircleDollar size={14} />
                   Valor
                 </label>
                 <input
@@ -1473,7 +1473,7 @@ export default function Pipeline() {
 
               <div>
                 <label className="mb-2 flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
-                  <CalendarDays size={14} />
+                  <CalendarDots size={14} />
                   Fecha límite
                 </label>
                 <input
@@ -1488,7 +1488,7 @@ export default function Pipeline() {
 
               <div className="sm:col-span-2 mt-1">
                 <label className="mb-2 flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
-                  <Activity size={14} />
+                  <Pulse size={14} />
                   Estado inicial
                 </label>
                 <CustomSelect

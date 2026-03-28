@@ -1,11 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  CalendarClock,
-  CheckCircle2,
-  ChevronLeft,
-  ChevronRight,
+  CalendarDot,
+  CheckCircle,
+  CaretLeft,
+  CaretRight,
   Clock,
-} from 'lucide-react';
+} from '@phosphor-icons/react';
 import { useAppContext } from '../context/AppContext';
 import { EmptyState, StatusBadge, SurfaceCard, cx } from '../components/ui';
 import { toast } from '../lib/toast';
@@ -162,7 +162,7 @@ function TaskCard({
             onClick={() => void onComplete(task.id)}
             className="flex items-center gap-1 rounded-[0.7rem] bg-[var(--surface-muted)] px-2 py-1 text-[10px] font-bold text-[var(--text-secondary)] transition-colors hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-500/15 dark:hover:text-emerald-400"
           >
-            <CheckCircle2 size={12} />
+            <CheckCircle size={12} />
             Completar
           </button>
         )}
@@ -538,7 +538,7 @@ export default function Dashboard() {
                       onClick={() => navigatePeriod(-1)}
                       className="rounded-lg p-1 text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]"
                     >
-                      <ChevronLeft size={16} />
+                      <CaretLeft size={16} />
                     </button>
                   )}
                   <span className="min-w-[140px] text-center text-[13px] font-bold text-[var(--text-primary)]">
@@ -550,7 +550,7 @@ export default function Dashboard() {
                       onClick={() => navigatePeriod(1)}
                       className="rounded-lg p-1 text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]"
                     >
-                      <ChevronRight size={16} />
+                      <CaretRight size={16} />
                     </button>
                   )}
                 </div>
@@ -780,7 +780,7 @@ export default function Dashboard() {
             </div>
           ) : (
             <EmptyState
-              icon={CalendarClock}
+              icon={CalendarDot}
               title="Día libre de entregas"
               description="Aprovecha el tiempo para prospectar nuevas marcas o planificar contenido."
               className="py-10"

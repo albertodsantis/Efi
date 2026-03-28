@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { GoogleGenAI, Type, FunctionDeclaration } from '@google/genai';
-import { Loader2, Mic, MicOff, Send, Sparkles, X } from 'lucide-react';
+import { CircleNotch, Microphone, MicrophoneSlash, PaperPlaneRight, Sparkle, X } from '@phosphor-icons/react';
 import { TaskStatus } from '@shared/domain';
 import { useAppContext } from '../context/AppContext';
 import { StatusBadge, cx } from './ui';
@@ -183,7 +183,7 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
     }
   };
 
-  const handleSend = async () => {
+  const handlePaperPlaneRight = async () => {
     if (!input.trim()) return;
 
     if (!chatRef.current) {
@@ -323,7 +323,7 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
               color: 'var(--accent-foreground)',
             }}
           >
-            <Sparkles size={14} />
+            <Sparkle size={14} />
           </div>
           {isDesktop ? (
             <div className="text-left">
@@ -373,7 +373,7 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
                     color: 'var(--accent-foreground)',
                   }}
                 >
-                  <Sparkles size={16} />
+                  <Sparkle size={16} />
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
@@ -416,7 +416,7 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
                 {isProcessing ? (
                   <div className="flex justify-start">
                     <div className="flex items-center gap-2 rounded-[1rem] rounded-tl-[0.4rem] border border-[color:var(--line-soft)] bg-[color:var(--surface-card)] px-4 py-3 text-[var(--text-secondary)] shadow-[0_12px_24px_-24px_rgba(63,43,33,0.24)]">
-                      <Loader2 size={16} className="animate-spin" />
+                      <CircleNotch size={16} className="animate-spin" />
                       <span className="text-xs font-medium">Tia esta pensando...</span>
                     </div>
                   </div>
@@ -439,7 +439,7 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
                         : 'text-[var(--text-secondary)] hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]',
                     )}
                   >
-                    {isListening ? <Mic size={18} className="animate-pulse" /> : <MicOff size={18} />}
+                    {isListening ? <Microphone size={18} className="animate-pulse" /> : <MicrophoneSlash size={18} />}
                   </button>
                 ) : null}
 
@@ -447,14 +447,14 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
                   type="text"
                   value={input}
                   onChange={(event) => setInput(event.target.value)}
-                  onKeyDown={(event) => event.key === 'Enter' && void handleSend()}
+                  onKeyDown={(event) => event.key === 'Enter' && void handlePaperPlaneRight()}
                   placeholder="Escribe o habla con Tia..."
                   className="flex-1 border-none bg-transparent px-2 text-base sm:text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none"
                 />
 
                 <button
                   type="button"
-                  onClick={() => void handleSend()}
+                  onClick={() => void handlePaperPlaneRight()}
                   disabled={!input.trim() || isProcessing}
                   className="flex h-10 w-10 items-center justify-center rounded-[0.9rem] transition-transform active:scale-95 disabled:opacity-50"
                   style={{
@@ -462,7 +462,7 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
                     color: 'var(--accent-foreground)',
                   }}
                 >
-                  <Send size={16} className="ml-0.5" />
+                  <PaperPlaneRight size={16} className="ml-0.5" />
                 </button>
               </div>
             </div>

@@ -37,7 +37,7 @@ Technical base:
 
 - Tailwind CSS `4.x` (via `@tailwindcss/vite` plugin)
 - CSS tokens for color, typography, radius, and shadow defined in `index.css`
-- `lucide-react` for iconography
+- `@phosphor-icons/react` for iconography (weight="duotone" set globally via `IconContext.Provider` in `main.tsx`)
 - Vite build with `@shared` path alias to `packages/shared`
 
 Introducing another full UI system such as Material UI or Ant Design is not approved.
