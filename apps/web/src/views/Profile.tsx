@@ -19,6 +19,7 @@ import {
 import type { Goal, GoalPriority, GoalStatus, MediaKitMetric, MediaKitOffer, MediaKitProfile, Partner, SocialProfiles, UserProfile } from '@shared';
 import { useAppContext } from '../context/AppContext';
 import { Avatar, Button, SurfaceCard, ModalPanel, cx } from '../components/ui';
+import OverlayModal from '../components/OverlayModal';
 import CustomSelect from '../components/CustomSelect';
 import ImageUpload from '../components/ImageUpload';
 import { appApi } from '../lib/api';
@@ -1371,149 +1372,13 @@ export default function Profile() {
       </div>
 
       {isGoalsModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
-          <div
-            className="relative flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-[1.35rem] border bg-[var(--surface-card-strong)] shadow-[var(--shadow-medium)] [border-color:var(--line-soft)] sm:w-[min(1100px,96vw)]"
-          >
-            <div
-              className="pointer-events-none absolute inset-0"
-              style={{
-                background: `radial-gradient(circle at top left, var(--accent-soft-strong) 0%, rgba(255,255,255,0.2) 38%, transparent 72%)`,
-                opacity: 0.55,
-              }}
-            />
-            <div className="relative border-b px-5 py-5 [border-color:var(--line-soft)] sm:px-6">
-              <div className="flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <h2 className="text-2xl font-extrabold tracking-tight text-[var(--text-primary)]">
-                    Plan Estratégico
-                  </h2>
-                  <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">
-                    Define tus metas clave, proyecciones de ingresos y estado general de tus verticales de negocio.
-                  </p>
-                </div>
-                <button type="button" onClick={handleCancelGoals} className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--surface-muted)] text-[var(--text-secondary)] transition-transform active:scale-95"
-                  aria-label="Cerrar modal"
-                >
-                  <X size={18} />
-                </button>
-              </div>
-            </div>
-            <div className="relative flex-1 overflow-y-auto px-5 py-5 sm:px-6">
-              <p className="mb-4 text-[13px] font-medium leading-relaxed text-[var(--text-secondary)]">
-                <strong className="font-bold text-[var(--text-primary)]">Tip sobre Áreas o Verticales:</strong> Úsalas para categorizar tus distintas líneas de negocio o roles. <span className="opacity-85">Por ejemplo: Creación de contenido, radio, copywriter, host, administrativo.</span>
-              </p>
-              <div className="grid gap-4">
-                {safeArr(profileForm.goals).map((goal: any, index: number) => (
-                  <div key={goal?.id || index} className="relative rounded-[1.2rem] border bg-[var(--surface-card)] p-5 shadow-sm [border-color:var(--line-soft)]">
-                    <div className="mb-4 flex items-center justify-between">
-                      <h4 className="text-[11px] font-extrabold tracking-[0.16em] text-[var(--text-primary)] uppercase">
-                        Meta {index + 1}
-                      </h4>
-                      <button
-                        type="button"
-                        onClick={() => deleteGoal(index)}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-secondary)] transition-all hover:bg-rose-50 hover:text-rose-500"
-                        title="Eliminar objetivo"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-
-                    <div className="grid gap-4 sm:grid-cols-3">
-                      <div className="sm:col-span-1">
-                        <label className={labelClass}>Área / Vertical</label>
-                        <input
-                          value={goal?.area || ''}
-                          onChange={(event) => setGoalField(index, 'area', event.target.value)}
-                          className={cx(fieldClass, 'bg-[var(--surface-muted)]')}
-                          style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                        placeholder=""
-                        />
-                      </div>
-                      <div className="sm:col-span-2">
-                        <label className={labelClass}>Objetivo General</label>
-                        <input
-                          value={goal?.generalGoal || ''}
-                          onChange={(event) => setGoalField(index, 'generalGoal', event.target.value)}
-                          className={cx(fieldClass, 'bg-[var(--surface-muted)]')}
-                          style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                          placeholder=""
-                        />
-                      </div>
-
-                      <div className="sm:col-span-1">
-                        <label className={labelClass}>Métrica de éxito</label>
-                        <input
-                          value={goal?.successMetric || ''}
-                          onChange={(event) => setGoalField(index, 'successMetric', event.target.value)}
-                          className={cx(fieldClass, 'bg-[var(--surface-muted)]')}
-                          style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                          placeholder=""
-                        />
-                      </div>
-                      <div className="sm:col-span-1">
-                        <label className={labelClass}>Meta específica</label>
-                        <input
-                          value={goal?.specificTarget || ''}
-                          onChange={(event) => setGoalField(index, 'specificTarget', event.target.value)}
-                          className={cx(fieldClass, 'bg-[var(--surface-muted)]')}
-                          style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                          placeholder=""
-                        />
-                      </div>
-                      <div className="sm:col-span-1">
-                        <label className={labelClass}>Plazo</label>
-                        <CustomSelect
-                          value={goal?.timeframe || '1 año'}
-                          onChange={(val) => setGoalField(index, 'timeframe', val)}
-                          options={[
-                            { value: '1 año', label: '1 año' },
-                            { value: '2 años', label: '2 años' },
-                            { value: '3 años', label: '3 años' },
-                          ]}
-                          buttonStyle={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                          buttonClassName="font-medium bg-[var(--surface-muted)]"
-                        />
-                      </div>
-
-                      <div className="sm:col-span-1">
-                        <label className={labelClass}>Estado</label>
-                        <CustomSelect
-                          value={goal?.status || 'Pendiente'}
-                          onChange={(val) => setGoalField(index, 'status', val as GoalStatus)}
-                          options={GOAL_STATUSES.map((s) => ({ value: s, label: s }))}
-                          buttonStyle={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                          buttonClassName="font-medium bg-[var(--surface-muted)]"
-                        />
-                      </div>
-                      <div className="sm:col-span-1">
-                        <label className={labelClass}>Prioridad</label>
-                        <CustomSelect
-                          value={goal?.priority || 'Media'}
-                          onChange={(val) => setGoalField(index, 'priority', val as GoalPriority)}
-                          options={GOAL_PRIORITIES.map((s) => ({ value: s, label: s }))}
-                          buttonStyle={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                          buttonClassName="font-medium bg-[var(--surface-muted)]"
-                        />
-                      </div>
-                      <div className="sm:col-span-1">
-                        <label className={labelClass}>Est. Ingresos (USD)</label>
-                        <input
-                          type="number"
-                          value={goal?.revenueEstimation ?? ''}
-                          onChange={(event) => setGoalField(index, 'revenueEstimation', Number(event.target.value))}
-                          className={cx(fieldClass, 'bg-[var(--surface-muted)]')}
-                          style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                          placeholder=""
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="relative border-t px-5 py-4 [border-color:var(--line-soft)] sm:px-6">
+        <OverlayModal onClose={handleCancelGoals}>
+          <ModalPanel
+            title="Plan Estratégico"
+            description="Define tus metas clave, proyecciones de ingresos y estado general de tus verticales de negocio."
+            onClose={handleCancelGoals}
+            size="lg"
+            footer={
               <div className="flex flex-col gap-3">
                 <Button
                   tone="secondary"
@@ -1542,9 +1407,122 @@ export default function Profile() {
                   </Button>
                 </div>
               </div>
+            }
+          >
+            <p className="mb-4 text-[13px] font-medium leading-relaxed text-[var(--text-secondary)]">
+              <strong className="font-bold text-[var(--text-primary)]">Tip sobre Áreas o Verticales:</strong> Úsalas para categorizar tus distintas líneas de negocio o roles. <span className="opacity-85">Por ejemplo: Creación de contenido, radio, copywriter, host, administrativo.</span>
+            </p>
+            <div className="grid gap-4">
+              {safeArr(profileForm.goals).map((goal: any, index: number) => (
+                <div key={goal?.id || index} className="relative rounded-[1.2rem] border bg-[var(--surface-card)] p-5 shadow-sm [border-color:var(--line-soft)]">
+                  <div className="mb-4 flex items-center justify-between">
+                    <h4 className="text-[11px] font-extrabold tracking-[0.16em] text-[var(--text-primary)] uppercase">
+                      Meta {index + 1}
+                    </h4>
+                    <button
+                      type="button"
+                      onClick={() => deleteGoal(index)}
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-secondary)] transition-all hover:bg-rose-50 hover:text-rose-500"
+                      title="Eliminar objetivo"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    <div className="sm:col-span-1">
+                      <label className={labelClass}>Área / Vertical</label>
+                      <input
+                        value={goal?.area || ''}
+                        onChange={(event) => setGoalField(index, 'area', event.target.value)}
+                        className={cx(fieldClass, 'bg-[var(--surface-muted)]')}
+                        style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
+                        placeholder=""
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className={labelClass}>Objetivo General</label>
+                      <input
+                        value={goal?.generalGoal || ''}
+                        onChange={(event) => setGoalField(index, 'generalGoal', event.target.value)}
+                        className={cx(fieldClass, 'bg-[var(--surface-muted)]')}
+                        style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
+                        placeholder=""
+                      />
+                    </div>
+
+                    <div className="sm:col-span-1">
+                      <label className={labelClass}>Métrica de éxito</label>
+                      <input
+                        value={goal?.successMetric || ''}
+                        onChange={(event) => setGoalField(index, 'successMetric', event.target.value)}
+                        className={cx(fieldClass, 'bg-[var(--surface-muted)]')}
+                        style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
+                        placeholder=""
+                      />
+                    </div>
+                    <div className="sm:col-span-1">
+                      <label className={labelClass}>Meta específica</label>
+                      <input
+                        value={goal?.specificTarget || ''}
+                        onChange={(event) => setGoalField(index, 'specificTarget', event.target.value)}
+                        className={cx(fieldClass, 'bg-[var(--surface-muted)]')}
+                        style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
+                        placeholder=""
+                      />
+                    </div>
+                    <div className="sm:col-span-1">
+                      <label className={labelClass}>Plazo</label>
+                      <CustomSelect
+                        value={goal?.timeframe || '1 año'}
+                        onChange={(val) => setGoalField(index, 'timeframe', val)}
+                        options={[
+                          { value: '1 año', label: '1 año' },
+                          { value: '2 años', label: '2 años' },
+                          { value: '3 años', label: '3 años' },
+                        ]}
+                        buttonStyle={{ '--tw-ring-color': accentHex } as React.CSSProperties}
+                        buttonClassName="font-medium bg-[var(--surface-muted)]"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-1">
+                      <label className={labelClass}>Estado</label>
+                      <CustomSelect
+                        value={goal?.status || 'Pendiente'}
+                        onChange={(val) => setGoalField(index, 'status', val as GoalStatus)}
+                        options={GOAL_STATUSES.map((s) => ({ value: s, label: s }))}
+                        buttonStyle={{ '--tw-ring-color': accentHex } as React.CSSProperties}
+                        buttonClassName="font-medium bg-[var(--surface-muted)]"
+                      />
+                    </div>
+                    <div className="sm:col-span-1">
+                      <label className={labelClass}>Prioridad</label>
+                      <CustomSelect
+                        value={goal?.priority || 'Media'}
+                        onChange={(val) => setGoalField(index, 'priority', val as GoalPriority)}
+                        options={GOAL_PRIORITIES.map((s) => ({ value: s, label: s }))}
+                        buttonStyle={{ '--tw-ring-color': accentHex } as React.CSSProperties}
+                        buttonClassName="font-medium bg-[var(--surface-muted)]"
+                      />
+                    </div>
+                    <div className="sm:col-span-1">
+                      <label className={labelClass}>Est. Ingresos (USD)</label>
+                      <input
+                        type="number"
+                        value={goal?.revenueEstimation ?? ''}
+                        onChange={(event) => setGoalField(index, 'revenueEstimation', Number(event.target.value))}
+                        className={cx(fieldClass, 'bg-[var(--surface-muted)]')}
+                        style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
+                        placeholder=""
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
-        </div>
+          </ModalPanel>
+        </OverlayModal>
       )}
       </div>
     </div>
