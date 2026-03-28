@@ -74,7 +74,7 @@ const STATUS_TONES: Record<Partner['status'], React.ComponentProps<typeof Status
 };
 
 const fieldClass =
-  'w-full rounded-[1rem] border border-[color:var(--line-soft)] bg-[var(--surface-card-strong)] px-4 py-3 text-sm font-medium text-[var(--text-primary)] transition-all placeholder:text-[var(--text-secondary)]/70 focus:outline-none focus:ring-2';
+  'w-full rounded-[1rem] border border-[color:var(--line-soft)] bg-[var(--surface-card-strong)] px-4 py-3 text-base sm:text-sm font-medium text-[var(--text-primary)] transition-all placeholder:text-[var(--text-secondary)]/70 focus:outline-none focus:ring-2';
 
 const statusLabel = (status: Partner['status']) => STATUS_LABELS[status] ?? status;
 const statusTone = (status: Partner['status']) => STATUS_TONES[status] ?? 'neutral';
@@ -388,7 +388,7 @@ export default function Directory() {
               placeholder="Buscar marcas o contactos"
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              className={cx(fieldClass, 'py-4 pl-14 pr-5 text-[15px]')}
+              className={cx(fieldClass, 'py-4 pl-14 pr-5 text-base sm:text-[15px]')}
               style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
             />
           </div>

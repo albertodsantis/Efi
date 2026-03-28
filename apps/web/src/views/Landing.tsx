@@ -332,7 +332,7 @@ export default function Landing({
                         placeholder="Tu nombre"
                         required={!isLogin}
                         autoComplete="name"
-                        className="w-full rounded-[0.85rem] border bg-[var(--surface-card)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/40 transition-colors focus:bg-[var(--surface-card-strong)] [border-color:var(--line-soft)]"
+                        className="w-full rounded-[0.85rem] border bg-[var(--surface-card)] px-4 py-3 text-base sm:text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/40 transition-colors focus:bg-[var(--surface-card-strong)] [border-color:var(--line-soft)]"
                       />
                     </div>
                   ) : null}
@@ -352,10 +352,9 @@ export default function Landing({
                       placeholder="tu@email.com"
                       required
                       autoComplete="email"
-                      className="w-full rounded-[0.85rem] border bg-[var(--surface-card)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/40 transition-colors focus:bg-[var(--surface-card-strong)] [border-color:var(--line-soft)]"
+                      className="w-full rounded-[0.85rem] border bg-[var(--surface-card)] px-4 py-3 text-base sm:text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/40 transition-colors focus:bg-[var(--surface-card-strong)] [border-color:var(--line-soft)]"
                     />
                   </div>
-
                   <div>
                     <label
                       htmlFor="auth-password"
@@ -373,12 +372,11 @@ export default function Landing({
                         required
                         minLength={isLogin ? undefined : 6}
                         autoComplete={isLogin ? 'current-password' : 'new-password'}
-                        className="w-full rounded-[0.85rem] border bg-[var(--surface-card)] px-4 py-3 pr-12 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/40 transition-colors focus:bg-[var(--surface-card-strong)] [border-color:var(--line-soft)]"
+                        className="w-full rounded-[0.85rem] border bg-[var(--surface-card)] px-4 py-3 pr-12 text-base sm:text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/40 transition-colors focus:bg-[var(--surface-card-strong)] [border-color:var(--line-soft)]"
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        tabIndex={-1}
                         className="absolute top-1/2 right-3 -translate-y-1/2 p-1 text-[var(--text-secondary)]/50 transition-colors hover:text-[var(--text-secondary)]"
                       >
                         {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}

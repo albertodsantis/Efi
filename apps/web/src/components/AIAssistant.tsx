@@ -449,7 +449,7 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
                   onChange={(event) => setInput(event.target.value)}
                   onKeyDown={(event) => event.key === 'Enter' && void handleSend()}
                   placeholder="Escribe o habla con Tia..."
-                  className="flex-1 border-none bg-transparent px-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none"
+                  className="flex-1 border-none bg-transparent px-2 text-base sm:text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none"
                 />
 
                 <button
