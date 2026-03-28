@@ -53,7 +53,7 @@ export default function CustomSelect({
         onClick={() => setIsOpen(!isOpen)}
         aria-label={ariaLabel}
         className={cx(
-          'flex w-full items-center justify-between appearance-none rounded-[1rem] border bg-[var(--surface-card-strong)] px-4 py-3 text-sm font-bold text-[var(--text-primary)] transition-all focus:outline-none focus:ring-2 disabled:opacity-50 [border-color:var(--line-soft)]',
+          'flex w-full items-center justify-between appearance-none rounded-[1rem] border bg-[var(--surface-card-strong)] px-4 py-3 text-base sm:text-sm font-bold text-[var(--text-primary)] transition-all focus:outline-none focus:ring-2 disabled:opacity-50 [border-color:var(--line-soft)]',
           buttonClassName,
         )}
         style={buttonStyle}

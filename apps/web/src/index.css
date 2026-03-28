@@ -119,12 +119,15 @@ textarea {
   font: inherit;
 }
 
-/* Prevent iOS Safari auto-zoom on input focus (triggers when font-size < 16px) */
-@media (hover: none) and (pointer: coarse) {
+/* Prevent auto-zoom on input focus across all mobile browsers (iOS Safari, Chrome Mobile,
+   Android WebView). Triggered when font-size < 16px. Uses max-width rather than pointer/hover
+   media features for universal browser support. !important ensures Tailwind utilities cannot
+   override this rule. Does not disable manual pinch-to-zoom — accessibility preserved. */
+@media screen and (max-width: 767px) {
   input,
   select,
   textarea {
-    font-size: 16px;
+    font-size: 16px !important;
   }
 }
 
