@@ -13,7 +13,6 @@ import type { SessionUser } from '@shared';
 import { authApi, ApiError } from '../lib/api';
 import { supabase } from '../lib/supabase';
 import { cx } from '../components/ui';
-import RoadmapButton from '../components/RoadmapButton';
 
 type AuthMode = 'login' | 'register';
 
@@ -167,12 +166,11 @@ export default function Landing({
               <rect x="26" y="18" width="12" height="28" rx="6" fill="url(#logo-grad)" opacity="0.65"/>
               <path d="M10,24 C10,15 18,9 32,9 C46,9 54,15 54,24 C54,27 48,28 40,26 C36,25 34,22 32,22 C30,22 28,25 24,26 C16,28 10,27 10,24Z" fill="url(#logo-grad)"/>
             </svg>
-            <span className="text-lg font-extrabold tracking-tight text-[var(--text-primary)]">
+            <span className="text-lg font-bold tracking-tight text-[var(--text-primary)]">
               Tia
             </span>
           </div>
           <div className="flex items-center gap-3">
-            <RoadmapButton />
             <a
               href="#login"
               className="rounded-full border px-4 py-2 text-xs font-bold transition-colors hover:bg-[var(--surface-card)] [border-color:var(--line-soft)]"

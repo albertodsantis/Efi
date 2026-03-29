@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ChartBar, CalendarDots, Image, Rocket, Sparkle, X } from '@phosphor-icons/react';
+import { useAppContext } from '../context/AppContext';
 
 const BRAND_GOLD = '#FCAF45';
 const BRAND_ORANGE = '#F56040';
@@ -35,10 +36,8 @@ const ROADMAP_ITEMS = [
 
 export default function RoadmapButton({ compact }: { compact?: boolean }) {
   const [open, setOpen] = useState(false);
-
-  // Usamos los colores por defecto de la marca para que funcione fuera del AppProvider
-  const accentColor = BRAND_ORANGE;
-  const accentGradient = `linear-gradient(135deg, ${BRAND_ORANGE}, ${BRAND_PINK}, ${BRAND_PURPLE})`;
+  
+  const { accentColor, accentGradient } = useAppContext();
 
   return (
     <div className="relative">
@@ -48,24 +47,14 @@ export default function RoadmapButton({ compact }: { compact?: boolean }) {
         className="group relative flex items-center gap-2 overflow-hidden rounded-full py-2 pl-3 pr-4 text-xs font-extrabold transition-all hover:scale-105 hover:shadow-lg active:scale-[0.97]"
         style={{
           background: accentGradient,
-          color: '#ffffff',
+          color: 'var(--accent-foreground)',
           boxShadow: `0 4px 20px -6px ${accentColor}90`,
           ...(compact ? { padding: '0.375rem 0.75rem 0.375rem 0.625rem', fontSize: '11px' } : {}),
         }}
       >
         <span className="pointer-events-none absolute inset-0 bg-white/0 transition-colors group-hover:bg-white/10" />
         <Rocket size={compact ? 12 : 13} />
-        Lo que se viene
-        <span className="relative flex h-2 w-2">
-          <span
-            className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"
-            style={{ backgroundColor: accentColor }}
-          />
-          <span
-            className="relative inline-flex h-2 w-2 rounded-full"
-            style={{ backgroundColor: accentColor }}
-          />
-        </span>
+        Lo que viene
       </button>
 
       {open && (
@@ -82,7 +71,7 @@ export default function RoadmapButton({ compact }: { compact?: boolean }) {
                   <div className="flex items-center gap-2">
                     <div
                       className="flex h-7 w-7 items-center justify-center rounded-lg"
-                      style={{ background: accentGradient, color: '#ffffff' }}
+                      style={{ background: accentGradient, color: 'var(--accent-foreground)' }}
                     >
                       <Rocket size={13} />
                     </div>

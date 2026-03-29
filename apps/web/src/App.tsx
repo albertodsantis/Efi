@@ -241,7 +241,6 @@ const DesktopSidebar = ({
         />
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-bold text-[var(--text-primary)]">{profileName}</p>
-          <p className="mt-1 text-xs text-[var(--text-secondary)]">Workspace personal</p>
         </div>
         <button
           type="button"
