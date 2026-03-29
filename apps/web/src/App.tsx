@@ -249,7 +249,7 @@ const DesktopSidebar = ({
           title="Cerrar sesion"
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-card-strong)] hover:text-[var(--text-primary)]"
         >
-          <SignOut size={16} />
+          <SignOut size={16} weight="regular" />
         </button>
       </div>
     </div>

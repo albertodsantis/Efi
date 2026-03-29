@@ -396,7 +396,7 @@ export default function Directory() {
           <SurfaceCard className="p-3 sm:p-4">
             <div className="mb-3 px-2 pt-1">
               <Button accentColor={accentGradient} onClick={() => setIsAddingPartner(true)} className="w-full py-2.5 text-xs">
-                <Plus size={14} />
+                <Plus size={14} weight="regular" />
                 Añadir
               </Button>
             </div>
@@ -449,7 +449,7 @@ export default function Directory() {
                   className="border-dashed"
                   action={
                     <Button accentColor={accentGradient} onClick={() => setIsAddingPartner(true)}>
-                      <Plus size={16} />
+                      <Plus size={16} weight="regular" />
                       Añadir marca
                     </Button>
                   }
@@ -603,7 +603,7 @@ export default function Directory() {
                   <span className="hidden text-[10px] font-bold uppercase tracking-[0.24em] text-[var(--text-secondary)]/70 sm:inline-block">Contactos</span>
                 </div>
                 <Button accentColor={accentGradient} onClick={() => setAddingContactTo(activePartner.id)}>
-                  <Plus size={16} />
+                  <Plus size={16} weight="regular" />
                   Añadir contacto
                 </Button>
               </div>
@@ -669,7 +669,7 @@ export default function Directory() {
                     description="Añade el primer contacto para empezar a redactar mensajes y hacer seguimiento."
                     action={
                       <Button accentColor={accentGradient} onClick={() => setAddingContactTo(activePartner.id)}>
-                        <Plus size={16} />
+                        <Plus size={16} weight="regular" />
                         Añadir contacto
                       </Button>
                     }

@@ -964,7 +964,7 @@ export default function Profile() {
                 </div>
               ))}
               <button type="button" onClick={() => addStringListItem('aboutParagraphs')} className="mt-2 flex items-center gap-1.5 text-sm font-bold text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]">
-                <Plus size={14} /> Añadir párrafo
+                <Plus size={14} weight="regular" /> Añadir párrafo
               </button>
             </div>
             <div>
@@ -986,7 +986,7 @@ export default function Profile() {
                 ))}
               </div>
               <button type="button" onClick={() => addStringListItem('topicTags')} className="mt-3 flex items-center gap-1.5 text-sm font-bold text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]">
-                <Plus size={14} /> Añadir tag
+                <Plus size={14} weight="regular" /> Añadir tag
               </button>
             </div>
           </div>
@@ -1038,7 +1038,7 @@ export default function Profile() {
                 className="flex min-h-[120px] items-center justify-center rounded-[1rem] border border-dashed border-[var(--line-soft)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]"
               >
                 <div className="flex flex-col items-center gap-2">
-                  <Plus size={20} />
+                  <Plus size={20} weight="regular" />
                   <span className="text-sm font-bold">Añadir métrica</span>
                 </div>
               </button>
@@ -1084,7 +1084,7 @@ export default function Profile() {
               ))}
               <button type="button" onClick={() => addMetric('audienceGender')} className="flex min-h-[120px] items-center justify-center rounded-[1rem] border border-dashed border-[var(--line-soft)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]">
                 <div className="flex flex-col items-center gap-2">
-                  <Plus size={16} />
+                  <Plus size={16} weight="regular" />
                   <span className="text-sm font-bold">Añadir segmento</span>
                 </div>
               </button>
@@ -1130,7 +1130,7 @@ export default function Profile() {
               ))}
               <button type="button" onClick={() => addMetric('ageDistribution')} className="flex min-h-[120px] items-center justify-center rounded-[1rem] border border-dashed border-[var(--line-soft)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]">
                 <div className="flex flex-col items-center gap-2">
-                  <Plus size={16} />
+                  <Plus size={16} weight="regular" />
                   <span className="text-sm font-bold">Añadir rango</span>
                 </div>
               </button>
@@ -1176,7 +1176,7 @@ export default function Profile() {
               ))}
               <button type="button" onClick={() => addMetric('topCountries')} className="flex min-h-[120px] items-center justify-center rounded-[1rem] border border-dashed border-[var(--line-soft)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]">
                 <div className="flex flex-col items-center gap-2">
-                  <Plus size={16} />
+                  <Plus size={16} weight="regular" />
                   <span className="text-sm font-bold">Añadir país</span>
                 </div>
               </button>
@@ -1210,7 +1210,7 @@ export default function Profile() {
             ))}
           </div>
           <button type="button" onClick={() => addStringListItem('portfolioImages')} className="mt-3 flex items-center gap-1.5 text-sm font-bold text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]">
-            <Plus size={14} /> Añadir imagen
+            <Plus size={14} weight="regular" /> Añadir imagen
           </button>
         </SurfaceCard>
 
@@ -1262,7 +1262,7 @@ export default function Profile() {
             ))}
           </div>
           <button type="button" onClick={() => addStringListItem('trustedBrands')} className="mt-3 flex items-center gap-1.5 text-sm font-bold text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]">
-            <Plus size={14} /> Añadir marca
+            <Plus size={14} weight="regular" /> Añadir marca
           </button>
         </SurfaceCard>
 
@@ -1327,7 +1327,7 @@ export default function Profile() {
                 </div>
               ))}
               <button type="button" onClick={addOffering} className="flex min-h-[60px] items-center justify-center gap-2 rounded-[1rem] border border-dashed border-[var(--line-soft)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]">
-                <Plus size={16} /> <span className="text-sm font-bold">Añadir oferta</span>
+                <Plus size={16} weight="regular" /> <span className="text-sm font-bold">Añadir oferta</span>
               </button>
             </div>
           </div>

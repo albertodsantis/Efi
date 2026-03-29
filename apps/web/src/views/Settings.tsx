@@ -301,7 +301,7 @@ export default function Settings() {
               }}
               className="w-full justify-center"
             >
-              <Plus size={16} />
+              <Plus size={16} weight="regular" />
               Nueva plantilla
             </Button>
 
@@ -381,7 +381,7 @@ export default function Settings() {
                     setNewTemplate({ name: '', subject: '', body: '' });
                     setIsAddingTemplate(true);
                   }}>
-                    <Plus size={16} />
+                    <Plus size={16} weight="regular" />
                     Crear plantilla
                   </Button>
                 }

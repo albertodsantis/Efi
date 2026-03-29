@@ -1031,7 +1031,7 @@ export default function Pipeline() {
               Actualizar Calendar
             </Button>
             <Button accentColor={accentGradient} onClick={openCreate} className="flex-1 sm:flex-none">
-              <Plus size={16} />
+              <Plus size={16} weight="regular" />
               Nueva tarea
             </Button>
           </div>
@@ -1182,7 +1182,7 @@ export default function Pipeline() {
             description="Añade tu primera entrega para empezar a construir el pipeline."
             action={
               <Button accentColor={accentGradient} onClick={openCreate}>
-                <Plus size={16} />
+                <Plus size={16} weight="regular" />
                 Crear tarea
               </Button>
             }
