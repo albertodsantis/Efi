@@ -433,7 +433,7 @@ export default function Settings() {
 
           <div className="mt-5 space-y-3">
             <SettingRow
-              icon={SignOut}
+              icon={(props: any) => <SignOut {...props} weight="regular" />}
               title="Cerrar sesion"
               description="Cierra tu sesion actual en este dispositivo."
               onClick={onLogout}

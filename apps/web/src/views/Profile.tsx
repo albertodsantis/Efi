@@ -793,7 +793,7 @@ export default function Profile() {
                 {configuredStats}
               </p>
               <p className="mt-1 text-xs leading-5 text-[var(--text-secondary)]">
-                Metricas y distribuciones con contenido cargado.
+                Metricas cargadas.
               </p>
             </div>
             <div className="rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-card-strong)] px-4 py-4">
@@ -809,13 +809,24 @@ export default function Profile() {
             </div>
             <div className="rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-card-strong)] px-4 py-4">
               <p className="text-[10px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/80 uppercase">
-                Marcas y tarifas
+                Marcas
               </p>
               <p className="mt-2 text-2xl font-extrabold tracking-tight text-[var(--text-primary)]">
-                {configuredBrands + configuredOffers}
+                {configuredBrands}
               </p>
               <p className="mt-1 text-xs leading-5 text-[var(--text-secondary)]">
-                Items cargados entre ofertas y marcas.
+                Nombres de marcas cargados.
+              </p>
+            </div>
+            <div className="rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-card-strong)] px-4 py-4">
+              <p className="text-[10px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/80 uppercase">
+                Ofertas de Servicios
+              </p>
+              <p className="mt-2 text-2xl font-extrabold tracking-tight text-[var(--text-primary)]">
+                {configuredOffers}
+              </p>
+              <p className="mt-1 text-xs leading-5 text-[var(--text-secondary)]">
+                Tarifas y servicios cargados.
               </p>
             </div>
           </div>
@@ -859,13 +870,13 @@ export default function Profile() {
               />
             </div>
             <div>
-              <label className={labelClass}>Periodo visible</label>
+              <label className={labelClass}>Título</label>
               <input
                 value={mediaKit.periodLabel || ''}
                 onChange={(event) => setMediaKitField('periodLabel', event.target.value)}
                 className={fieldClass}
                 style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                placeholder="Media Kit - Marzo 2026"
+                placeholder=""
               />
             </div>
             <div className="sm:col-span-2">
@@ -1028,7 +1039,7 @@ export default function Profile() {
                     }
                     className={fieldClass}
                     style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                    placeholder="22K"
+                    placeholder=""
                   />
                 </div>
               ))}
@@ -1078,7 +1089,7 @@ export default function Profile() {
                     }
                     className={fieldClass}
                     style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                    placeholder=""
+                    placeholder="%"
                   />
                 </div>
               ))}
@@ -1124,7 +1135,7 @@ export default function Profile() {
                     }
                     className={fieldClass}
                     style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                    placeholder=""
+                    placeholder="%"
                   />
                 </div>
               ))}
@@ -1170,7 +1181,7 @@ export default function Profile() {
                     }
                     className={fieldClass}
                     style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                    placeholder=""
+                    placeholder="%"
                   />
                 </div>
               ))}

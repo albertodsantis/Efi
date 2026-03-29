@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ChartBar, CalendarDots, Image, Rocket, Sparkle, X } from '@phosphor-icons/react';
+import { useAppContext } from '../context/AppContext';
 
 const BRAND_GOLD = '#FCAF45';
 const BRAND_ORANGE = '#F56040';
@@ -35,16 +36,18 @@ const ROADMAP_ITEMS = [
 
 export default function RoadmapButton({ compact }: { compact?: boolean }) {
   const [open, setOpen] = useState(false);
+  const { accentGradient, accentColor } = useAppContext();
 
   return (
     <div className="relative">
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="group relative flex items-center gap-2 overflow-hidden rounded-full py-2 pl-3 pr-4 text-xs font-extrabold text-white transition-all hover:scale-105 hover:shadow-lg active:scale-[0.97]"
+        className="group relative flex items-center gap-2 overflow-hidden rounded-full py-2 pl-3 pr-4 text-xs font-extrabold transition-all hover:scale-105 hover:shadow-lg active:scale-[0.97]"
         style={{
-          background: `linear-gradient(135deg, ${BRAND_ORANGE}, ${BRAND_PINK}, ${BRAND_PURPLE})`,
-          boxShadow: `0 4px 20px -6px ${BRAND_PINK}90`,
+          background: accentGradient,
+          color: 'var(--accent-foreground)',
+          boxShadow: `0 4px 20px -6px ${accentColor}90`,
           ...(compact ? { padding: '0.375rem 0.75rem 0.375rem 0.625rem', fontSize: '11px' } : {}),
         }}
       >
@@ -54,11 +57,11 @@ export default function RoadmapButton({ compact }: { compact?: boolean }) {
         <span className="relative flex h-2 w-2">
           <span
             className="absolute inline-flex h-full w-full animate-ping rounded-full opacity-60"
-            style={{ backgroundColor: BRAND_GOLD }}
+            style={{ backgroundColor: accentColor }}
           />
           <span
             className="relative inline-flex h-2 w-2 rounded-full"
-            style={{ backgroundColor: BRAND_GOLD }}
+            style={{ backgroundColor: accentColor }}
           />
         </span>
       </button>
@@ -71,25 +74,21 @@ export default function RoadmapButton({ compact }: { compact?: boolean }) {
               {/* Header */}
               <div
                 className="relative px-5 pb-3 pt-5"
-                style={{
-                  background: `linear-gradient(135deg, ${BRAND_ORANGE}15, ${BRAND_PINK}12, ${BRAND_PURPLE}10)`,
-                }}
+                style={{ background: `linear-gradient(135deg, ${accentColor}15, ${accentColor}12, ${accentColor}10)` }}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div
                       className="flex h-7 w-7 items-center justify-center rounded-lg"
-                      style={{
-                        background: `linear-gradient(135deg, ${BRAND_ORANGE}, ${BRAND_PINK})`,
-                      }}
+                      style={{ background: accentGradient, color: 'var(--accent-foreground)' }}
                     >
-                      <Rocket size={13} color="#fff" />
+                      <Rocket size={13} />
                     </div>
                     <div>
                       <p className="text-sm font-extrabold text-[var(--text-primary)]">Roadmap</p>
                       <p
                         className="text-[10px] font-bold tracking-[0.14em] uppercase"
-                        style={{ color: BRAND_ORANGE }}
+                        style={{ color: accentColor }}
                       >
                         Beta
                       </p>
@@ -131,16 +130,6 @@ export default function RoadmapButton({ compact }: { compact?: boolean }) {
                 })}
               </div>
 
-              {/* Footer */}
-              <div
-                className="mx-5 mb-4 mt-1 rounded-xl px-3.5 py-3"
-                style={{ backgroundColor: `${BRAND_GOLD}12` }}
-              >
-                <p className="text-xs font-bold leading-5 text-[var(--text-secondary)]">
-                  <span style={{ color: BRAND_ORANGE }}>Y tus sugerencias</span> — estamos
-                  construyendo Tia contigo. Cada idea cuenta.
-                </p>
-              </div>
             </div>
           </div>
         </>
