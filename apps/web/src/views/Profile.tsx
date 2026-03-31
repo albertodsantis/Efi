@@ -683,24 +683,28 @@ export default function Profile() {
 
   return (
     <div className="relative">
-      {saveStatus !== 'idle' && (
-        <div className="sticky top-0 z-30 flex justify-end px-4 py-2 lg:px-8">
-          <div className="rounded-full border border-[var(--line-soft)] bg-[var(--surface-card-strong)]/95 px-3 py-1.5 shadow-sm backdrop-blur-sm">
-            {saveStatus === 'saving' && (
-              <span className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-secondary)] animate-pulse">
-                <CircleNotch size={13} className="animate-spin" />
-                Guardando...
-              </span>
-            )}
-            {saveStatus === 'saved' && (
-              <span className="flex items-center gap-1.5 text-xs font-semibold text-emerald-500">
-                <CheckCircle size={13} />
-                Guardado
-              </span>
-            )}
-          </div>
+      <div
+        className={cx(
+          'pointer-events-none fixed bottom-[calc(env(safe-area-inset-bottom,0px)+5.5rem)] left-1/2 z-150 -translate-x-1/2 lg:bottom-6',
+          'transition-all duration-300',
+          saveStatus !== 'idle' ? 'translate-y-0 opacity-100' : 'translate-y-3 opacity-0',
+        )}
+      >
+        <div className="rounded-full border border-(--line-soft) bg-(--surface-card-strong)/95 px-4 py-2 shadow-(--shadow-floating) backdrop-blur-md">
+          {saveStatus === 'saving' && (
+            <span className="flex items-center gap-2 text-xs font-semibold text-(--text-secondary) animate-pulse">
+              <CircleNotch size={13} className="animate-spin" />
+              Guardando...
+            </span>
+          )}
+          {saveStatus === 'saved' && (
+            <span className="flex items-center gap-2 text-xs font-semibold text-emerald-500 dark:text-emerald-300">
+              <CheckCircle size={13} />
+              Guardado
+            </span>
+          )}
         </div>
-      )}
+      </div>
       <div className="space-y-5 p-4 pb-6 lg:space-y-6 lg:px-8 lg:pt-4 lg:pb-8">
         <SurfaceCard className="relative overflow-hidden p-6 lg:p-7">
         <div
