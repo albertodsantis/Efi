@@ -492,6 +492,13 @@ const MainLayout = () => {
           >
             Reintentar
           </button>
+          <button
+            type="button"
+            onClick={onLogout}
+            className="mt-3 w-full rounded-2xl py-3.5 text-sm font-bold text-(--text-secondary) hover:text-(--text-primary) transition-colors"
+          >
+            Cerrar sesión
+          </button>
         </SurfaceCard>
       </div>
     );
@@ -712,6 +719,17 @@ export default function App() {
     setSessionUser(null);
     setAuthPhase('unauthenticated');
   };
+
+  useEffect(() => {
+    if (authPhase !== 'authenticated') return;
+    const handler = () => {
+      authApi.logout().catch(() => {});
+      setSessionUser(null);
+      setAuthPhase('unauthenticated');
+    };
+    window.addEventListener('tia:unauthorized', handler);
+    return () => window.removeEventListener('tia:unauthorized', handler);
+  }, [authPhase]);
 
   if (authPhase === 'checking') {
     return (
