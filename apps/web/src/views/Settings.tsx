@@ -303,7 +303,7 @@ export default function Settings() {
               Nueva plantilla
             </Button>
 
-            <div className="rounded-[1rem] border border-slate-200/70 bg-[var(--surface-card-strong)] p-4 dark:border-slate-700/60">
+            <div className="pt-2">
               <p className="text-[10px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
                 Variables disponibles
               </p>
