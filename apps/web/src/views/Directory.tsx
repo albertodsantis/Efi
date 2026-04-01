@@ -732,7 +732,7 @@ export default function Directory() {
                       }} options={PARTNERSHIP_TYPES.map(s => ({ value: s, label: s }))} buttonStyle={{ '--tw-ring-color': accentHex } as React.CSSProperties} buttonClassName="font-medium bg-[var(--surface-card)]" />
                     </div>
                     {(editingPartner.partnershipType || 'Por definir') !== 'Por definir' && (
-                      <div className={cx('grid min-w-0 gap-4', ((editingPartner.partnershipType || 'Por definir') === 'Permanente' || (editingPartner.partnershipType || 'Por definir') === 'One Time') ? 'grid-cols-1' : 'grid-cols-2')}>
+                      <div className={cx('grid min-w-0 gap-4', ((editingPartner.partnershipType || 'Por definir') === 'Permanente' || (editingPartner.partnershipType || 'Por definir') === 'One Time') ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2')}>
                         <div className="min-w-0">
                           <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
                             <CalendarDots size={14} />
@@ -829,7 +829,7 @@ export default function Directory() {
                       }} options={PARTNERSHIP_TYPES.map(s => ({ value: s, label: s }))} buttonStyle={{ '--tw-ring-color': accentHex } as React.CSSProperties} buttonClassName="font-medium bg-[var(--surface-card)]" />
                     </div>
                     {newPartner.partnershipType !== 'Por definir' && (
-                      <div className={cx('grid min-w-0 gap-4', (newPartner.partnershipType === 'Permanente' || newPartner.partnershipType === 'One Time') ? 'grid-cols-1' : 'grid-cols-2')}>
+                      <div className={cx('grid min-w-0 gap-4', (newPartner.partnershipType === 'Permanente' || newPartner.partnershipType === 'One Time') ? 'grid-cols-1' : 'grid-cols-1 sm:grid-cols-2')}>
                         <div className="min-w-0">
                           <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
                             <CalendarDots size={14} />
