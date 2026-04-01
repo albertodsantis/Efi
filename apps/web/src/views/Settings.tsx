@@ -167,121 +167,12 @@ export default function Settings() {
   return (
     <div className="space-y-5 p-4 pb-6 lg:space-y-6 lg:px-8 lg:pt-4 lg:pb-8">
       <SurfaceCard className="overflow-hidden p-0">
-        <div className="grid xl:grid-cols-[minmax(0,0.94fr)_minmax(0,1.06fr)]">
-          <div className="p-6 lg:p-7">
-            <button
-              type="button"
-              onClick={() => setIsAccentPaletteOpen((current) => !current)}
-              className="flex w-full items-center justify-between gap-4 text-left"
-              aria-expanded={isAccentPaletteOpen}
-            >
-              <div className="flex items-center gap-3">
-                <span
-                  className="block h-11 w-11 rounded-[0.9rem] border-4 border-white shadow-sm dark:border-slate-700"
-                  style={{ background: isGradientAccent(activeAccent.value) ? (getGradientCss(activeAccent.value) || activeAccent.value) : activeAccent.value }}
-                />
-                <div>
-                  <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                    Paleta de acento
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                    Actual: {activeAccent.name}.
-                  </p>
-                </div>
-              </div>
-
-              <div className="text-right">
-                <p className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
-                  {isAccentPaletteOpen ? 'Ocultar' : 'Cambiar'}
-                </p>
-                <CaretDown
-                  size={18}
-                  className={cx(
-                    'ml-auto mt-2 text-slate-400 transition-transform dark:text-slate-500',
-                    isAccentPaletteOpen ? 'rotate-180' : '',
-                  )}
-                />
-              </div>
-            </button>
-
-            {isAccentPaletteOpen ? (
-              <div className="mt-4 grid grid-cols-4 gap-3 min-[390px]:grid-cols-5">
-                {ACCENT_OPTIONS.map((option) => {
-                  const isSelected = option.value.toLowerCase() === accentColor.toLowerCase();
-
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      aria-label={`Seleccionar ${option.name}`}
-                      title={option.name}
-                      onClick={() => {
-                        void setAccentColor(option.value);
-                        setIsAccentPaletteOpen(false);
-                      }}
-                      className="flex items-center justify-center py-1 transition-transform active:scale-95"
-                    >
-                      <span
-                        className={cx(
-                          'block h-11 w-11 rounded-[0.9rem] border-4 border-white shadow-sm transition-all dark:border-slate-700',
-                          isSelected ? 'scale-110 ring-2 ring-slate-900/20 dark:ring-white/20' : 'hover:scale-105',
-                        )}
-                        style={{ background: isGradientAccent(option.value) ? (getGradientCss(option.value) || option.value) : option.value }}
-                      />
-                    </button>
-                  );
-                })}
-              </div>
-            ) : null}
-
-            <div className="mt-5 border-t border-slate-200/70 pt-3 dark:border-slate-700/60">
-              <SettingRow
-                icon={theme === 'dark' ? Moon : Sun}
-                title="Modo oscuro"
-                description="Cambia la iluminacion general del workspace."
-                onClick={() => void setTheme(theme === 'dark' ? 'light' : 'dark')}
-                trailing={<ToggleSwitch checked={theme === 'dark'} accentColor={accentGradient} />}
-                className="px-0 py-3"
-              />
-            </div>
-          </div>
-
-          <div className="border-t border-slate-200/70 p-6 xl:border-t-0 xl:border-l lg:p-7 dark:border-slate-700/60">
-            <div className="space-y-1">
-              <SettingRow
-                icon={Bell}
-                title="Notificaciones push"
-                description="Recibe avisos cuando haya entregas cercanas o cambios relevantes."
-                onClick={() => void toggleNotifications()}
-                trailing={<ToggleSwitch checked={profile.notificationsEnabled} accentColor={accentGradient} />}
-                className="px-0 py-3"
-              />
-              <SettingRow
-                icon={CalendarBlank}
-                title="Sincronizacion con Calendar"
-                description="Proximamente. La integracion con Google Calendar estara disponible en una version futura."
-                trailing={<ToggleSwitch checked={false} accentColor={accentGradient} disabled />}
-                className="cursor-not-allowed px-0 py-3 opacity-60"
-              />
-              <SettingRow
-                icon={ShieldCheck}
-                title="Privacidad y seguridad"
-                description="Controla sesiones, permisos y preferencias sensibles."
-                trailing={<ToggleSwitch checked={false} accentColor={accentGradient} disabled />}
-                className="cursor-not-allowed px-0 py-3"
-              />
-            </div>
-          </div>
-        </div>
-      </SurfaceCard>
-
-      <SurfaceCard className="overflow-hidden p-0">
         <div className="grid xl:grid-cols-[minmax(260px,0.72fr)_minmax(0,1.28fr)]">
           <div className="p-6 lg:p-7">
           <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-4">
             <div className="flex shrink-0 items-baseline gap-3">
               <h2 className="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
-                Mensajes reutilizables
+                Plantillas de mensajes
               </h2>
               <span className="hidden text-[11px] font-bold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500 sm:inline-block">
                 Plantillas
@@ -386,62 +277,153 @@ export default function Settings() {
         </div>
       </SurfaceCard>
 
-      <SurfaceCard tone="muted" className="p-4 sm:p-5">
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-4">
-            <div className="flex shrink-0 items-baseline gap-3">
-              <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
-                Reiniciar onboarding
-              </h2>
-              <span className="hidden text-[11px] font-bold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500 sm:inline-block">
-                Utilidades
-              </span>
-            </div>
-            <div className="hidden h-4 w-px bg-[var(--line-soft)] sm:block" />
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Vuelve a mostrar el tour guiado la proxima vez que cargue la app.
-            </p>
-          </div>
-
-          <Button
-            tone="secondary"
-            className="justify-center sm:min-w-[12rem]"
-            onClick={handleResetTour}
+      <SurfaceCard className="overflow-hidden p-0">
+        <div className="p-6 lg:p-7">
+          <button
+            type="button"
+            onClick={() => setIsAccentPaletteOpen((current) => !current)}
+            className="flex w-full items-center justify-between gap-4 text-left"
+            aria-expanded={isAccentPaletteOpen}
           >
-            <ArrowCounterClockwise size={16} />
-            Reiniciar tour
-          </Button>
+            <div className="flex items-center gap-3">
+              <span
+                className="block h-11 w-11 rounded-[0.9rem] border-4 border-white shadow-sm dark:border-slate-700"
+                style={{ background: isGradientAccent(activeAccent.value) ? (getGradientCss(activeAccent.value) || activeAccent.value) : activeAccent.value }}
+              />
+              <div>
+                <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                  Paleta de acento
+                </p>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  Actual: {activeAccent.name}.
+                </p>
+              </div>
+            </div>
+
+            <div className="text-right">
+              <p className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
+                {isAccentPaletteOpen ? 'Ocultar' : 'Cambiar'}
+              </p>
+              <CaretDown
+                size={18}
+                className={cx(
+                  'ml-auto mt-2 text-slate-400 transition-transform dark:text-slate-500',
+                  isAccentPaletteOpen ? 'rotate-180' : '',
+                )}
+              />
+            </div>
+          </button>
+
+          {isAccentPaletteOpen ? (
+            <div className="mt-4 grid grid-cols-4 gap-3 min-[390px]:grid-cols-5">
+              {ACCENT_OPTIONS.map((option) => {
+                const isSelected = option.value.toLowerCase() === accentColor.toLowerCase();
+
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    aria-label={`Seleccionar ${option.name}`}
+                    title={option.name}
+                    onClick={() => {
+                      void setAccentColor(option.value);
+                      setIsAccentPaletteOpen(false);
+                    }}
+                    className="flex items-center justify-center py-1 transition-transform active:scale-95"
+                  >
+                    <span
+                      className={cx(
+                        'block h-11 w-11 rounded-[0.9rem] border-4 border-white shadow-sm transition-all dark:border-slate-700',
+                        isSelected ? 'scale-110 ring-2 ring-slate-900/20 dark:ring-white/20' : 'hover:scale-105',
+                      )}
+                      style={{ background: isGradientAccent(option.value) ? (getGradientCss(option.value) || option.value) : option.value }}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          ) : null}
+
+          <div className="mt-5 border-t border-slate-200/70 pt-3 dark:border-slate-700/60">
+            <SettingRow
+              icon={theme === 'dark' ? Moon : Sun}
+              title="Modo oscuro"
+              description="Cambia la iluminacion general del workspace."
+              onClick={() => void setTheme(theme === 'dark' ? 'light' : 'dark')}
+              trailing={<ToggleSwitch checked={theme === 'dark'} accentColor={accentGradient} />}
+              className="px-0 py-3"
+            />
+          </div>
         </div>
       </SurfaceCard>
 
       <SurfaceCard className="overflow-hidden p-0">
-        <div className="p-6 lg:p-7">
-          <div className="flex shrink-0 items-baseline gap-3">
-            <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">
-              Cuenta
+        <div className="divide-y divide-slate-200/70 dark:divide-slate-700/60">
+
+          {/* Notifications & integrations */}
+          <div className="p-6 lg:p-7">
+            <h2 className="mb-5 text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
+              Ajustes
             </h2>
-            <span className="hidden text-[11px] font-bold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500 sm:inline-block">
-              Sesion
-            </span>
+            <div className="space-y-1">
+              <SettingRow
+                icon={Bell}
+                title="Notificaciones push"
+                description="Recibe avisos cuando haya entregas cercanas o cambios relevantes."
+                onClick={() => void toggleNotifications()}
+                trailing={<ToggleSwitch checked={profile.notificationsEnabled} accentColor={accentGradient} />}
+                className="px-0 py-3"
+              />
+              <SettingRow
+                icon={CalendarBlank}
+                title="Sincronizacion con Calendar"
+                description="Proximamente. La integracion con Google Calendar estara disponible en una version futura."
+                trailing={<ToggleSwitch checked={false} accentColor={accentGradient} disabled />}
+                className="cursor-not-allowed px-0 py-3 opacity-60"
+              />
+              <SettingRow
+                icon={ShieldCheck}
+                title="Privacidad y seguridad"
+                description="Controla sesiones, permisos y preferencias sensibles."
+                trailing={<ToggleSwitch checked={false} accentColor={accentGradient} disabled />}
+                className="cursor-not-allowed px-0 py-3"
+              />
+            </div>
           </div>
 
-          <div className="mt-5 space-y-3">
+          {/* Utilities */}
+          <div className="p-6 lg:p-7">
             <SettingRow
-              icon={(props: any) => <SignOut {...props} weight="regular" />}
-              title="Cerrar sesion"
-              description="Cierra tu sesion actual en este dispositivo."
-              onClick={onLogout}
+              icon={ArrowCounterClockwise}
+              title="Reiniciar onboarding"
+              description="Vuelve a mostrar el tour guiado la proxima vez que cargue la app."
+              onClick={handleResetTour}
               trailing={
                 <span className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
-                  Salir
+                  Reiniciar
                 </span>
               }
               className="px-0 py-3"
             />
+          </div>
 
-            <div className="border-t border-slate-200/70 pt-3 dark:border-slate-700/60">
+          {/* Account */}
+          <div className="p-6 lg:p-7">
+            <div className="space-y-1">
+              <SettingRow
+                icon={(props: any) => <SignOut {...props} weight="regular" />}
+                title="Cerrar sesion"
+                description="Cierra tu sesion actual en este dispositivo."
+                onClick={onLogout}
+                trailing={
+                  <span className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
+                    Salir
+                  </span>
+                }
+                className="px-0 py-3"
+              />
               {showDeleteConfirm ? (
-                <div className="rounded-[1rem] border border-rose-200 bg-rose-50 p-4 dark:border-rose-800/50 dark:bg-rose-950/30">
+                <div className="mt-2 rounded-[1rem] border border-rose-200 bg-rose-50 p-4 dark:border-rose-800/50 dark:bg-rose-950/30">
                   <p className="text-sm font-bold text-rose-700 dark:text-rose-400">
                     Estas seguro?
                   </p>
@@ -482,6 +464,7 @@ export default function Settings() {
               )}
             </div>
           </div>
+
         </div>
       </SurfaceCard>
 
