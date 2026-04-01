@@ -974,7 +974,7 @@ export default function Directory() {
                   <div>
                     <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
                       <InstagramLogo size={14} />
-                      InstagramLogo
+                      Instagram
                     </label>
                     <input value={newContact.ig} onChange={(event) => setNewContact({ ...newContact, ig: event.target.value })} className={cx(fieldClass, 'bg-[var(--surface-card)]')} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} placeholder="" />
                   </div>
