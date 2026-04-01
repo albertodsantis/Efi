@@ -245,7 +245,7 @@ function GoalEffortWidget({
       <div className="flex items-center gap-2">
         <Target size={14} className="text-[var(--text-secondary)]" />
         <p className="text-[11px] font-bold tracking-[0.18em] text-[var(--text-secondary)] uppercase">
-          Esfuerzo por objetivo
+          Tareas por objetivo
         </p>
       </div>
 
