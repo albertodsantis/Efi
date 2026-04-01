@@ -26,6 +26,7 @@ export interface Partner {
   status: PartnerStatus;
   logo?: string;
   contacts: Contact[];
+  goalId?: string;
   keyTerms?: string;
   partnershipType?: PartnershipType;
   startDate?: string;
@@ -47,6 +48,7 @@ export interface Task {
   title: string;
   description: string;
   partnerId: string;
+  goalId?: string;
   status: TaskStatus;
   dueDate: string;
   value: number;

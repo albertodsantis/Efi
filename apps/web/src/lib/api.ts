@@ -14,6 +14,7 @@ import type {
   Partner,
   RegisterRequest,
   SettingsResponse,
+  StrategicViewResponse,
   Task,
   Template,
   UpdateContactRequest,
@@ -90,6 +91,7 @@ export const authApi = {
 
 export const appApi = {
   getBootstrap: () => apiRequest<AppBootstrapResponse>('/api/v1/bootstrap'),
+  getStrategicView: () => apiRequest<StrategicViewResponse>('/api/v1/strategic-view'),
   getProfile: () => apiRequest<UserProfile>('/api/v1/profile'),
   updateProfile: (payload: UpdateProfileRequest) =>
     apiRequest<UserProfile>('/api/v1/profile', {

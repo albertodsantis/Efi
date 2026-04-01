@@ -5,6 +5,7 @@ import {
   CaretLeft,
   CaretRight,
   Clock,
+  Target,
 } from '@phosphor-icons/react';
 import { useAppContext } from '../context/AppContext';
 import { EmptyState, StatusBadge, SurfaceCard, cx } from '../components/ui';
@@ -168,6 +169,120 @@ function TaskCard({
         )}
       </div>
     </div>
+  );
+}
+
+/* ── GoalEffortWidget ──────────────────────────────────────── */
+
+function GoalEffortWidget({
+  tasks,
+  goals,
+  accentHex,
+  accentGradient,
+}: {
+  tasks: Task[];
+  goals: any[];
+  accentHex: string;
+  accentGradient: string;
+}) {
+  const distribution = useMemo(() => {
+    const goalMap = new Map<string, { name: string; taskCount: number; value: number }>();
+    for (const g of goals) {
+      if (g.id && g.generalGoal) {
+        goalMap.set(g.id, { name: g.generalGoal, taskCount: 0, value: 0 });
+      }
+    }
+
+    let unassignedCount = 0;
+    let unassignedValue = 0;
+
+    for (const t of tasks) {
+      if (t.goalId && goalMap.has(t.goalId)) {
+        const entry = goalMap.get(t.goalId)!;
+        entry.taskCount++;
+        entry.value += t.value;
+      } else {
+        unassignedCount++;
+        unassignedValue += t.value;
+      }
+    }
+
+    const items = [...goalMap.values()]
+      .filter((e) => e.taskCount > 0)
+      .sort((a, b) => b.value - a.value);
+
+    return { items, unassignedCount, unassignedValue };
+  }, [tasks, goals]);
+
+  const totalTasks = tasks.length;
+  if (totalTasks === 0 || distribution.items.length === 0) return null;
+
+  const COLORS = [
+    accentHex,
+    '#059669',
+    '#2563eb',
+    '#7c3aed',
+    '#d97706',
+    '#dc2626',
+    '#0891b2',
+    '#4f46e5',
+  ];
+
+  const allItems = [
+    ...distribution.items.map((item, i) => ({
+      label: item.name,
+      count: item.taskCount,
+      value: item.value,
+      color: COLORS[i % COLORS.length],
+    })),
+    ...(distribution.unassignedCount > 0
+      ? [{ label: 'Sin objetivo', count: distribution.unassignedCount, value: distribution.unassignedValue, color: '#94a3b8' }]
+      : []),
+  ];
+
+  return (
+    <SurfaceCard className="p-5 lg:p-6">
+      <div className="flex items-center gap-2">
+        <Target size={14} className="text-[var(--text-secondary)]" />
+        <p className="text-[11px] font-bold tracking-[0.18em] text-[var(--text-secondary)] uppercase">
+          Esfuerzo por objetivo
+        </p>
+      </div>
+
+      {/* Segmented bar */}
+      <div className="mt-4 flex h-3 overflow-hidden rounded-full bg-[var(--surface-inset)]">
+        {allItems.map((item) => {
+          const pct = (item.count / totalTasks) * 100;
+          if (pct === 0) return null;
+          return (
+            <div
+              key={item.label}
+              className="transition-all duration-300 first:rounded-l-full last:rounded-r-full"
+              style={{ width: `${pct}%`, backgroundColor: item.color, opacity: 0.82 }}
+            />
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div className="mt-3.5 space-y-2">
+        {allItems.map((item) => (
+          <div key={item.label} className="flex items-center justify-between text-[11px]">
+            <div className="flex items-center gap-2 min-w-0">
+              <span
+                className="inline-block h-2.5 w-2.5 shrink-0 rounded-[3px]"
+                style={{ backgroundColor: item.color }}
+              />
+              <span className="truncate font-medium text-[var(--text-primary)]">{item.label}</span>
+              <span className="shrink-0 text-[var(--text-secondary)]">({item.count})</span>
+            </div>
+            <span className="shrink-0 font-bold text-[var(--text-secondary)]">
+              ${item.value.toLocaleString('es-ES')}
+            </span>
+          </div>
+        ))}
+      </div>
+    </SurfaceCard>
   );
 }
 
@@ -721,6 +836,14 @@ export default function Dashboard() {
               ))}
             </div>
           </SurfaceCard>
+
+          {/* Goal Effort Distribution */}
+          <GoalEffortWidget
+            tasks={periodFilteredTasks}
+            goals={profile?.goals || []}
+            accentHex={accentHex}
+            accentGradient={accentGradient}
+          />
 
         </div>
 

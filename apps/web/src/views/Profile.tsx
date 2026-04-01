@@ -3,30 +3,22 @@ import {
   ChartBar,
   BriefcaseMetal,
   CheckCircle,
-  CaretRight,
   ArrowSquareOut,
   FolderPlus,
   Image,
   CircleNotch,
   Plus,
-  FloppyDisk,
   Sparkle,
-  Target,
   Trash,
   Users,
   X,
 } from '@phosphor-icons/react';
-import type { Goal, GoalPriority, GoalStatus, MediaKitMetric, MediaKitOffer, MediaKitProfile, Partner, SocialProfiles, UserProfile } from '@shared';
+import type { MediaKitMetric, MediaKitOffer, MediaKitProfile, Partner, SocialProfiles, UserProfile } from '@shared';
 import { useAppContext } from '../context/AppContext';
-import { Avatar, Button, SurfaceCard, ModalPanel, cx } from '../components/ui';
-import OverlayModal from '../components/OverlayModal';
-import CustomSelect from '../components/CustomSelect';
+import { Avatar, Button, SurfaceCard, cx } from '../components/ui';
 import ImageUpload from '../components/ImageUpload';
 import { appApi } from '../lib/api';
 import { toast } from '../lib/toast';
-
-const GOAL_STATUSES: GoalStatus[] = ['Pendiente', 'En Curso', 'Alcanzado', 'Cancelado'];
-const GOAL_PRIORITIES: GoalPriority[] = ['Baja', 'Media', 'Alta'];
 
 const fieldClass =
   'w-full rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-card-strong)] px-4 py-3.5 text-base sm:text-sm font-medium text-[var(--text-primary)] transition-all placeholder:text-[var(--text-secondary)]/70 focus:outline-none focus:ring-2';
@@ -138,13 +130,11 @@ export default function Profile() {
   const [profileForm, setProfileForm] = useState<UserProfile>(() => {
     const safeGoals = safeArr(profile?.goals).map((g: any, i) =>
           typeof g === 'string'
-            ? { id: `legacy-${i}`, area: '', generalGoal: g, successMetric: '', specificTarget: '', timeframe: '', status: 'Pendiente' as GoalStatus, priority: 'Media' as GoalPriority, revenueEstimation: 0 }
+            ? { id: `legacy-${i}`, area: '', generalGoal: g, successMetric: '', specificTarget: '', timeframe: '', status: 'Pendiente' as const, priority: 'Media' as const, revenueEstimation: 0 }
             : g,
         )
     return { ...(profile || {}), goals: safeGoals } as UserProfile;
   });
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
-  const [isGoalsModalOpen, setIsGoalsModalOpen] = useState(false);
   const [uploadsEnabled, setUploadsEnabled] = useState(false);
   const lastSavedProfile = useRef(JSON.stringify(profileForm));
   const updateProfileRef = useRef(updateProfile);
@@ -162,11 +152,10 @@ export default function Profile() {
   // Sync external profile changes into local form state
   useEffect(() => {
     if (!profile) return;
-    if (isGoalsModalOpen) return;
 
     const safeGoals = safeArr(profile.goals).map((g: any, i) =>
       typeof g === 'string'
-        ? { id: `legacy-${i}`, area: '', generalGoal: g, successMetric: '', specificTarget: '', timeframe: '', status: 'Pendiente' as GoalStatus, priority: 'Media' as GoalPriority, revenueEstimation: 0 }
+        ? { id: `legacy-${i}`, area: '', generalGoal: g, successMetric: '', specificTarget: '', timeframe: '', status: 'Pendiente' as const, priority: 'Media' as const, revenueEstimation: 0 }
         : g,
     );
     const incomingProfile = { ...profile, goals: safeGoals } as UserProfile;
@@ -177,12 +166,10 @@ export default function Profile() {
       profileFormRef.current = incomingProfile;
       lastSavedProfile.current = incomingString;
     }
-  }, [profile, isGoalsModalOpen]);
+  }, [profile]);
 
-  // Debounced auto-save for profile fields (goals save via modal button)
+  // Debounced auto-save for profile fields
   useEffect(() => {
-    if (isGoalsModalOpen) return;
-
     const currentString = JSON.stringify(profileForm);
     if (currentString === lastSavedProfile.current) return;
 
@@ -206,7 +193,7 @@ export default function Profile() {
     return () => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
     };
-  }, [profileForm, isGoalsModalOpen]);
+  }, [profileForm]);
 
   // Cleanup timers on unmount
   useEffect(() => {
@@ -345,71 +332,6 @@ export default function Profile() {
         offerings: safeArr(current.mediaKit?.offerings).filter((_: any, i: number) => i !== index),
       } as MediaKitProfile,
     }));
-  };
-
-  const setGoalField = <K extends keyof Goal>(index: number, field: K, value: Goal[K]) => {
-    setProfileForm((current) => ({
-      ...current,
-      goals: safeArr(current.goals).map((item, itemIndex) =>
-        itemIndex === index ? { ...item, [field]: value } : item,
-      ),
-    }));
-  };
-
-  const addGoal = () => {
-    setProfileForm((current) => ({
-      ...current,
-      goals: [
-        ...safeArr(current.goals),
-        {
-          id: Math.random().toString(36).substring(7),
-          area: '',
-          generalGoal: '',
-          successMetric: '',
-          specificTarget: '',
-          timeframe: '',
-          status: 'Pendiente',
-          priority: 'Media',
-          revenueEstimation: 0,
-        },
-      ],
-    }));
-  };
-
-  const deleteGoal = (index: number) => {
-    setProfileForm((current) => ({
-      ...current,
-      goals: safeArr(current.goals).filter((_, itemIndex) => itemIndex !== index),
-    }));
-  };
-
-  const handleSaveGoals = async () => {
-    setIsSavingProfile(true);
-    try {
-      console.log('[GOALS] Saving goals:', profileFormRef.current.goals);
-      const saved = await updateProfile({ goals: profileFormRef.current.goals });
-      // Merge only goals back — preserve any unsaved edits to other profile fields
-      setProfileForm((prev) => ({ ...prev, goals: saved.goals }));
-      const merged = { ...profileFormRef.current, goals: saved.goals };
-      profileFormRef.current = merged;
-      lastSavedProfile.current = JSON.stringify(merged);
-      toast.success('Plan Estratégico guardado');
-      setIsGoalsModalOpen(false);
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
-      console.error('[GOALS ERROR]', errorMsg);
-      toast.error(`Error al guardar: ${errorMsg}`);
-    } finally {
-      setIsSavingProfile(false);
-    }
-  };
-
-  const handleCancelGoals = () => {
-    // Revertir al último estado guardado para descartar cambios
-    const reverted = JSON.parse(lastSavedProfile.current);
-    setProfileForm(reverted);
-    profileFormRef.current = reverted;
-    setIsGoalsModalOpen(false);
   };
 
   const generateHtml = () => {
@@ -735,46 +657,6 @@ export default function Profile() {
             </div>
 
             <div className="flex w-full shrink-0 flex-col gap-3 sm:max-w-sm xl:w-[22rem]">
-              <button
-                type="button"
-                onClick={() => setIsGoalsModalOpen(true)}
-                className="group relative w-full overflow-hidden rounded-[1.35rem] border border-[var(--line-soft)] bg-[var(--surface-card)] p-4 text-left transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_20px_40px_-16px_var(--btn-glow)] active:scale-95"
-                style={{ '--btn-glow': `${accentHex}40` } as React.CSSProperties}
-              >
-                <div
-                  className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-                  style={{ background: `linear-gradient(135deg, ${accentHex}12 0%, transparent 100%)` }}
-                />
-                <div className="relative flex items-center justify-between gap-4">
-                  <div className="flex items-center gap-4">
-                    <div
-                      className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl shadow-sm transition-transform duration-300 group-hover:scale-110 group-hover:rotate-3"
-                      style={{ background: accentGradient, color: '#fff' }}
-                    >
-                      <Target size={22} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="truncate text-[10px] font-extrabold tracking-[0.18em] text-[var(--text-secondary)]/80 uppercase">
-                        Metas y objetivos
-                      </p>
-                      <p className="mt-0.5 truncate text-[1.05rem] font-black tracking-tight text-[var(--text-primary)]">
-                        Plan Estratégico
-                      </p>
-                      {safeArr(profileForm.goals).length > 0 && (
-                        <p className="mt-1 truncate text-[11px] font-medium text-[var(--text-secondary)]">
-                          {`${safeArr(profileForm.goals).length} objetivo${safeArr(profileForm.goals).length > 1 ? 's' : ''} en curso`}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <div
-                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[var(--surface-muted)] text-[var(--text-primary)] transition-transform duration-300 group-hover:translate-x-1"
-                  >
-                    <CaretRight size={18} style={{ color: accentHex }} />
-                  </div>
-                </div>
-              </button>
-
               <div className="flex items-center justify-end gap-3">
                 <Button
                   accentColor={accentGradient}
@@ -1386,159 +1268,6 @@ export default function Profile() {
         </SurfaceCard>
       </div>
 
-      {isGoalsModalOpen && (
-        <OverlayModal onClose={handleCancelGoals}>
-          <ModalPanel
-            title="Plan Estratégico"
-            description="Define tus metas clave, proyecciones de ingresos y estado general de tus verticales de negocio."
-            onClose={handleCancelGoals}
-            size="lg"
-            footer={
-              <div className="flex flex-col gap-3">
-                <Button
-                  tone="secondary"
-                  onClick={addGoal}
-                  disabled={safeArr(profileForm.goals).length >= 10}
-                  className="w-full"
-                >
-                  Agregar objetivo
-                </Button>
-                <div className="flex gap-3">
-                  <button
-                    type="button"
-                    onClick={handleCancelGoals}
-                    className="flex-1 rounded-[1rem] border border-[var(--line-soft)] bg-transparent px-4 py-3 text-sm font-bold text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-muted)]/50"
-                  >
-                    Cancelar
-                  </button>
-                  <Button
-                    accentColor={accentGradient}
-                    onClick={handleSaveGoals}
-                    disabled={isSavingProfile}
-                    className="flex-1"
-                  >
-                    <FloppyDisk size={16} />
-                    {isSavingProfile ? 'Guardando...' : 'Guardar'}
-                  </Button>
-                </div>
-              </div>
-            }
-          >
-            <p className="mb-4 text-[13px] font-medium leading-relaxed text-[var(--text-secondary)]">
-              <strong className="font-bold text-[var(--text-primary)]">Tip sobre Áreas o Verticales:</strong> Úsalas para categorizar tus distintas líneas de negocio o roles. <span className="opacity-85">Por ejemplo: Creación de contenido, radio, copywriter, host, administrativo.</span>
-            </p>
-            <div className="grid gap-4">
-              {safeArr(profileForm.goals).map((goal: any, index: number) => (
-                <div key={goal?.id || index} className="relative rounded-[1.2rem] border bg-[var(--surface-card)] p-5 shadow-sm [border-color:var(--line-soft)]">
-                  <div className="mb-4 flex items-center justify-between">
-                    <h4 className="text-[11px] font-extrabold tracking-[0.16em] text-[var(--text-primary)] uppercase">
-                      Meta {index + 1}
-                    </h4>
-                    <button
-                      type="button"
-                      onClick={() => deleteGoal(index)}
-                      className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-secondary)] transition-all hover:bg-rose-50 hover:text-rose-500"
-                      title="Eliminar objetivo"
-                    >
-                      <Trash size={16} />
-                    </button>
-                  </div>
-
-                  <div className="grid gap-4 sm:grid-cols-3">
-                    <div className="sm:col-span-1">
-                      <label className={labelClass}>Área / Vertical</label>
-                      <input
-                        value={goal?.area || ''}
-                        onChange={(event) => setGoalField(index, 'area', event.target.value)}
-                        className={cx(fieldClass, 'bg-[var(--surface-muted)]')}
-                        style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                        placeholder=""
-                      />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label className={labelClass}>Objetivo General</label>
-                      <input
-                        value={goal?.generalGoal || ''}
-                        onChange={(event) => setGoalField(index, 'generalGoal', event.target.value)}
-                        className={cx(fieldClass, 'bg-[var(--surface-muted)]')}
-                        style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                        placeholder=""
-                      />
-                    </div>
-
-                    <div className="sm:col-span-1">
-                      <label className={labelClass}>Métrica de éxito</label>
-                      <input
-                        value={goal?.successMetric || ''}
-                        onChange={(event) => setGoalField(index, 'successMetric', event.target.value)}
-                        className={cx(fieldClass, 'bg-[var(--surface-muted)]')}
-                        style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                        placeholder=""
-                      />
-                    </div>
-                    <div className="sm:col-span-1">
-                      <label className={labelClass}>Meta específica</label>
-                      <input
-                        value={goal?.specificTarget || ''}
-                        onChange={(event) => setGoalField(index, 'specificTarget', event.target.value)}
-                        className={cx(fieldClass, 'bg-[var(--surface-muted)]')}
-                        style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                        placeholder=""
-                      />
-                    </div>
-                    <div className="sm:col-span-1">
-                      <label className={labelClass}>Plazo</label>
-                      <CustomSelect
-                        value={goal?.timeframe || '1 año'}
-                        onChange={(val) => setGoalField(index, 'timeframe', val)}
-                        options={[
-                          { value: '1 año', label: '1 año' },
-                          { value: '2 años', label: '2 años' },
-                          { value: '3 años', label: '3 años' },
-                        ]}
-                        buttonStyle={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                        buttonClassName="font-medium bg-[var(--surface-muted)]"
-                      />
-                    </div>
-
-                    <div className="sm:col-span-1">
-                      <label className={labelClass}>Estado</label>
-                      <CustomSelect
-                        value={goal?.status || 'Pendiente'}
-                        onChange={(val) => setGoalField(index, 'status', val as GoalStatus)}
-                        options={GOAL_STATUSES.map((s) => ({ value: s, label: s }))}
-                        buttonStyle={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                        buttonClassName="font-medium bg-[var(--surface-muted)]"
-                      />
-                    </div>
-                    <div className="sm:col-span-1">
-                      <label className={labelClass}>Prioridad</label>
-                      <CustomSelect
-                        value={goal?.priority || 'Media'}
-                        onChange={(val) => setGoalField(index, 'priority', val as GoalPriority)}
-                        options={GOAL_PRIORITIES.map((s) => ({ value: s, label: s }))}
-                        buttonStyle={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                        buttonClassName="font-medium bg-[var(--surface-muted)]"
-                      />
-                    </div>
-                    <div className="sm:col-span-1">
-                      <label className={labelClass}>Est. Ingresos (USD)</label>
-                      <input
-                        type="number"
-                        value={goal?.revenueEstimation || ''}
-                        onChange={(event) => setGoalField(index, 'revenueEstimation', event.target.value ? Number(event.target.value) : 0)}
-                        className={cx(fieldClass, 'bg-[var(--surface-muted)]')}
-                        style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                        placeholder=""
-                      />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </ModalPanel>
-        </OverlayModal>
-      )}
       </div>
     </div>
   );

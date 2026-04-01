@@ -2,6 +2,7 @@ import type {
   AppState,
   AppTheme,
   Contact,
+  Goal,
   MediaKitProfile,
   Partner,
   PartnerStatus,
@@ -28,6 +29,7 @@ export interface CreateTaskRequest {
   title: string;
   description: string;
   partnerId: string;
+  goalId?: string;
   status: TaskStatus;
   dueDate: string;
   value: number;
@@ -42,6 +44,7 @@ export interface CreatePartnerRequest {
   status: PartnerStatus;
   logo?: string;
   source?: string;
+  goalId?: string;
   partnershipType?: string;
   keyTerms?: string;
   startDate?: string;
@@ -99,3 +102,21 @@ export type TaskResponse = Task;
 export type TemplateResponse = Template;
 export type TaskStatusHistoryResponse = TaskStatusTransition[];
 export type PartnerStatusHistoryResponse = PartnerStatusTransition[];
+
+export interface GoalAggregation {
+  goal: Goal;
+  taskCount: number;
+  totalValue: number;
+  completedTaskCount: number;
+  partnerCount: number;
+  partners: Array<{ id: string; name: string }>;
+}
+
+export interface StrategicViewResponse {
+  goals: GoalAggregation[];
+  unassigned: {
+    taskCount: number;
+    totalValue: number;
+    partnerCount: number;
+  };
+}

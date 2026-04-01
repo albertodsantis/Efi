@@ -10,6 +10,7 @@ import {
   Kanban,
   SignOut,
   SlidersHorizontal,
+  Target,
   User,
   Users,
 } from '@phosphor-icons/react';
@@ -21,6 +22,7 @@ import Pipeline from './views/Pipeline';
 import Directory from './views/Directory';
 import Profile from './views/Profile';
 import Settings from './views/Settings';
+import StrategicView from './views/StrategicView';
 import Landing from './views/Landing';
 import AIAssistant from './components/AIAssistant';
 import OnboardingTour from './components/OnboardingTour';
@@ -31,7 +33,7 @@ import { Avatar, SurfaceCard, cx } from './components/ui';
 import { authApi } from './lib/api';
 import { supabase } from './lib/supabase';
 
-type TabId = 'dashboard' | 'pipeline' | 'directory' | 'profile' | 'settings';
+type TabId = 'dashboard' | 'pipeline' | 'directory' | 'strategic' | 'profile' | 'settings';
 
 const tabs: Array<{
   id: TabId;
@@ -60,6 +62,13 @@ const tabs: Array<{
     shortLabel: 'Directorio',
     description: 'Organiza marcas, contactos y alcance comercial.',
     icon: Users,
+  },
+  {
+    id: 'strategic',
+    label: 'Estrategia',
+    shortLabel: 'Estrategia',
+    description: 'Visualiza cómo tus tareas y marcas contribuyen a tus objetivos.',
+    icon: Target,
   },
   {
     id: 'profile',
@@ -163,6 +172,10 @@ function renderActiveView(activeTab: TabId) {
 
   if (activeTab === 'directory') {
     return <Directory />;
+  }
+
+  if (activeTab === 'strategic') {
+    return <StrategicView />;
   }
 
   if (activeTab === 'profile') {

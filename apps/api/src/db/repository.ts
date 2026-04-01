@@ -15,6 +15,7 @@ import type {
   DashboardSummaryResponse,
   DeleteEntityResponse,
   Goal,
+  GoalAggregation,
   GoalPriority,
   GoalStatus,
   MediaKitMetric,
@@ -22,6 +23,7 @@ import type {
   Partner,
   PartnerStatusTransition,
   SettingsResponse,
+  StrategicViewResponse,
   Task,
   TaskStatusTransition,
   Template,
@@ -164,6 +166,7 @@ function mapRowToTask(row: any): Task {
     title: row.title,
     description: row.description,
     partnerId: row.partner_id,
+    ...(row.goal_id ? { goalId: row.goal_id } : {}),
     status: row.status,
     dueDate: row.due_date,
     value: Number(row.value),
@@ -193,6 +196,7 @@ function mapRowToPartner(row: any): Partner {
     status: row.status,
     ...(row.logo ? { logo: row.logo } : {}),
     contacts: [],
+    ...(row.goal_id ? { goalId: row.goal_id } : {}),
     partnershipType: row.partnership_type,
     keyTerms: row.key_terms,
     ...(row.start_date ? { startDate: row.start_date } : {}),
@@ -283,7 +287,7 @@ export class PostgresAppStore {
         [userId, today],
       ),
       this.pool.query(
-        `SELECT id, title, description, partner_id, status, due_date, value, gcal_event_id,
+        `SELECT id, title, description, partner_id, goal_id, status, due_date, value, gcal_event_id,
                 created_at, completed_at, cobrado_at, actual_payment
          FROM tasks WHERE user_id = $1 ORDER BY due_date ASC LIMIT 4`,
         [userId],
@@ -301,7 +305,7 @@ export class PostgresAppStore {
 
   async listTasks(userId: string): Promise<Task[]> {
     const { rows } = await this.pool.query(
-      `SELECT id, title, description, partner_id, status, due_date, value, gcal_event_id,
+      `SELECT id, title, description, partner_id, goal_id, status, due_date, value, gcal_event_id,
               created_at, completed_at, cobrado_at, actual_payment
        FROM tasks WHERE user_id = $1 ORDER BY due_date ASC`,
       [userId],
@@ -319,6 +323,7 @@ export class PostgresAppStore {
     const value = normalizeMoney(input.value);
     const gcalEventId = normalizeOptionalText(input.gcalEventId) || null;
     const actualPayment = input.actualPayment !== undefined ? normalizeMoney(input.actualPayment) : null;
+    const goalId = normalizeOptionalText(input.goalId) || null;
 
     const { rows: partnerRows } = await this.pool.query(
       'SELECT 1 FROM partners WHERE id = $1 AND user_id = $2',
@@ -328,11 +333,21 @@ export class PostgresAppStore {
       throw new Error('La marca seleccionada no existe.');
     }
 
+    if (goalId) {
+      const { rows: goalRows } = await this.pool.query(
+        'SELECT 1 FROM goals WHERE id = $1 AND user_id = $2',
+        [goalId, userId],
+      );
+      if (goalRows.length === 0) {
+        throw new Error('El objetivo seleccionado no existe.');
+      }
+    }
+
     const { rows } = await this.pool.query(
-      `INSERT INTO tasks (id, user_id, title, description, partner_id, status, due_date, value, gcal_event_id, actual_payment)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      `INSERT INTO tasks (id, user_id, title, description, partner_id, goal_id, status, due_date, value, gcal_event_id, actual_payment)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
        RETURNING created_at`,
-      [id, userId, title, description, partnerId, status, dueDate, value, gcalEventId, actualPayment],
+      [id, userId, title, description, partnerId, goalId, status, dueDate, value, gcalEventId, actualPayment],
     );
 
     const createdAt = rows[0].created_at instanceof Date ? rows[0].created_at.toISOString() : rows[0].created_at;
@@ -348,6 +363,7 @@ export class PostgresAppStore {
       title,
       description,
       partnerId,
+      ...(goalId ? { goalId } : {}),
       status: status as Task['status'],
       dueDate,
       value,
@@ -415,10 +431,19 @@ export class PostgresAppStore {
       setClauses.push(`actual_payment = $${idx++}`);
       values.push(normalizeMoney(updates.actualPayment));
     }
+    if ((updates as any).goalId !== undefined) {
+      const gid = normalizeOptionalText((updates as any).goalId) || null;
+      if (gid) {
+        const { rows: gr } = await this.pool.query('SELECT 1 FROM goals WHERE id = $1 AND user_id = $2', [gid, userId]);
+        if (gr.length === 0) throw new Error('El objetivo seleccionado no existe.');
+      }
+      setClauses.push(`goal_id = $${idx++}`);
+      values.push(gid);
+    }
 
     if (setClauses.length === 0) {
       const { rows } = await this.pool.query(
-        `SELECT id, title, description, partner_id, status, due_date, value, gcal_event_id,
+        `SELECT id, title, description, partner_id, goal_id, status, due_date, value, gcal_event_id,
                 created_at, completed_at, cobrado_at, actual_payment
          FROM tasks WHERE id = $1 AND user_id = $2`,
         [taskId, userId],
@@ -432,7 +457,7 @@ export class PostgresAppStore {
 
     const { rows: updated } = await this.pool.query(
       `UPDATE tasks SET ${setClauses.join(', ')} WHERE id = $${idx} AND user_id = $${idx + 1} RETURNING
-       id, title, description, partner_id, status, due_date, value, gcal_event_id,
+       id, title, description, partner_id, goal_id, status, due_date, value, gcal_event_id,
        created_at, completed_at, cobrado_at, actual_payment`,
       values,
     );
@@ -516,14 +541,25 @@ export class PostgresAppStore {
     const annualRevenue = Number((input as any).annualRevenue) || 0;
     const mainChannel = normalizeText((input as any).mainChannel);
     const source = normalizeText(input.source);
+    const goalId = normalizeOptionalText(input.goalId) || null;
+
+    if (goalId) {
+      const { rows: goalRows } = await this.pool.query(
+        'SELECT 1 FROM goals WHERE id = $1 AND user_id = $2',
+        [goalId, userId],
+      );
+      if (goalRows.length === 0) {
+        throw new Error('El objetivo seleccionado no existe.');
+      }
+    }
 
     const { rows } = await this.pool.query(
       `INSERT INTO partners (id, user_id, name, name_lookup, status, logo, partnership_type,
-         key_terms, start_date, end_date, monthly_revenue, annual_revenue, main_channel, source)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+         key_terms, start_date, end_date, monthly_revenue, annual_revenue, main_channel, source, goal_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
        RETURNING created_at`,
       [id, userId, normalizedName, lookupKey, status, logo, partnershipType,
-       keyTerms, startDate, endDate, monthlyRevenue, annualRevenue, mainChannel, source],
+       keyTerms, startDate, endDate, monthlyRevenue, annualRevenue, mainChannel, source, goalId],
     );
 
     const createdAt = rows[0].created_at instanceof Date ? rows[0].created_at.toISOString() : rows[0].created_at;
@@ -540,6 +576,7 @@ export class PostgresAppStore {
       status: status as Partner['status'],
       ...(logo ? { logo } : {}),
       contacts: [],
+      ...(goalId ? { goalId } : {}),
       partnershipType: partnershipType as any,
       keyTerms,
       ...(startDate ? { startDate } : {}),
@@ -625,6 +662,15 @@ export class PostgresAppStore {
     if (updates.source !== undefined) {
       setClauses.push(`source = $${idx++}`);
       values.push(normalizeText(updates.source));
+    }
+    if ((updates as any).goalId !== undefined) {
+      const gid = normalizeOptionalText((updates as any).goalId) || null;
+      if (gid) {
+        const { rows: gr } = await this.pool.query('SELECT 1 FROM goals WHERE id = $1 AND user_id = $2', [gid, userId]);
+        if (gr.length === 0) throw new Error('El objetivo seleccionado no existe.');
+      }
+      setClauses.push(`goal_id = $${idx++}`);
+      values.push(gid);
     }
 
     if (setClauses.length > 0) {
@@ -1046,5 +1092,80 @@ export class PostgresAppStore {
       [partnerId, userId],
     );
     return rows.map(mapRowToPartnerStatusTransition);
+  }
+
+  /* ---------- STRATEGIC VIEW ---------- */
+
+  async getStrategicView(userId: string): Promise<StrategicViewResponse> {
+    const [goalsResult, taskAggResult, partnerAggResult, unassignedTasksResult, unassignedPartnersResult] = await Promise.all([
+      this.pool.query('SELECT * FROM goals WHERE user_id = $1 ORDER BY sort_order ASC', [userId]),
+      this.pool.query(
+        `SELECT goal_id,
+                COUNT(*)::int AS task_count,
+                COALESCE(SUM(value), 0) AS total_value,
+                COUNT(*) FILTER (WHERE status IN ('Completada', 'Cobrado'))::int AS completed_count
+         FROM tasks WHERE user_id = $1 AND goal_id IS NOT NULL
+         GROUP BY goal_id`,
+        [userId],
+      ),
+      this.pool.query(
+        `SELECT goal_id, COUNT(*)::int AS partner_count,
+                json_agg(json_build_object('id', id, 'name', name)) AS partners
+         FROM partners WHERE user_id = $1 AND goal_id IS NOT NULL
+         GROUP BY goal_id`,
+        [userId],
+      ),
+      this.pool.query(
+        `SELECT COUNT(*)::int AS task_count, COALESCE(SUM(value), 0) AS total_value
+         FROM tasks WHERE user_id = $1 AND goal_id IS NULL`,
+        [userId],
+      ),
+      this.pool.query(
+        `SELECT COUNT(DISTINCT id)::int AS partner_count
+         FROM partners WHERE user_id = $1 AND goal_id IS NULL`,
+        [userId],
+      ),
+    ]);
+
+    const taskAggByGoal = new Map<string, { taskCount: number; totalValue: number; completedCount: number }>();
+    for (const row of taskAggResult.rows) {
+      taskAggByGoal.set(row.goal_id, {
+        taskCount: row.task_count,
+        totalValue: Number(row.total_value),
+        completedCount: row.completed_count,
+      });
+    }
+
+    const partnerAggByGoal = new Map<string, { partnerCount: number; partners: Array<{ id: string; name: string }> }>();
+    for (const row of partnerAggResult.rows) {
+      partnerAggByGoal.set(row.goal_id, {
+        partnerCount: row.partner_count,
+        partners: row.partners || [],
+      });
+    }
+
+    const goals: GoalAggregation[] = goalsResult.rows.map((row: any) => {
+      const goal = mapRowToGoal(row);
+      const taskAgg = taskAggByGoal.get(goal.id) || { taskCount: 0, totalValue: 0, completedCount: 0 };
+      const partnerAgg = partnerAggByGoal.get(goal.id) || { partnerCount: 0, partners: [] };
+
+      return {
+        goal,
+        taskCount: taskAgg.taskCount,
+        totalValue: taskAgg.totalValue,
+        completedTaskCount: taskAgg.completedCount,
+        partnerCount: partnerAgg.partnerCount,
+        partners: partnerAgg.partners,
+      };
+    });
+
+    return {
+      goals,
+      unassigned: {
+        taskCount: unassignedTasksResult.rows[0].task_count,
+        totalValue: Number(unassignedTasksResult.rows[0].total_value),
+        partnerCount: unassignedPartnersResult.rows[0].partner_count,
+      },
+    };
   }
 }

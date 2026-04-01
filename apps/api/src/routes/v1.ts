@@ -12,6 +12,7 @@ import type {
   DashboardSummaryResponse,
   SessionUser,
   SettingsResponse,
+  StrategicViewResponse,
   UpdateContactRequest,
   UpdatePartnerRequest,
   UpdateProfileRequest,
@@ -64,6 +65,17 @@ export function createV1Router(appStore: PostgresAppStore, _pool: pg.Pool) {
       res.json(response);
     } catch (error) {
       console.error('Dashboard summary error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  router.get('/strategic-view', async (req, res) => {
+    try {
+      const userId = getUserId(req);
+      const response: StrategicViewResponse = await appStore.getStrategicView(userId);
+      res.json(response);
+    } catch (error) {
+      console.error('Strategic view error:', error);
       res.status(500).json({ error: 'Internal server error' });
     }
   });
