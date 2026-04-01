@@ -1,6 +1,9 @@
 -- Convert timeframe from text labels to integer months,
 -- and add target_date + created_at columns to goals.
 
+-- Drop any default on timeframe before changing the type
+ALTER TABLE goals ALTER COLUMN timeframe DROP DEFAULT;
+
 ALTER TABLE goals
   ALTER COLUMN timeframe TYPE INTEGER USING (
     CASE timeframe
