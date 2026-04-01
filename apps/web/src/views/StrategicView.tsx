@@ -46,10 +46,10 @@ const priorityColors: Record<string, string> = {
 };
 
 const fieldClass =
-  'w-full rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-card-strong)] px-4 py-3 text-base sm:text-sm font-medium text-[var(--text-primary)] transition-all placeholder:text-[var(--text-secondary)]/70 focus:outline-none focus:ring-2';
+  'w-full rounded-[1rem] border border-(--line-soft) bg-(--surface-card-strong) px-4 py-3 text-base sm:text-sm font-medium text-(--text-primary) transition-all placeholder:text-(--text-secondary)/70 focus:outline-none focus:ring-2';
 
 const labelClass =
-  'mb-2 block text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/80 uppercase';
+  'mb-2 block text-[11px] font-bold tracking-[0.16em] text-(--text-secondary)/80 uppercase';
 
 function emptyGoalForm(): Omit<Goal, 'id'> & { id: string } {
   return {
@@ -86,17 +86,17 @@ function GoalListItem({
           className={cx(
             'flex h-11 w-11 items-center justify-center rounded-[0.95rem] text-sm font-black',
             isActive
-              ? 'bg-white/85 text-[var(--text-primary)]'
-              : 'bg-[var(--surface-muted)] text-[var(--text-secondary)]',
+              ? 'bg-white/85 text-(--text-primary)'
+              : 'bg-(--surface-muted) text-(--text-secondary)',
           )}
         >
           <Target size={20} />
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-base font-bold leading-tight text-[var(--text-primary)]">
+          <h3 className="truncate text-base font-bold leading-tight text-(--text-primary)">
             {goal.generalGoal || 'Sin nombre'}
           </h3>
-          <p className="mt-1 text-xs font-medium text-[var(--text-secondary)]">
+          <p className="mt-1 text-xs font-medium text-(--text-secondary)">
             {taskCount} tareas · {formatCurrency(totalValue)}
             {taskCount > 0 ? ` · ${completionPct}%` : ''}
           </p>
@@ -127,19 +127,19 @@ function GoalDetail({
       <div className="p-5 sm:p-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0">
-            <div className="flex items-center gap-3">
-              <h2 className="text-xl font-bold tracking-tight text-[var(--text-primary)]">
+            <div className="flex min-w-0 items-center gap-3">
+              <h2 className="min-w-0 wrap-break-word text-xl font-bold tracking-tight text-(--text-primary)">
                 {goal.generalGoal || 'Sin nombre'}
               </h2>
               <IconButton icon={PencilLine} label="Editar objetivo" onClick={onEdit} tone="ghost" />
             </div>
             {goal.area && (
-              <p className="mt-1 text-sm font-medium text-[var(--text-secondary)]">{goal.area}</p>
+              <p className="mt-1 text-sm font-medium text-(--text-secondary)">{goal.area}</p>
             )}
           </div>
           <div className="flex items-center gap-2">
             <StatusBadge tone={goalStatusToneMap[goal.status]}>{goal.status}</StatusBadge>
-            <span className={cx('text-[11px] font-bold', priorityColors[goal.priority] || 'text-[var(--text-secondary)]')}>
+            <span className={cx('text-[11px] font-bold', priorityColors[goal.priority] || 'text-(--text-secondary)')}>
               {goal.priority}
             </span>
           </div>
@@ -148,11 +148,11 @@ function GoalDetail({
         {/* Progress bar */}
         {taskCount > 0 && (
           <div className="mt-5">
-            <div className="flex items-center justify-between text-[10px] font-bold text-[var(--text-secondary)]">
+            <div className="flex items-center justify-between text-[10px] font-bold text-(--text-secondary)">
               <span>Progreso de tareas</span>
               <span>{completedTaskCount}/{taskCount} ({completionPct}%)</span>
             </div>
-            <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-[var(--surface-inset)]">
+            <div className="mt-1.5 h-2.5 overflow-hidden rounded-full bg-(--surface-inset)">
               <div
                 className="h-full rounded-full transition-all duration-500"
                 style={{ width: `${completionPct}%`, background: accentGradient }}
@@ -163,15 +163,15 @@ function GoalDetail({
 
         {/* Metrics */}
         <div className="mt-5 grid grid-cols-3 gap-3">
-          <div className="rounded-[0.7rem] bg-[var(--surface-muted)]/60 px-3 py-2.5">
-            <div className="flex items-center gap-1.5 text-[var(--text-secondary)]">
+          <div className="rounded-[0.7rem] bg-(--surface-muted)/60 px-3 py-2.5">
+            <div className="flex items-center gap-1.5 text-(--text-secondary)">
               <ListChecks size={12} />
               <span className="text-[10px] font-bold uppercase tracking-wide">Tareas</span>
             </div>
-            <p className="mt-1 text-lg font-black text-[var(--text-primary)]">{taskCount}</p>
+            <p className="mt-1 text-lg font-black text-(--text-primary)">{taskCount}</p>
           </div>
-          <div className="rounded-[0.7rem] bg-[var(--surface-muted)]/60 px-3 py-2.5">
-            <div className="flex items-center gap-1.5 text-[var(--text-secondary)]">
+          <div className="rounded-[0.7rem] bg-(--surface-muted)/60 px-3 py-2.5">
+            <div className="flex items-center gap-1.5 text-(--text-secondary)">
               <TrendUp size={12} />
               <span className="text-[10px] font-bold uppercase tracking-wide">Valor</span>
             </div>
@@ -179,31 +179,31 @@ function GoalDetail({
               {formatCurrency(totalValue)}
             </p>
           </div>
-          <div className="rounded-[0.7rem] bg-[var(--surface-muted)]/60 px-3 py-2.5">
-            <div className="flex items-center gap-1.5 text-[var(--text-secondary)]">
+          <div className="rounded-[0.7rem] bg-(--surface-muted)/60 px-3 py-2.5">
+            <div className="flex items-center gap-1.5 text-(--text-secondary)">
               <UsersIcon size={12} />
               <span className="text-[10px] font-bold uppercase tracking-wide">Marcas</span>
             </div>
-            <p className="mt-1 text-lg font-black text-[var(--text-primary)]">{partnerCount}</p>
+            <p className="mt-1 text-lg font-black text-(--text-primary)">{partnerCount}</p>
           </div>
         </div>
 
         {/* Goal details */}
         {(goal.successMetric || goal.specificTarget || goal.timeframe) && (
-          <div className="mt-5 space-y-2 rounded-[0.7rem] bg-[var(--surface-muted)]/40 px-4 py-3.5">
+          <div className="mt-5 space-y-2 rounded-[0.7rem] bg-(--surface-muted)/40 px-4 py-3.5">
             {goal.successMetric && (
-              <p className="text-[12px] text-[var(--text-secondary)]">
-                <span className="font-bold text-[var(--text-primary)]">Métrica de éxito:</span> {goal.successMetric}
+              <p className="wrap-break-word text-[12px] text-(--text-secondary)">
+                <span className="font-bold text-(--text-primary)">Métrica de éxito:</span> {goal.successMetric}
               </p>
             )}
             {goal.specificTarget && (
-              <p className="text-[12px] text-[var(--text-secondary)]">
-                <span className="font-bold text-[var(--text-primary)]">Meta específica:</span> {goal.specificTarget}
+              <p className="wrap-break-word text-[12px] text-(--text-secondary)">
+                <span className="font-bold text-(--text-primary)">Meta específica:</span> {goal.specificTarget}
               </p>
             )}
             {goal.timeframe && (
-              <p className="text-[12px] text-[var(--text-secondary)]">
-                <span className="font-bold text-[var(--text-primary)]">Plazo:</span> {goal.timeframe}
+              <p className="text-[12px] text-(--text-secondary)">
+                <span className="font-bold text-(--text-primary)">Plazo:</span> {goal.timeframe}
               </p>
             )}
           </div>
@@ -212,14 +212,14 @@ function GoalDetail({
         {/* Partners */}
         {partners.length > 0 && (
           <div className="mt-5">
-            <p className="text-[10px] font-bold uppercase tracking-wide text-[var(--text-secondary)]">
+            <p className="text-[10px] font-bold uppercase tracking-wide text-(--text-secondary)">
               Marcas vinculadas
             </p>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {partners.map((p) => (
                 <span
                   key={p.id}
-                  className="rounded-[0.5rem] bg-[var(--surface-card-strong)] px-2.5 py-1 text-[11px] font-bold text-[var(--text-primary)]"
+                  className="rounded-[0.5rem] bg-(--surface-card-strong) px-2.5 py-1 text-[11px] font-bold text-(--text-primary)"
                 >
                   {p.name}
                 </span>
@@ -230,8 +230,8 @@ function GoalDetail({
 
         {/* Revenue estimation */}
         {goal.revenueEstimation > 0 && (
-          <div className="mt-5 flex items-center justify-between rounded-[0.7rem] bg-[var(--surface-muted)]/40 px-4 py-3">
-            <span className="text-[10px] font-bold uppercase tracking-wide text-[var(--text-secondary)]">
+          <div className="mt-5 flex items-center justify-between rounded-[0.7rem] bg-(--surface-muted)/40 px-4 py-3">
+            <span className="text-[10px] font-bold uppercase tracking-wide text-(--text-secondary)">
               Ingreso estimado
             </span>
             <span className="text-[14px] font-black" style={{ color: accentHex }}>
@@ -299,7 +299,7 @@ function GoalFormModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-[1rem] border border-[var(--line-soft)] bg-transparent px-4 py-3 text-sm font-bold text-[var(--text-primary)] transition-colors hover:bg-[var(--surface-muted)]/50"
+              className="flex-1 rounded-[1rem] border border-(--line-soft) bg-transparent px-4 py-3 text-sm font-bold text-(--text-primary) transition-colors hover:bg-(--surface-muted)/50"
             >
               Cancelar
             </button>
@@ -316,7 +316,7 @@ function GoalFormModal({
             <input
               value={form.area}
               onChange={(e) => setField('area', e.target.value)}
-              className={cx(fieldClass, 'bg-[var(--surface-muted)]')}
+              className={cx(fieldClass, 'bg-(--surface-muted)')}
               style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
             />
           </div>
@@ -325,7 +325,7 @@ function GoalFormModal({
             <input
               value={form.generalGoal}
               onChange={(e) => setField('generalGoal', e.target.value)}
-              className={cx(fieldClass, 'bg-[var(--surface-muted)]')}
+              className={cx(fieldClass, 'bg-(--surface-muted)')}
               style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
             />
           </div>
@@ -335,7 +335,7 @@ function GoalFormModal({
             <input
               value={form.successMetric}
               onChange={(e) => setField('successMetric', e.target.value)}
-              className={cx(fieldClass, 'bg-[var(--surface-muted)]')}
+              className={cx(fieldClass, 'bg-(--surface-muted)')}
               style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
             />
           </div>
@@ -344,7 +344,7 @@ function GoalFormModal({
             <input
               value={form.specificTarget}
               onChange={(e) => setField('specificTarget', e.target.value)}
-              className={cx(fieldClass, 'bg-[var(--surface-muted)]')}
+              className={cx(fieldClass, 'bg-(--surface-muted)')}
               style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
             />
           </div>
@@ -359,7 +359,7 @@ function GoalFormModal({
                 { value: '3 años', label: '3 años' },
               ]}
               buttonStyle={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-              buttonClassName="font-medium bg-[var(--surface-muted)]"
+              buttonClassName="font-medium bg-(--surface-muted)"
             />
           </div>
 
@@ -370,7 +370,7 @@ function GoalFormModal({
               onChange={(val) => setField('status', val as GoalStatus)}
               options={GOAL_STATUSES.map((s) => ({ value: s, label: s }))}
               buttonStyle={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-              buttonClassName="font-medium bg-[var(--surface-muted)]"
+              buttonClassName="font-medium bg-(--surface-muted)"
             />
           </div>
           <div className="sm:col-span-1">
@@ -380,7 +380,7 @@ function GoalFormModal({
               onChange={(val) => setField('priority', val as GoalPriority)}
               options={GOAL_PRIORITIES.map((s) => ({ value: s, label: s }))}
               buttonStyle={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-              buttonClassName="font-medium bg-[var(--surface-muted)]"
+              buttonClassName="font-medium bg-(--surface-muted)"
             />
           </div>
           <div className="sm:col-span-1">
@@ -389,7 +389,7 @@ function GoalFormModal({
               type="number"
               value={form.revenueEstimation || ''}
               onChange={(e) => setField('revenueEstimation', e.target.value ? Number(e.target.value) : 0)}
-              className={cx(fieldClass, 'bg-[var(--surface-muted)]')}
+              className={cx(fieldClass, 'bg-(--surface-muted)')}
               style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
             />
           </div>
@@ -510,7 +510,7 @@ export default function StrategicView() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <CircleNotch size={24} className="animate-spin text-[var(--text-secondary)]" />
+        <CircleNotch size={24} className="animate-spin text-(--text-secondary)" />
       </div>
     );
   }
@@ -520,7 +520,7 @@ export default function StrategicView() {
       <div className="p-4 lg:px-8">
         <SurfaceCard className="p-6 text-center">
           <Warning size={32} className="mx-auto text-amber-500" />
-          <p className="mt-2 text-sm text-[var(--text-secondary)]">{error}</p>
+          <p className="mt-2 text-sm text-(--text-secondary)">{error}</p>
         </SurfaceCard>
       </div>
     );
@@ -544,10 +544,10 @@ export default function StrategicView() {
               <item.icon size={15} />
             </div>
             <div className="min-w-0">
-              <p className="text-[10px] font-bold tracking-[0.18em] text-[var(--text-secondary)]/70 uppercase">
+              <p className="text-[10px] font-bold tracking-[0.18em] text-(--text-secondary)/70 uppercase">
                 {item.label}
               </p>
-              <p className="text-sm font-bold text-[var(--text-primary)]">{item.value}</p>
+              <p className="text-sm font-bold text-(--text-primary)">{item.value}</p>
             </div>
           </div>
         ))}
@@ -556,8 +556,8 @@ export default function StrategicView() {
       {/* Main 2-col grid */}
       <div className="grid gap-4 xl:grid-cols-[minmax(310px,0.92fr)_minmax(0,1.08fr)]">
         {/* Left: goal list */}
-        <div className="space-y-4 xl:sticky xl:top-4 xl:self-start">
-          <SurfaceCard className="p-3 sm:p-4">
+        <div className="min-w-0 space-y-4 xl:sticky xl:top-4 xl:self-start">
+          <SurfaceCard className="overflow-hidden p-3 sm:p-4">
             <div className="mb-3 px-2 pt-1">
               <Button accentColor={accentGradient} onClick={handleCreateGoal} className="w-full py-2.5 text-xs">
                 <Plus size={14} weight="regular" />
@@ -576,8 +576,8 @@ export default function StrategicView() {
                     className={cx(
                       'w-full rounded-[1rem] border px-4 py-4 text-left transition-all',
                       isActive
-                        ? 'border-transparent bg-[var(--surface-card-strong)] shadow-[var(--shadow-soft)]'
-                        : 'border-transparent bg-[var(--surface-card)]/75 hover:bg-[var(--surface-muted)]/90',
+                        ? 'border-transparent bg-(--surface-card-strong) shadow-(--shadow-soft)'
+                        : 'border-transparent bg-(--surface-card)/75 hover:bg-(--surface-muted)/90',
                     )}
                     style={isActive ? { borderColor: 'var(--accent-border)', backgroundColor: 'var(--accent-soft)' } : undefined}
                   >
@@ -611,21 +611,21 @@ export default function StrategicView() {
           {/* Unassigned effort */}
           {data && (data.unassigned.taskCount > 0 || data.unassigned.partnerCount > 0) && (
             <SurfaceCard className="p-4" tone="muted">
-              <p className="text-[10px] font-bold tracking-[0.18em] text-[var(--text-secondary)] uppercase">
+              <p className="text-[10px] font-bold tracking-[0.18em] text-(--text-secondary) uppercase">
                 Sin objetivo asignado
               </p>
               <div className="mt-2 grid grid-cols-3 gap-3">
                 <div>
-                  <p className="text-[10px] font-bold text-[var(--text-secondary)] uppercase">Tareas</p>
-                  <p className="text-base font-black text-[var(--text-primary)]">{data.unassigned.taskCount}</p>
+                  <p className="text-[10px] font-bold text-(--text-secondary) uppercase">Tareas</p>
+                  <p className="text-base font-black text-(--text-primary)">{data.unassigned.taskCount}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-[var(--text-secondary)] uppercase">Valor</p>
-                  <p className="text-base font-black text-[var(--text-primary)]">{formatCurrency(data.unassigned.totalValue)}</p>
+                  <p className="text-[10px] font-bold text-(--text-secondary) uppercase">Valor</p>
+                  <p className="text-base font-black text-(--text-primary)">{formatCurrency(data.unassigned.totalValue)}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-[var(--text-secondary)] uppercase">Marcas</p>
-                  <p className="text-base font-black text-[var(--text-primary)]">{data.unassigned.partnerCount}</p>
+                  <p className="text-[10px] font-bold text-(--text-secondary) uppercase">Marcas</p>
+                  <p className="text-base font-black text-(--text-primary)">{data.unassigned.partnerCount}</p>
                 </div>
               </div>
             </SurfaceCard>
@@ -633,7 +633,7 @@ export default function StrategicView() {
         </div>
 
         {/* Right: detail pane */}
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           {activeGoal ? (
             <GoalDetail
               item={activeGoal}
