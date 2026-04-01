@@ -656,7 +656,7 @@ export default function Directory() {
 
                         <div className="flex shrink-0 flex-wrap gap-2 lg:justify-end">
                           <IconButton icon={PencilLine} label={`Editar contacto ${contact.name}`} onClick={() => handleOpenEditContact(activePartner.id, contact)} className="h-10 w-10 rounded-[0.8rem] bg-[var(--surface-muted)] text-[var(--text-secondary)]" />
-                          <IconButton icon={ChatCircle} label={`Redactar WhatsApp para ${contact.name}`} onClick={() => setComposingTo({ contact, partner: activePartner })} tone="primary" accentColor={accentGradient} className="h-10 w-10 rounded-[0.8rem]" />
+                          <IconButton icon={ChatCircle} label={`Redactar WhatsApp para ${contact.name}`} onClick={() => setComposingTo({ contact, partner: activePartner })} tone="primary" accentColor={accentGradient} className="h-10 w-10 rounded-[0.8rem] border-none" />
                         </div>
                       </div>
                     </div>
