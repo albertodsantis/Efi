@@ -341,7 +341,6 @@ export default function Settings() {
                         <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100">
                           {template.name}
                         </h3>
-                        <StatusBadge tone="neutral">Base</StatusBadge>
                       </div>
                       <p className="mt-2 line-clamp-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
                         {template.body}
