@@ -732,21 +732,21 @@ export default function Directory() {
                       }} options={PARTNERSHIP_TYPES.map(s => ({ value: s, label: s }))} buttonStyle={{ '--tw-ring-color': accentHex } as React.CSSProperties} buttonClassName="font-medium bg-[var(--surface-card)]" />
                     </div>
                     {(editingPartner.partnershipType || 'Por definir') !== 'Por definir' && (
-                      <div className={cx('grid gap-4', ((editingPartner.partnershipType || 'Por definir') === 'Permanente' || (editingPartner.partnershipType || 'Por definir') === 'One Time') ? 'grid-cols-1' : 'grid-cols-2')}>
-                        <div>
+                      <div className={cx('grid min-w-0 gap-4', ((editingPartner.partnershipType || 'Por definir') === 'Permanente' || (editingPartner.partnershipType || 'Por definir') === 'One Time') ? 'grid-cols-1' : 'grid-cols-2')}>
+                        <div className="min-w-0 overflow-hidden">
                           <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
                             <CalendarDots size={14} />
                             {(editingPartner.partnershipType || 'Por definir') === 'One Time' ? 'Fecha' : 'Inicio'}
                           </label>
-                          <input type="date" value={editingPartner.startDate || ''} onChange={(event) => setEditingPartner({ ...editingPartner, startDate: event.target.value })} className={cx(fieldClass, 'bg-[var(--surface-card)] px-3')} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} />
+                          <input type="date" value={editingPartner.startDate || ''} onChange={(event) => setEditingPartner({ ...editingPartner, startDate: event.target.value })} className={cx(fieldClass, 'min-w-0 bg-[var(--surface-card)] px-3')} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} />
                         </div>
                         {(editingPartner.partnershipType || 'Por definir') === 'Plazo Fijo' && (
-                          <div>
+                          <div className="min-w-0 overflow-hidden">
                             <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
                               <CalendarDots size={14} />
                               Fin
                             </label>
-                            <input type="date" value={editingPartner.endDate || ''} onChange={(event) => setEditingPartner({ ...editingPartner, endDate: event.target.value })} className={cx(fieldClass, 'bg-[var(--surface-card)] px-3')} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} />
+                            <input type="date" value={editingPartner.endDate || ''} onChange={(event) => setEditingPartner({ ...editingPartner, endDate: event.target.value })} className={cx(fieldClass, 'min-w-0 bg-[var(--surface-card)] px-3')} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} />
                           </div>
                         )}
                       </div>
@@ -829,21 +829,21 @@ export default function Directory() {
                       }} options={PARTNERSHIP_TYPES.map(s => ({ value: s, label: s }))} buttonStyle={{ '--tw-ring-color': accentHex } as React.CSSProperties} buttonClassName="font-medium bg-[var(--surface-card)]" />
                     </div>
                     {newPartner.partnershipType !== 'Por definir' && (
-                      <div className={cx('grid gap-4', (newPartner.partnershipType === 'Permanente' || newPartner.partnershipType === 'One Time') ? 'grid-cols-1' : 'grid-cols-2')}>
-                        <div>
+                      <div className={cx('grid min-w-0 gap-4', (newPartner.partnershipType === 'Permanente' || newPartner.partnershipType === 'One Time') ? 'grid-cols-1' : 'grid-cols-2')}>
+                        <div className="min-w-0 overflow-hidden">
                           <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
                             <CalendarDots size={14} />
                             {newPartner.partnershipType === 'One Time' ? 'Fecha' : 'Inicio'}
                           </label>
-                          <input type="date" value={newPartner.startDate} onChange={(event) => setNewPartner({ ...newPartner, startDate: event.target.value })} className={cx(fieldClass, 'bg-[var(--surface-card)] px-3')} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} />
+                          <input type="date" value={newPartner.startDate} onChange={(event) => setNewPartner({ ...newPartner, startDate: event.target.value })} className={cx(fieldClass, 'min-w-0 bg-[var(--surface-card)] px-3')} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} />
                         </div>
                         {newPartner.partnershipType === 'Plazo Fijo' && (
-                          <div>
+                          <div className="min-w-0 overflow-hidden">
                             <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
                               <CalendarDots size={14} />
                               Fin
                             </label>
-                            <input type="date" value={newPartner.endDate} onChange={(event) => setNewPartner({ ...newPartner, endDate: event.target.value })} className={cx(fieldClass, 'bg-[var(--surface-card)] px-3')} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} />
+                            <input type="date" value={newPartner.endDate} onChange={(event) => setNewPartner({ ...newPartner, endDate: event.target.value })} className={cx(fieldClass, 'min-w-0 bg-[var(--surface-card)] px-3')} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} />
                           </div>
                         )}
                       </div>

@@ -1488,8 +1488,8 @@ export default function Pipeline() {
                   required
                   value={form.dueDate}
                   onChange={(event) => setForm({ ...form, dueDate: event.target.value })}
-                  className={cx(fieldClass, 'bg-[var(--surface-card)] !w-full max-w-full min-w-0')}
-                  style={{ '--tw-ring-color': accentHex, maxWidth: '100%' } as React.CSSProperties}
+                  className={cx(fieldClass, 'min-w-0 bg-[var(--surface-card)]')}
+                  style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
                 />
               </div>
 
