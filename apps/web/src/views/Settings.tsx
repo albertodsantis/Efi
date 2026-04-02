@@ -35,6 +35,7 @@ import { getGradientCss, isGradientAccent } from '../lib/accent';
 
 const ACCENT_OPTIONS = [
   { name: 'IG', value: 'gradient:instagram' },
+  { name: 'Google', value: 'gradient:google' },
   { name: 'Matcha', value: '#74A12E' },
   { name: 'Terracota', value: '#C65D4B' },
   { name: 'Cobre', value: '#B86A45' },
@@ -345,10 +346,10 @@ export default function Settings() {
               />
               <div>
                 <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                  Paleta de acento
+                  Tema
                 </p>
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Actual: {activeAccent.name}.
+                  Tema actual: {activeAccent.name}.
                 </p>
               </div>
             </div>

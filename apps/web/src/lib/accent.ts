@@ -4,6 +4,10 @@ const GRADIENT_PRESETS: Record<string, { gradient: string; representative: strin
     gradient: 'linear-gradient(135deg, #FCAF45, #F56040, #E1306C, #833AB4)',
     representative: '#E1306C',
   },
+  google: {
+    gradient: 'linear-gradient(135deg, #4285F4, #EA4335, #FBBC05, #34A853)',
+    representative: '#4285F4',
+  },
 };
 
 export function isGradientAccent(value: string): boolean {
