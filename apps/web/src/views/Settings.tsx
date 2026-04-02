@@ -357,114 +357,110 @@ export default function Settings() {
         </div>
       </SurfaceCard>
 
+      <SettingRow
+        icon={ArrowCounterClockwise}
+        title="Reiniciar onboarding"
+        description="Vuelve a mostrar el tour guiado la proxima vez que cargue la app."
+        onClick={handleResetTour}
+        trailing={
+          <span className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
+            Reiniciar
+          </span>
+        }
+        className="px-2 py-3"
+      />
+
       <SurfaceCard className="overflow-hidden p-0">
-        <div className="divide-y divide-slate-200/70 dark:divide-slate-700/60">
-
-          {/* Notifications & integrations */}
-          <div className="p-6 lg:p-7">
-            <h2 className="mb-5 text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
-              Ajustes
-            </h2>
-            <div className="space-y-1">
-              <SettingRow
-                icon={Bell}
-                title="Notificaciones push"
-                description="Recibe avisos cuando haya entregas cercanas o cambios relevantes."
-                onClick={() => void toggleNotifications()}
-                trailing={<ToggleSwitch checked={profile.notificationsEnabled} accentColor={accentGradient} />}
-                className="px-0 py-3"
-              />
-              <SettingRow
-                icon={CalendarBlank}
-                title="Sincronizacion con Calendar"
-                description="Proximamente. La integracion con Google Calendar estara disponible en una version futura."
-                trailing={<ToggleSwitch checked={false} accentColor={accentGradient} disabled />}
-                className="cursor-not-allowed px-0 py-3 opacity-60"
-              />
-              <SettingRow
-                icon={ShieldCheck}
-                title="Privacidad y seguridad"
-                description="Controla sesiones, permisos y preferencias sensibles."
-                trailing={<ToggleSwitch checked={false} accentColor={accentGradient} disabled />}
-                className="cursor-not-allowed px-0 py-3"
-              />
-            </div>
-          </div>
-
-          {/* Utilities */}
-          <div className="p-6 lg:p-7">
+        <div className="p-6 lg:p-7">
+          <h2 className="mb-5 text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
+            Ajustes
+          </h2>
+          <div className="space-y-1">
             <SettingRow
-              icon={ArrowCounterClockwise}
-              title="Reiniciar onboarding"
-              description="Vuelve a mostrar el tour guiado la proxima vez que cargue la app."
-              onClick={handleResetTour}
+              icon={Bell}
+              title="Notificaciones push"
+              description="Recibe avisos cuando haya entregas cercanas o cambios relevantes."
+              onClick={() => void toggleNotifications()}
+              trailing={<ToggleSwitch checked={profile.notificationsEnabled} accentColor={accentGradient} />}
+              className="px-0 py-3"
+            />
+            <SettingRow
+              icon={CalendarBlank}
+              title="Sincronizacion con Calendar"
+              description="Proximamente. La integracion con Google Calendar estara disponible en una version futura."
+              trailing={<ToggleSwitch checked={false} accentColor={accentGradient} disabled />}
+              className="cursor-not-allowed px-0 py-3 opacity-60"
+            />
+            <SettingRow
+              icon={ShieldCheck}
+              title="Privacidad y seguridad"
+              description="Controla sesiones, permisos y preferencias sensibles."
+              trailing={<ToggleSwitch checked={false} accentColor={accentGradient} disabled />}
+              className="cursor-not-allowed px-0 py-3"
+            />
+          </div>
+        </div>
+      </SurfaceCard>
+
+      <SurfaceCard className="overflow-hidden p-0">
+        <div className="p-6 lg:p-7">
+          <h2 className="mb-5 text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
+            Cuenta
+          </h2>
+          <div className="space-y-1">
+            <SettingRow
+              icon={(props: any) => <SignOut {...props} weight="regular" />}
+              title="Cerrar sesion"
+              description="Cierra tu sesion actual en este dispositivo."
+              onClick={onLogout}
               trailing={
                 <span className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
-                  Reiniciar
+                  Salir
                 </span>
               }
               className="px-0 py-3"
             />
-          </div>
-
-          {/* Account */}
-          <div className="p-6 lg:p-7">
-            <div className="space-y-1">
+            {showDeleteConfirm ? (
+              <div className="mt-2 rounded-[1rem] border border-rose-200 bg-rose-50 p-4 dark:border-rose-800/50 dark:bg-rose-950/30">
+                <p className="text-sm font-bold text-rose-700 dark:text-rose-400">
+                  Estas seguro?
+                </p>
+                <p className="mt-1 text-sm text-rose-600/80 dark:text-rose-400/70">
+                  Esta accion cerrara tu sesion y eliminara tus datos. No se puede deshacer.
+                </p>
+                <div className="mt-4 flex gap-3">
+                  <Button
+                    tone="danger"
+                    onClick={() => void handleDeleteAccount()}
+                    className="justify-center"
+                  >
+                    <Trash size={16} />
+                    Si, eliminar cuenta
+                  </Button>
+                  <Button
+                    tone="secondary"
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="justify-center"
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            ) : (
               <SettingRow
-                icon={(props: any) => <SignOut {...props} weight="regular" />}
-                title="Cerrar sesion"
-                description="Cierra tu sesion actual en este dispositivo."
-                onClick={onLogout}
+                icon={UserMinus}
+                title="Eliminar cuenta"
+                description="Elimina tu cuenta y todos los datos asociados de forma permanente."
+                onClick={() => setShowDeleteConfirm(true)}
                 trailing={
-                  <span className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
-                    Salir
+                  <span className="text-[11px] font-bold tracking-[0.16em] text-rose-400 uppercase dark:text-rose-500">
+                    Eliminar
                   </span>
                 }
                 className="px-0 py-3"
               />
-              {showDeleteConfirm ? (
-                <div className="mt-2 rounded-[1rem] border border-rose-200 bg-rose-50 p-4 dark:border-rose-800/50 dark:bg-rose-950/30">
-                  <p className="text-sm font-bold text-rose-700 dark:text-rose-400">
-                    Estas seguro?
-                  </p>
-                  <p className="mt-1 text-sm text-rose-600/80 dark:text-rose-400/70">
-                    Esta accion cerrara tu sesion y eliminara tus datos. No se puede deshacer.
-                  </p>
-                  <div className="mt-4 flex gap-3">
-                    <Button
-                      tone="danger"
-                      onClick={() => void handleDeleteAccount()}
-                      className="justify-center"
-                    >
-                      <Trash size={16} />
-                      Si, eliminar cuenta
-                    </Button>
-                    <Button
-                      tone="secondary"
-                      onClick={() => setShowDeleteConfirm(false)}
-                      className="justify-center"
-                    >
-                      Cancelar
-                    </Button>
-                  </div>
-                </div>
-              ) : (
-                <SettingRow
-                  icon={UserMinus}
-                  title="Eliminar cuenta"
-                  description="Elimina tu cuenta y todos los datos asociados de forma permanente."
-                  onClick={() => setShowDeleteConfirm(true)}
-                  trailing={
-                    <span className="text-[11px] font-bold tracking-[0.16em] text-rose-400 uppercase dark:text-rose-500">
-                      Eliminar
-                    </span>
-                  }
-                  className="px-0 py-3"
-                />
-              )}
-            </div>
+            )}
           </div>
-
         </div>
       </SurfaceCard>
 
