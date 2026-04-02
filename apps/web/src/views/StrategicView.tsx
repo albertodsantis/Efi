@@ -402,7 +402,7 @@ function GoalFormModal({
                     targetDate: computeTargetDate(base, months),
                   }));
                 }}
-                className="h-2 w-full cursor-pointer appearance-none rounded-full bg-(--surface-inset) accent-(--accent-primary) focus:outline-none focus:ring-2"
+                className="w-full cursor-pointer rounded-full focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-offset-transparent"
                 style={{ '--tw-ring-color': accentHex, accentColor: accentHex } as React.CSSProperties}
               />
               <span className="shrink-0 text-[11px] font-bold text-(--text-secondary)">36m</span>
