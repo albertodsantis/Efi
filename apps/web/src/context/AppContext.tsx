@@ -15,7 +15,7 @@ import type {
   UserProfile,
 } from '@shared';
 import { appApi } from '../lib/api';
-import { getAccentCssVariables, getGradientCss, getRepresentativeHex, isGradientAccent } from '../lib/accent';
+import { getAccentCssVariables, getGradientCss, getRepresentativeHex, getSurfaceOverrides, isGradientAccent } from '../lib/accent';
 import { addLocalDays, formatLocalDateISO } from '../lib/date';
 
 interface AppContextType extends AppState {
@@ -135,6 +135,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     // Guardamos en caché para que la Landing page pueda leerlo antes de iniciar sesión
     localStorage.setItem('tia_accent_color', state.accentColor);
   }, [state.accentColor]);
+
+  useEffect(() => {
+    const overrides = getSurfaceOverrides(state.accentColor, state.theme);
+    Object.entries(overrides).forEach(([key, value]) => {
+      if (value) {
+        document.documentElement.style.setProperty(key, value);
+      } else {
+        document.documentElement.style.removeProperty(key);
+      }
+    });
+  }, [state.accentColor, state.theme]);
 
   useEffect(() => {
     if (state.theme === 'dark') {

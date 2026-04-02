@@ -51,6 +51,52 @@ export function getRepresentativeHex(value: string): string {
   return value;
 }
 
+// Surface overrides — keyed by normalized accent value, defines light + dark surface variables
+const SURFACE_THEMES: Record<string, { light: Record<string, string>; dark: Record<string, string> }> = {
+  '#74a12e': {
+    light: {
+      '--surface-app': '#f0f4eb',
+      '--surface-shell': 'rgba(247, 252, 242, 0.88)',
+      '--surface-card': 'rgba(247, 252, 242, 0.84)',
+      '--surface-card-strong': 'rgba(250, 254, 246, 0.96)',
+      '--surface-muted': 'rgba(234, 242, 226, 0.84)',
+      '--surface-overlay': 'rgba(244, 250, 237, 0.72)',
+      '--text-secondary': '#5c6b52',
+      '--line-soft': 'rgba(72, 96, 52, 0.12)',
+      '--line-strong': 'rgba(72, 96, 52, 0.18)',
+    },
+    dark: {
+      '--surface-app': '#0e1209',
+      '--surface-shell': 'rgba(16, 22, 12, 0.9)',
+      '--surface-card': 'rgba(22, 30, 17, 0.84)',
+      '--surface-card-strong': 'rgba(28, 37, 22, 0.96)',
+      '--surface-muted': 'rgba(20, 28, 14, 0.78)',
+      '--surface-overlay': 'rgba(16, 22, 12, 0.68)',
+      '--text-secondary': '#8aaa7a',
+      '--line-soft': 'rgba(116, 161, 46, 0.1)',
+      '--line-strong': 'rgba(116, 161, 46, 0.16)',
+    },
+  },
+};
+
+const SURFACE_OVERRIDE_KEYS = [
+  '--surface-app',
+  '--surface-shell',
+  '--surface-card',
+  '--surface-card-strong',
+  '--surface-muted',
+  '--surface-overlay',
+  '--text-secondary',
+  '--line-soft',
+  '--line-strong',
+] as const;
+
+export function getSurfaceOverrides(accentColor: string, theme: 'light' | 'dark'): Record<string, string> {
+  const themeData = SURFACE_THEMES[accentColor.toLowerCase()];
+  const overrides = themeData ? themeData[theme] : {};
+  return Object.fromEntries(SURFACE_OVERRIDE_KEYS.map((key) => [key, overrides[key] ?? '']));
+}
+
 function hexToRgb(hex: string) {
   const normalized = hex.replace('#', '');
 
