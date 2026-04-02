@@ -28,6 +28,9 @@ import AIAssistant from './components/AIAssistant';
 import OnboardingTour from './components/OnboardingTour';
 import WelcomeColorPicker from './views/WelcomeColorPicker';
 import Toaster from './components/Toaster';
+import MoreOptionsMenu from './components/MoreOptionsMenu';
+import LegalModal from './components/LegalModal';
+import type { LegalPage } from './components/LegalModal';
 import { Avatar, SurfaceCard, cx } from './components/ui';
 import { authApi } from './lib/api';
 import { supabase } from './lib/supabase';
@@ -370,6 +373,7 @@ const MobileBottomNav = ({
 
 const MainLayout = () => {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
+  const [activeLegalPage, setActiveLegalPage] = useState<LegalPage | null>(null);
   const isDesktop = useIsDesktop();
   const mainRegionRef = useRef<HTMLElement | null>(null);
   const {
@@ -583,7 +587,7 @@ const MainLayout = () => {
               >
                 <div
                   className={cx(
-                    'min-w-0 flex flex-wrap items-baseline gap-4',
+                    'min-w-0 flex flex-wrap items-center gap-4',
                     isDesktop ? 'px-8 py-5' : 'px-4 pb-3 pt-4',
                   )}
                   style={
@@ -600,6 +604,7 @@ const MainLayout = () => {
                   <p className={cx('text-[var(--text-secondary)] flex-1 min-w-0 hidden lg:block', isDesktop ? 'text-sm leading-6' : 'text-xs leading-5')}>
                     {activeTabConfig.description}
                   </p>
+                  <MoreOptionsMenu onSelect={setActiveLegalPage} />
                 </div>
 
                 <div
@@ -628,6 +633,10 @@ const MainLayout = () => {
                   accentGradient={accentGradient}
                 />
               ) : null}
+
+              {activeLegalPage && (
+                <LegalModal page={activeLegalPage} onClose={() => setActiveLegalPage(null)} />
+              )}
 
               <AIAssistant isDesktop={isDesktop} />
             </main>
