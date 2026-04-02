@@ -628,16 +628,7 @@ export default function Profile() {
         </div>
       </div>
       <div className="space-y-5 p-4 pb-6 lg:space-y-6 lg:px-8 lg:pt-4 lg:pb-8">
-        <SurfaceCard className="relative overflow-hidden p-6 lg:p-7">
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            background:
-              'radial-gradient(circle at top left, rgba(201, 111, 91, 0.16), transparent 38%), radial-gradient(circle at 85% 10%, rgba(93, 141, 123, 0.12), transparent 34%), linear-gradient(180deg, var(--surface-card), var(--surface-muted))',
-          }}
-        />
-
-        <div className="relative">
+        <div className="relative px-2 pb-2 lg:px-4">
           <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
             <div className="flex min-w-0 items-start gap-4">
               <Avatar
@@ -685,7 +676,6 @@ export default function Profile() {
             ))}
           </div>
         </div>
-      </SurfaceCard>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <SurfaceCard className="p-6 lg:p-7">
