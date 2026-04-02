@@ -475,16 +475,6 @@ export default function StrategicView() {
     return data.goals.find((g) => g.goal.id === selectedGoalId) ?? data.goals[0] ?? null;
   }, [data, selectedGoalId]);
 
-  const totals = useMemo(() => {
-    if (!data) return { goals: 0, tasks: 0, value: 0, partners: 0 };
-    return {
-      goals: data.goals.length,
-      tasks: data.goals.reduce((s, g) => s + g.taskCount, 0) + data.unassigned.taskCount,
-      value: data.goals.reduce((s, g) => s + g.totalValue, 0) + data.unassigned.totalValue,
-      partners: data.goals.reduce((s, g) => s + g.partnerCount, 0) + data.unassigned.partnerCount,
-    };
-  }, [data]);
-
   const saveGoals = async (updatedGoals: Goal[]) => {
     setSaving(true);
     try {
@@ -573,31 +563,6 @@ export default function StrategicView() {
 
   return (
     <div className="space-y-5 p-4 pb-6 animate-in fade-in slide-in-from-bottom-4 duration-500 lg:px-8 lg:pt-4 lg:pb-8">
-      {/* Summary KPIs */}
-      <div className="flex flex-wrap gap-2">
-        {[
-          { icon: Target, label: 'Objetivos', value: String(totals.goals) },
-          { icon: ListChecks, label: 'Tareas', value: String(totals.tasks) },
-          { icon: TrendUp, label: 'Valor', value: formatCurrency(totals.value) },
-          { icon: UsersIcon, label: 'Marcas', value: String(totals.partners) },
-        ].map((item) => (
-          <div key={item.label} className="inline-flex items-center gap-3 px-3 py-2">
-            <div
-              className="flex h-8 w-8 items-center justify-center rounded-full"
-              style={{ backgroundColor: `${accentHex}14`, color: accentHex }}
-            >
-              <item.icon size={15} />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[10px] font-bold tracking-[0.18em] text-(--text-secondary)/70 uppercase">
-                {item.label}
-              </p>
-              <p className="text-sm font-bold text-(--text-primary)">{item.value}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
       {/* Main 2-col grid */}
       <div className="grid gap-4 xl:grid-cols-[minmax(310px,0.92fr)_minmax(0,1.08fr)]">
         {/* Left: goal list */}
