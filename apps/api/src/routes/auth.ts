@@ -6,6 +6,8 @@ import { createClient } from '@supabase/supabase-js';
 import type pg from 'pg';
 import type {
   AuthStatusResponse,
+  ChangePasswordRequest,
+  ChangePasswordResponse,
   DeleteAccountResponse,
   GoogleAuthUrlResponse,
   LoginRequest,
@@ -430,6 +432,63 @@ export function createAuthRouter(
   });
 
   // ── Calendar auth status ──────────────────────────────────────
+
+  // ── POST /password ──────────────────────────────────────────
+  // Change password (email users) or add password (Google users).
+
+  router.post('/password', async (req, res) => {
+    const sessionUser = getSessionUser(req);
+    if (!sessionUser) {
+      res.status(401).json({ error: 'No autenticado.' });
+      return;
+    }
+
+    const { currentPassword, newPassword } = req.body as ChangePasswordRequest;
+
+    if (!newPassword || newPassword.length < 8) {
+      res.status(400).json({ error: 'La contraseña debe tener al menos 8 caracteres.' });
+      return;
+    }
+
+    try {
+      const { rows } = await pool.query<{ password_hash: string; provider: string }>(
+        'SELECT password_hash, provider FROM users WHERE id = $1',
+        [sessionUser.id],
+      );
+      const user = rows[0];
+      if (!user) {
+        res.status(404).json({ error: 'Usuario no encontrado.' });
+        return;
+      }
+
+      if (user.provider === 'email') {
+        if (!currentPassword) {
+          res.status(400).json({ error: 'La contraseña actual es obligatoria.' });
+          return;
+        }
+        const valid = await bcrypt.compare(currentPassword, user.password_hash);
+        if (!valid) {
+          res.status(401).json({ error: 'La contraseña actual es incorrecta.' });
+          return;
+        }
+      }
+
+      const newHash = await bcrypt.hash(newPassword, BCRYPT_ROUNDS);
+      await pool.query(
+        'UPDATE users SET password_hash = $1, provider = $2, updated_at = NOW() WHERE id = $3',
+        [newHash, 'email', sessionUser.id],
+      );
+
+      const updatedUser: SessionUser = { ...sessionUser, provider: 'email' };
+      setSessionUser(req, updatedUser);
+
+      const response: ChangePasswordResponse = { success: true, updatedProvider: 'email' };
+      res.json(response);
+    } catch (err) {
+      console.error('Error changing password:', err);
+      res.status(500).json({ error: 'No se pudo cambiar la contraseña.' });
+    }
+  });
 
   router.get('/status', (req, res) => {
     const response: AuthStatusResponse = {

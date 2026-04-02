@@ -36,3 +36,13 @@ export interface SessionUser {
 export interface MeResponse {
   user: SessionUser | null;
 }
+
+export interface ChangePasswordRequest {
+  currentPassword?: string;
+  newPassword: string;
+}
+
+export interface ChangePasswordResponse {
+  success: boolean;
+  updatedProvider: 'email' | 'google';
+}

@@ -775,7 +775,12 @@ export default function App() {
 
   return (
     <ErrorBoundary>
-      <AppProvider onLogout={handleLogout} email={sessionUser?.email ?? ''}>
+      <AppProvider
+        onLogout={handleLogout}
+        email={sessionUser?.email ?? ''}
+        provider={sessionUser?.provider ?? 'email'}
+        onProviderChange={(p: 'email' | 'google') => setSessionUser((u: SessionUser | null) => u ? { ...u, provider: p } : u)}
+      >
         <AppShell />
       </AppProvider>
     </ErrorBoundary>

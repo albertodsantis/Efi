@@ -6,6 +6,7 @@ import {
   CaretDown,
   SignOut,
   Chat,
+  LockKey,
   Moon,
   PencilLine,
   Plus,
@@ -63,6 +64,8 @@ export default function Settings() {
     accentGradient,
     setAccentColor,
     email,
+    provider,
+    onProviderChange,
     profile,
     updateProfile,
     templates,
@@ -80,6 +83,10 @@ export default function Settings() {
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [accountName, setAccountName] = useState(profile.name);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  const [passwordError, setPasswordError] = useState<string | null>(null);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -90,6 +97,39 @@ export default function Settings() {
     const trimmed = accountName.trim();
     if (trimmed && trimmed !== profile.name) {
       await updateProfile({ name: trimmed });
+    }
+  };
+
+  const closePasswordModal = () => {
+    setIsPasswordModalOpen(false);
+    setPasswordError(null);
+    setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+  };
+
+  const handleChangePassword = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setPasswordError(null);
+    if (passwordForm.newPassword.length < 8) {
+      setPasswordError('La contraseña debe tener al menos 8 caracteres.');
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError('Las contraseñas no coinciden.');
+      return;
+    }
+    setSavingPassword(true);
+    try {
+      const result = await authApi.changePassword({
+        ...(provider === 'email' ? { currentPassword: passwordForm.currentPassword } : {}),
+        newPassword: passwordForm.newPassword,
+      });
+      onProviderChange(result.updatedProvider);
+      closePasswordModal();
+      toast.success(provider === 'google' ? 'Contraseña agregada correctamente' : 'Contraseña actualizada correctamente');
+    } catch (error) {
+      setPasswordError(error instanceof Error ? error.message : 'No se pudo cambiar la contraseña.');
+    } finally {
+      setSavingPassword(false);
     }
   };
 
@@ -446,6 +486,22 @@ export default function Settings() {
           <div className="border-t border-slate-200/70 pt-4 dark:border-slate-700/60" />
           <div className="space-y-1">
             <SettingRow
+              icon={LockKey}
+              title={provider === 'google' ? 'Agregar contraseña' : 'Cambiar contraseña'}
+              description={
+                provider === 'google'
+                  ? 'Agrega una contraseña para iniciar sesion tambien con tu email.'
+                  : 'Actualiza la contraseña de tu cuenta.'
+              }
+              onClick={() => setIsPasswordModalOpen(true)}
+              trailing={
+                <span className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
+                  {provider === 'google' ? 'Agregar' : 'Cambiar'}
+                </span>
+              }
+              className="px-0 py-3"
+            />
+            <SettingRow
               icon={(props: any) => <SignOut {...props} weight="regular" />}
               title="Cerrar sesion"
               description="Cierra tu sesion actual en este dispositivo."
@@ -597,6 +653,93 @@ export default function Settings() {
                 </div>
               </div>
             </div>
+            </form>
+          </ModalPanel>
+        </OverlayModal>
+      ) : null}
+
+      {isPasswordModalOpen ? (
+        <OverlayModal onClose={closePasswordModal}>
+          <ModalPanel
+            title={provider === 'google' ? 'Agregar contraseña' : 'Cambiar contraseña'}
+            description={
+              provider === 'google'
+                ? 'Crea una contraseña para iniciar sesion con tu correo electronico.'
+                : 'Introduce tu contraseña actual y define la nueva.'
+            }
+            onClose={closePasswordModal}
+            footer={
+              <Button
+                type="submit"
+                form="password-form"
+                accentColor={accentGradient}
+                className="flex-1 justify-center"
+                disabled={savingPassword}
+              >
+                {provider === 'google' ? 'Agregar contraseña' : 'Guardar contraseña'}
+              </Button>
+            }
+          >
+            <form id="password-form" onSubmit={(e: React.FormEvent) => void handleChangePassword(e)} className="space-y-4">
+              {passwordError ? (
+                <div className="rounded-[1rem] border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-800/50 dark:bg-rose-950/30 dark:text-rose-400">
+                  {passwordError}
+                </div>
+              ) : null}
+
+              {provider === 'google' ? (
+                <div className="rounded-[1rem] border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700 dark:border-sky-800/50 dark:bg-sky-950/30 dark:text-sky-400">
+                  Al agregar una contraseña podras iniciar sesion con tu correo y esta contraseña, ademas de seguir usando Google.
+                </div>
+              ) : (
+                <div>
+                  <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
+                    Contraseña actual
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    value={passwordForm.currentPassword}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                    className={fieldClass}
+                    style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
+                    placeholder="Tu contraseña actual"
+                    autoComplete="current-password"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
+                  Nueva contraseña
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={passwordForm.newPassword}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                  className={fieldClass}
+                  style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
+                  placeholder="Minimo 8 caracteres"
+                  autoComplete="new-password"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
+                  Confirmar contraseña
+                </label>
+                <input
+                  type="password"
+                  required
+                  value={passwordForm.confirmPassword}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                  className={fieldClass}
+                  style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
+                  placeholder="Repite la nueva contraseña"
+                  autoComplete="new-password"
+                />
+              </div>
             </form>
           </ModalPanel>
         </OverlayModal>

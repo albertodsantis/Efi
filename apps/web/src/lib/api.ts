@@ -1,6 +1,8 @@
 import type {
   AppBootstrapResponse,
   AppSettingsResponse,
+  ChangePasswordRequest,
+  ChangePasswordResponse,
   Contact,
   CreateContactRequest,
   CreatePartnerRequest,
@@ -86,6 +88,11 @@ export const authApi = {
     apiRequest<MeResponse>('/api/auth/google/supabase', {
       method: 'POST',
       body: JSON.stringify({ access_token: accessToken }),
+    }),
+  changePassword: (payload: ChangePasswordRequest) =>
+    apiRequest<ChangePasswordResponse>('/api/auth/password', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     }),
 };
 

@@ -20,6 +20,8 @@ import { addLocalDays, formatLocalDateISO } from '../lib/date';
 
 interface AppContextType extends AppState {
   email: string;
+  provider: 'email' | 'google';
+  onProviderChange: (provider: 'email' | 'google') => void;
   accentHex: string;
   accentGradient: string;
   isBootstrapping: boolean;
@@ -97,7 +99,7 @@ function upsertPartnerInState(partners: Partner[], incomingPartner: Partner) {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => void; email: string }> = ({ children, onLogout, email }) => {
+export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => void; email: string; provider: 'email' | 'google'; onProviderChange: (provider: 'email' | 'google') => void }> = ({ children, onLogout, email, provider, onProviderChange }) => {
   const [state, setState] = useState<AppState>(emptyState);
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [bootstrapError, setBootstrapError] = useState<string | null>(null);
@@ -526,6 +528,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
       value={{
         ...state,
         email,
+        provider,
+        onProviderChange,
         accentHex,
         accentGradient,
         isBootstrapping,
