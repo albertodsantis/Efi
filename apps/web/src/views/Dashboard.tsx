@@ -554,7 +554,8 @@ export default function Dashboard() {
     const activePipelineValue = tasks
       .filter((t) => t.status !== 'Cobrado')
       .reduce((s, t) => s + t.value, 0);
-    return { overdue, tasksToday, tasksThisWeek, activePipelineValue };
+    const unassignedTaskCount = tasks.filter((t) => !t.goalId).length;
+    return { overdue, tasksToday, tasksThisWeek, activePipelineValue, unassignedTaskCount };
   }, [tasks, startOfToday, todayIso, weekEnd]);
 
   const periodSummary = useMemo(() => {
@@ -835,6 +836,17 @@ export default function Dashboard() {
                 </div>
               ))}
             </div>
+
+            {globalSummary.unassignedTaskCount > 0 && (
+              <div className="mt-3 flex items-center justify-between rounded-[0.6rem] bg-[var(--surface-muted)]/60 px-3 py-2">
+                <span className="text-[10px] font-bold tracking-[0.14em] text-[var(--text-secondary)] uppercase">
+                  Sin objetivo
+                </span>
+                <span className="text-[11px] font-bold text-[var(--text-secondary)]">
+                  {globalSummary.unassignedTaskCount} {globalSummary.unassignedTaskCount === 1 ? 'tarea' : 'tareas'}
+                </span>
+              </div>
+            )}
           </SurfaceCard>
 
           {/* Goal Effort Distribution */}

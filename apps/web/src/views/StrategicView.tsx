@@ -618,28 +618,6 @@ export default function StrategicView() {
             </div>
           </SurfaceCard>
 
-          {/* Unassigned effort */}
-          {data && (data.unassigned.taskCount > 0 || data.unassigned.partnerCount > 0) && (
-            <SurfaceCard className="p-4" tone="muted">
-              <p className="text-[10px] font-bold tracking-[0.18em] text-(--text-secondary) uppercase">
-                Sin objetivo asignado
-              </p>
-              <div className="mt-2 grid grid-cols-3 gap-3">
-                <div>
-                  <p className="text-[10px] font-bold text-(--text-secondary) uppercase">Tareas</p>
-                  <p className="text-base font-black text-(--text-primary)">{data.unassigned.taskCount}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-(--text-secondary) uppercase">Valor</p>
-                  <p className="text-base font-black text-(--text-primary)">{formatCurrency(data.unassigned.totalValue)}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-bold text-(--text-secondary) uppercase">Marcas</p>
-                  <p className="text-base font-black text-(--text-primary)">{data.unassigned.partnerCount}</p>
-                </div>
-              </div>
-            </SurfaceCard>
-          )}
         </div>
 
         {/* Right: detail pane */}
