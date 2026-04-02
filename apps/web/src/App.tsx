@@ -356,7 +356,7 @@ const MobileBottomNav = ({
             <Icon size={22} weight={isActive ? 'duotone' : 'regular'} />
             <span
               className={cx(
-                'text-[10px] font-bold tracking-wide',
+                'text-[10px] font-bold tracking-wide hidden min-[480px]:inline',
                 isActive ? '' : 'opacity-75',
               )}
             >
