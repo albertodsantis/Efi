@@ -240,6 +240,7 @@ export function Button({
           ? {
               background: accentColor || 'var(--accent-gradient, var(--accent-color))',
               color: 'var(--accent-foreground)',
+              boxShadow: '0 0 0 5px var(--accent-secondary, transparent)',
             }
           : undefined
       }

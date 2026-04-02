@@ -91,7 +91,7 @@ function normalizeEmail(email: string | undefined) {
 }
 
 const ALLOWED_GRADIENTS = new Set(['instagram']);
-const ALLOWED_CONICS = new Set(['google', 'tiktok']);
+const ALLOWED_CONICS = new Set(['tiktok']);
 
 function normalizeAccentColor(color: string | undefined) {
   const normalized = normalizeRequiredText(color, 'El color');

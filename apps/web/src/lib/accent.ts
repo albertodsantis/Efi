@@ -7,14 +7,11 @@ const GRADIENT_PRESETS: Record<string, { gradient: string; representative: strin
 };
 
 // Conic presets — swatch shows brand colors as pie sections, accent uses representative hex
-const CONIC_PRESETS: Record<string, { conic: string; representative: string }> = {
-  google: {
-    conic: 'conic-gradient(#4285F4 0deg 90deg, #EA4335 90deg 180deg, #FBBC05 180deg 270deg, #34A853 270deg 360deg)',
-    representative: '#4285F4',
-  },
+const CONIC_PRESETS: Record<string, { conic: string; representative: string; secondary?: string }> = {
   tiktok: {
     conic: 'conic-gradient(#25F4EE 0deg 180deg, #FE2C55 180deg 360deg)',
     representative: '#FE2C55',
+    secondary: '#25F4EE',
   },
 };
 
@@ -121,6 +118,10 @@ export function getAccentCssVariables(value: string) {
     ? getGradientCss(value)
     : hex;
 
+  const secondary = isConicAccent(value)
+    ? (CONIC_PRESETS[value.replace('conic:', '')]?.secondary ?? 'transparent')
+    : 'transparent';
+
   return {
     '--accent-color': hex,
     '--accent-gradient': gradientCss || hex,
@@ -129,5 +130,6 @@ export function getAccentCssVariables(value: string) {
     '--accent-soft-strong': withAlpha(hex, 0.18),
     '--accent-border': withAlpha(hex, 0.22),
     '--accent-glow': withAlpha(hex, 0.3),
+    '--accent-secondary': secondary,
   } as const;
 }

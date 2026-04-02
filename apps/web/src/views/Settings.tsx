@@ -35,10 +35,9 @@ import { getSwatchCss } from '../lib/accent';
 
 const ACCENT_OPTIONS = [
   { name: 'IG', value: 'gradient:instagram' },
-  { name: 'Google', value: 'conic:google' },
   { name: 'TikTok', value: 'conic:tiktok' },
   { name: 'Matcha', value: '#74A12E' },
-  { name: 'Terracota', value: '#C65D4B' },
+
   { name: 'Cobre', value: '#B86A45' },
   { name: 'Eucalipto', value: '#5D8D7B' },
   { name: 'Violeta', value: '#8B5CF6' },
