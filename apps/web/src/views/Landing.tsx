@@ -58,7 +58,7 @@ const features = [
 export default function Landing({
   onLogin,
 }: {
-  onLogin: (user: SessionUser) => void;
+  onLogin: (user: SessionUser, isNewRegistration?: boolean) => void;
 }) {
   const [mode, setMode] = useState<AuthMode>('login');
   const [name, setName] = useState('');
@@ -88,7 +88,7 @@ export default function Landing({
           password,
           name: name.trim(),
         });
-        if (user) onLogin(user);
+        if (user) onLogin(user, true);
       } else {
         const { user } = await authApi.login({
           email: email.trim(),

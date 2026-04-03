@@ -653,23 +653,13 @@ const MainLayout = () => {
 const DEFAULT_ACCENT = '#C96F5B';
 
 const ONBOARDING_STORAGE_KEY = 'hasSeenOnboardingTour';
-const COLOR_PICKER_STORAGE_KEY = 'hasPickedAccentColor';
 
-const AppShell = () => {
-  const { isBootstrapping, bootstrapError, profile, accentColor, setAccentColor, tasks, partners } = useAppContext();
-  const [colorPicked, setColorPicked] = useState(() => !!localStorage.getItem(COLOR_PICKER_STORAGE_KEY));
+const AppShell = ({ isNewRegistration }: { isNewRegistration: boolean }) => {
+  const { isBootstrapping, bootstrapError, profile, accentColor, setAccentColor } = useAppContext();
+  const [colorPicked, setColorPicked] = useState(false);
   const [forceOnboarding, setForceOnboarding] = useState(false);
 
-  // Existing users (with data) should never see the color picker
-  const hasExistingData = tasks.length > 0 || partners.length > 0;
-  useEffect(() => {
-    if (!isBootstrapping && !bootstrapError && !colorPicked && hasExistingData) {
-      localStorage.setItem(COLOR_PICKER_STORAGE_KEY, '1');
-      setColorPicked(true);
-    }
-  }, [isBootstrapping, bootstrapError, colorPicked, hasExistingData]);
-
-  const needsColorPicker = !isBootstrapping && !bootstrapError && !colorPicked && !hasExistingData && accentColor === DEFAULT_ACCENT;
+  const needsColorPicker = isNewRegistration && !isBootstrapping && !bootstrapError && !colorPicked && accentColor === DEFAULT_ACCENT;
 
   const handleColorSelected = async (color: string) => {
     try {
@@ -677,7 +667,6 @@ const AppShell = () => {
     } catch {
       // Let the user proceed even if the API call fails
     }
-    localStorage.setItem(COLOR_PICKER_STORAGE_KEY, '1');
     if (!localStorage.getItem(ONBOARDING_STORAGE_KEY)) {
       setForceOnboarding(true);
     }
@@ -748,7 +737,10 @@ export default function App() {
     checkAuth();
   }, []);
 
-  const handleLogin = (user: SessionUser) => {
+  const [isNewRegistration, setIsNewRegistration] = useState(false);
+
+  const handleLogin = (user: SessionUser, isNew = false) => {
+    setIsNewRegistration(isNew);
     setSessionUser(user);
     setAuthPhase('authenticated');
   };
@@ -795,7 +787,7 @@ export default function App() {
         provider={sessionUser?.provider ?? 'email'}
         onProviderChange={(p: 'email' | 'google') => setSessionUser((u: SessionUser | null) => u ? { ...u, provider: p } : u)}
       >
-        <AppShell />
+        <AppShell isNewRegistration={isNewRegistration} />
       </AppProvider>
     </ErrorBoundary>
   );
