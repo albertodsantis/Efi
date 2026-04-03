@@ -1,9 +1,11 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Allura&display=swap');
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
   --font-sans: var(--font-primary);
+  --font-playwrite: "Playwrite Ireland", cursive;
   --animate-shimmer: shimmer 3s infinite;
 
   @keyframes shimmer {

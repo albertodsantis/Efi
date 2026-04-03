@@ -169,7 +169,7 @@ export default function Landing({
               <rect x="26" y="18" width="12" height="28" rx="6" fill="url(#logo-grad)" opacity="0.65"/>
               <path d="M10,24 C10,15 18,9 32,9 C46,9 54,15 54,24 C54,27 48,28 40,26 C36,25 34,22 32,22 C30,22 28,25 24,26 C16,28 10,27 10,24Z" fill="url(#logo-grad)"/>
             </svg>
-            <span className="text-lg font-bold tracking-tight text-[var(--text-primary)]">
+            <span className="text-lg tracking-tight text-[var(--text-primary)]" style={{ fontFamily: '"Allura", cursive', fontWeight: 400 }}>
               Efi
             </span>
           </div>
@@ -203,19 +203,19 @@ export default function Landing({
                   backgroundImage: `linear-gradient(135deg, ${BRAND_ORANGE}, ${BRAND_PINK}, ${BRAND_PURPLE})`,
                 }}
               >
-                partnerships creativos
+                freelancers creativos
               </span>
             </h1>
 
             <p className="mt-5 max-w-lg text-base leading-7 text-[var(--text-secondary)] sm:text-lg sm:leading-8">
               Gestiona colaboraciones, entregables y contactos desde un workspace
-              compacto diseñado para freelancers creativos.
+              compacto.
             </p>
 
             {/* Feature grid - visible on desktop below hero */}
             <div className="mt-12 hidden lg:block">
               <p className="text-[11px] font-bold tracking-[0.18em] text-[var(--text-secondary)]/80 uppercase">
-                Todo lo que necesitas
+                Lo que necesitas
               </p>
               <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-3">
                 {features.map((feat) => {
