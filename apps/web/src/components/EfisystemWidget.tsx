@@ -1,7 +1,5 @@
-import React from 'react';
-import { Lightning, Trophy } from '@phosphor-icons/react';
+import { LightningIcon as Lightning, TrophyIcon as Trophy } from '@phosphor-icons/react';
 import type { BadgeKey, EfisystemSnapshot } from '@shared';
-import { SurfaceCard } from './ui';
 
 // ── Level config ──────────────────────────────────────────────
 
@@ -82,7 +80,7 @@ export default function EfisystemWidget({ efisystem, accentHex, onOpenBadges }: 
   const promptText = getPromptText(unlockedBadges);
 
   return (
-    <SurfaceCard className="p-5">
+    <div>
       {/* Header row */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
@@ -101,7 +99,7 @@ export default function EfisystemWidget({ efisystem, accentHex, onOpenBadges }: 
 
       {/* Progress bar */}
       <div className="mt-3">
-        <div className="h-2 rounded-full bg-(--surface-muted) overflow-hidden">
+        <div className="h-2 rounded-full bg-(--surface-muted) overflow-hidden" style={{ boxShadow: `0 0 0 1px ${accentHex}33` }}>
           <div
             className="h-full rounded-full transition-all duration-500"
             style={{ width: `${progressPct}%`, backgroundColor: 'var(--accent-color)' }}
@@ -115,7 +113,7 @@ export default function EfisystemWidget({ efisystem, accentHex, onOpenBadges }: 
         )}
       </div>
 
-      {/* Prompt + Medallas button */}
+      {/* Prompt + Emblemas button */}
       <div className="mt-3 flex items-end justify-between gap-3">
         <p className="text-xs text-(--text-secondary) leading-relaxed">{promptText}</p>
         {onOpenBadges && (
@@ -130,10 +128,10 @@ export default function EfisystemWidget({ efisystem, accentHex, onOpenBadges }: 
             }}
           >
             <Trophy size={13} weight="fill" />
-            Medallas
+            Emblemas
           </button>
         )}
       </div>
-    </SurfaceCard>
+    </div>
   );
 }

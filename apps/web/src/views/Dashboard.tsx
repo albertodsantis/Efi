@@ -10,7 +10,7 @@ import {
   Star,
   Eye,
   Users,
-  Trophy,
+  TrophyIcon as Trophy,
   Medal,
   Rocket,
   CurrencyDollar,
@@ -762,7 +762,9 @@ export default function Dashboard() {
       )}
 
       {/* Efisystem: level widget */}
-      <EfisystemWidget efisystem={efisystem} accentHex={accentHex} onOpenBadges={() => setBadgesOpen(true)} />
+      <div className="mb-4">
+        <EfisystemWidget efisystem={efisystem} accentHex={accentHex} onOpenBadges={() => setBadgesOpen(true)} />
+      </div>
       {badgesOpen && (
         <BadgesDrawer unlockedBadges={efisystem.unlockedBadges} onClose={() => setBadgesOpen(false)} />
       )}
