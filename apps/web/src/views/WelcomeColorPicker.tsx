@@ -58,7 +58,7 @@ export default function WelcomeColorPicker({
           Elige un tema
         </p>
         <p className="mb-6 text-center text-xs text-(--text-tertiary)">
-          Podrás cambiarlo después en tu perfil
+          Podrás cambiarlo después en tus ajustes
         </p>
 
         {/* Color grid */}
