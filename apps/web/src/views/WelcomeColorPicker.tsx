@@ -54,8 +54,11 @@ export default function WelcomeColorPicker({
       </div>
 
       <div className="relative z-10 w-full max-w-lg px-6">
-        <p className="mb-6 text-center text-sm font-medium text-[var(--text-secondary)]">
-          Elige un color
+        <p className="mb-2 text-center text-sm font-medium text-[var(--text-secondary)]">
+          Elige un tema
+        </p>
+        <p className="mb-6 text-center text-xs text-(--text-tertiary)">
+          Podrás cambiarlo después en tu perfil
         </p>
 
         {/* Color grid */}
