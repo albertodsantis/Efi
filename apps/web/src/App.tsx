@@ -656,11 +656,20 @@ const ONBOARDING_STORAGE_KEY = 'hasSeenOnboardingTour';
 const COLOR_PICKER_STORAGE_KEY = 'hasPickedAccentColor';
 
 const AppShell = () => {
-  const { isBootstrapping, bootstrapError, profile, accentColor, setAccentColor } = useAppContext();
+  const { isBootstrapping, bootstrapError, profile, accentColor, setAccentColor, tasks, partners } = useAppContext();
   const [colorPicked, setColorPicked] = useState(() => !!localStorage.getItem(COLOR_PICKER_STORAGE_KEY));
   const [forceOnboarding, setForceOnboarding] = useState(false);
 
-  const needsColorPicker = !isBootstrapping && !bootstrapError && !colorPicked && accentColor === DEFAULT_ACCENT;
+  // Existing users (with data) should never see the color picker
+  const hasExistingData = tasks.length > 0 || partners.length > 0;
+  useEffect(() => {
+    if (!isBootstrapping && !bootstrapError && !colorPicked && hasExistingData) {
+      localStorage.setItem(COLOR_PICKER_STORAGE_KEY, '1');
+      setColorPicked(true);
+    }
+  }, [isBootstrapping, bootstrapError, colorPicked, hasExistingData]);
+
+  const needsColorPicker = !isBootstrapping && !bootstrapError && !colorPicked && !hasExistingData && accentColor === DEFAULT_ACCENT;
 
   const handleColorSelected = async (color: string) => {
     try {
