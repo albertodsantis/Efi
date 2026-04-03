@@ -19,16 +19,16 @@ const LEVEL_THRESHOLDS: Record<number, number> = {
 };
 
 const LEVEL_LABELS: Record<number, string> = {
-  1: 'Creadora Emergente',
-  2: 'Creadora en Progreso',
-  3: 'Colaboradora Activa',
-  4: 'Creadora Pro',
-  5: 'Top Creadora',
-  6: 'Creadora Elite',
-  7: 'Creadora Experta',
-  8: 'Creadora Referente',
-  9: 'Creadora Influencer',
-  10: 'Leyenda Digital',
+  1: 'Emergente',
+  2: 'Explorer',
+  3: 'Vibing',
+  4: 'Máquina',
+  5: 'Crack',
+  6: 'Master',
+  7: 'Élite',
+  8: 'Authority',
+  9: 'Ícono',
+  10: 'Leyenda',
 };
 
 function getThresholds(level: number): { current: number; next: number } {
@@ -56,7 +56,7 @@ function getPromptText(unlockedBadges: BadgeKey[]): string {
   for (const { badge, text } of PROMPTS) {
     if (!unlockedBadges.includes(badge)) return text;
   }
-  return '¡Eres una Leyenda Digital! Sigue creando ⚡';
+  return '¡Eres una Leyenda! Sigue creando ⚡';
 }
 
 // ── Component ─────────────────────────────────────────────────
@@ -110,7 +110,7 @@ export default function EfisystemWidget({ efisystem, accentHex, onOpenBadges }: 
         {!isMaxLevel && (
           <div className="mt-1 flex justify-between text-[11px] text-(--text-tertiary)">
             <span>{totalPoints.toLocaleString('es')} pts</span>
-            <span>{nextThreshold.toLocaleString('es')} pts</span>
+            <span>{nextThreshold.toLocaleString('es')} pts · {LEVEL_LABELS[currentLevel + 1]}</span>
           </div>
         )}
       </div>
