@@ -90,7 +90,7 @@ export default function OnboardingTour({ forceRun }: { forceRun?: boolean }) {
           {
             target: 'body',
             content:
-              'Bienvenida a Efi. Este tour te muestra el flujo base del workspace para ubicar navegacion, pipeline y relaciones.',
+              'Bienvenid@ a Efi. Este tour te muestra el flujo base del workspace para ubicar navegacion, pipeline y relaciones.',
             placement: 'center',
             disableBeacon: true,
           },
@@ -116,7 +116,7 @@ export default function OnboardingTour({ forceRun }: { forceRun?: boolean }) {
           {
             target: 'body',
             content:
-              'Bienvenida a Efi. En movil vas a moverte sobre todo con la barra inferior y siempre volveras rapido a cada modulo.',
+              'Bienvenid@ a Efi. En movil vas a moverte sobre todo con la barra inferior y siempre volveras rapido a cada modulo.',
             placement: 'center',
             disableBeacon: true,
           },
