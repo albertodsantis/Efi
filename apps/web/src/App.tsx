@@ -35,6 +35,7 @@ import type { LegalPage } from './components/LegalModal';
 import { Avatar, SurfaceCard, cx } from './components/ui';
 import { authApi } from './lib/api';
 import { supabase } from './lib/supabase';
+import { getAccentSecondary } from './lib/accent';
 
 type TabId = 'dashboard' | 'pipeline' | 'directory' | 'strategic' | 'profile' | 'settings';
 
@@ -333,7 +334,7 @@ const MobileBottomNav = ({
     style={{
       paddingTop: '0.7rem',
       paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 0.7rem)',
-      borderTop: '4px solid var(--accent-secondary, var(--line-soft))',
+      borderTop: '3px solid var(--accent-secondary, var(--line-soft))',
     }}
   >
     {tabs.map((tab) => {
@@ -390,6 +391,8 @@ const MainLayout = () => {
     refreshAppData,
     onLogout,
   } = useAppContext();
+
+  const accentSecondary = getAccentSecondary(accentColor);
 
   const activeTabConfig = tabs.find((tab) => tab.id === activeTab) || tabs[0];
   const { pullDistance, refreshing, handleTouchStart, handleTouchMove, handleTouchEnd } = usePullToRefresh(refreshAppData);
@@ -565,7 +568,9 @@ const MainLayout = () => {
               <div
                 className="pointer-events-none absolute inset-0 opacity-75 transition-colors duration-700"
                 style={{
-                  background: `radial-gradient(circle at top left, ${accentHex}30 0%, ${accentHex}10 35%, transparent 65%)`,
+                  background: accentSecondary
+                    ? `radial-gradient(circle at top left, ${accentHex}30 0%, ${accentHex}10 35%, transparent 65%), radial-gradient(circle at bottom right, ${accentSecondary}30 0%, ${accentSecondary}10 35%, transparent 65%)`
+                    : `radial-gradient(circle at top left, ${accentHex}30 0%, ${accentHex}10 35%, transparent 65%)`,
                 }}
               />
 

@@ -52,6 +52,11 @@ export function getSwatchCss(value: string): string {
   return value;
 }
 
+export function getAccentSecondary(value: string): string | null {
+  if (!isConicAccent(value)) return null;
+  return CONIC_PRESETS[value.replace('conic:', '')]?.secondary ?? null;
+}
+
 export function getRepresentativeHex(value: string): string {
   if (isGradientAccent(value)) {
     const key = value.replace('gradient:', '');
