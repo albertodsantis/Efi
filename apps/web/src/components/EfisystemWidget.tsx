@@ -40,10 +40,10 @@ function getThresholds(level: number): { current: number; next: number } {
 
 const PROMPTS: Array<{ badge: BadgeKey; text: string }> = [
   { badge: 'perfil_estelar', text: 'Completa tu perfil para ganar +100 ⚡' },
-  { badge: 'vision_clara', text: 'Define 3 objetivos estratégicos para desbloquear Visión Clara' },
-  { badge: 'motor_de_ideas', text: 'Crea 5 entregas en tu pipeline para ganar tu próximo logro' },
-  { badge: 'circulo_intimo', text: 'Agrega 5 socios a tu red para ganar tu próximo logro' },
-  { badge: 'promesa_cumplida', text: 'Completa 10 entregas para ganar tu próximo logro' },
+  { badge: 'vision_clara', text: 'Define 3 objetivos estratégicos para desbloquear un emblema' },
+  { badge: 'motor_de_ideas', text: 'Crea 5 entregas en tu pipeline para ganar tu próximo emblema' },
+  { badge: 'circulo_intimo', text: 'Agrega 5 socios a tu red para ganar tu próximo emblema' },
+  { badge: 'promesa_cumplida', text: 'Completa 10 entregas para ganar tu próximo emblema' },
   { badge: 'negocio_en_marcha', text: 'Cobra 5 entregas para desbloquear Negocio en Marcha' },
   { badge: 'directorio_dorado', text: 'Llega a 10 socios y 10 contactos para el Directorio Dorado' },
   { badge: 'creador_imparable', text: 'Completa 25 entregas para ganar Creador Imparable' },
@@ -51,10 +51,11 @@ const PROMPTS: Array<{ badge: BadgeKey; text: string }> = [
 ];
 
 function getPromptText(unlockedBadges: BadgeKey[]): string {
-  for (const { badge, text } of PROMPTS) {
-    if (!unlockedBadges.includes(badge)) return text;
-  }
-  return '¡Eres una Leyenda! Sigue creando ⚡';
+  const unmet = PROMPTS.filter(({ badge }) => !unlockedBadges.includes(badge));
+  if (unmet.length === 0) return '¡Eres una Leyenda! Sigue creando ⚡';
+  const candidates = unmet.slice(0, 3);
+  const dayIndex = Math.floor(Date.now() / 86_400_000);
+  return candidates[dayIndex % candidates.length].text;
 }
 
 // ── Component ─────────────────────────────────────────────────

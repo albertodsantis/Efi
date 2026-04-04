@@ -476,41 +476,128 @@ interface BadgeDef {
 }
 
 const ALL_BADGES: BadgeDef[] = [
-  { key: 'perfil_estelar', label: 'Perfil Estelar', description: 'Completaste tu perfil al 100%', icon: Star },
-  { key: 'vision_clara', label: 'Visión Clara', description: 'Definiste 3 objetivos estratégicos', icon: Eye },
-  { key: 'circulo_intimo', label: 'Círculo Íntimo', description: 'Agregaste 5 socios a tu red', icon: Users },
-  { key: 'directorio_dorado', label: 'Directorio Dorado', description: '10 socios y 10 contactos en tu red', icon: Trophy },
-  { key: 'motor_de_ideas', label: 'Motor de Ideas', description: 'Creaste 5 entregas en tu pipeline', icon: Rocket },
-  { key: 'promesa_cumplida', label: 'Promesa Cumplida', description: 'Completaste 10 entregas', icon: Medal },
-  { key: 'creador_imparable', label: 'Creador Imparable', description: 'Completaste 25 entregas', icon: Target },
-  { key: 'negocio_en_marcha', label: 'Negocio en Marcha', description: 'Cobraste 5 entregas', icon: CurrencyDollar },
-  { key: 'lluvia_de_billetes', label: 'Lluvia de Billetes', description: 'Cobraste 20 entregas', icon: Money },
+  { key: 'perfil_estelar',    label: 'Perfil Estelar',    description: 'Completaste tu perfil al 100%',          icon: Star },
+  { key: 'vision_clara',      label: 'Visión Clara',      description: 'Definiste 3 objetivos estratégicos',     icon: Eye },
+  { key: 'circulo_intimo',    label: 'Círculo Íntimo',    description: 'Agregaste 5 socios a tu red',            icon: Users },
+  { key: 'directorio_dorado', label: 'Directorio Dorado', description: '10 socios y 10 contactos en tu red',    icon: Trophy },
+  { key: 'motor_de_ideas',    label: 'Motor de Ideas',    description: 'Creaste 5 entregas en tu pipeline',      icon: Rocket },
+  { key: 'promesa_cumplida',  label: 'Promesa Cumplida',  description: 'Completaste 10 entregas',                icon: Medal },
+  { key: 'creador_imparable', label: 'Creador Imparable', description: 'Completaste 25 entregas',                icon: Target },
+  { key: 'negocio_en_marcha', label: 'Negocio en Marcha', description: 'Cobraste 5 entregas',                   icon: CurrencyDollar },
+  { key: 'lluvia_de_billetes',label: 'Lluvia de Billetes',description: 'Cobraste 20 entregas',                  icon: Money },
 ];
+
+// ── Material tier per badge (progression order: Bronze → Diamond) ─
+
+interface MaterialStyle {
+  medallionBg: string;
+  medallionShadow: string;
+  iconColor: string;
+  tileBorderColor: string;
+  tileGlowColor: string;
+}
+
+const BADGE_MATERIALS: Record<BadgeKey, MaterialStyle> = {
+  // Tier 1 — Bronze
+  perfil_estelar: {
+    medallionBg: 'linear-gradient(145deg, #8c5a28 0%, #b87830 15%, #d49840 28%, #f0c060 42%, #e8b048 55%, #c07828 70%, #8c5828 85%, #6a4020 100%)',
+    medallionShadow: '0 6px 20px -4px rgba(160,100,30,0.75), inset 0 1px 0 rgba(255,215,120,0.5), inset 0 -1px 0 rgba(0,0,0,0.3)',
+    iconColor: '#fff8e8',
+    tileBorderColor: 'rgba(180,120,50,0.45)',
+    tileGlowColor: 'rgba(180,120,50,0.08)',
+  },
+  // Tier 2 — Copper
+  vision_clara: {
+    medallionBg: 'linear-gradient(145deg, #7c3818 0%, #a85830 15%, #c87848 28%, #e09868 42%, #cc8050 55%, #aa5828 70%, #7c3818 100%)',
+    medallionShadow: '0 6px 20px -4px rgba(160,80,40,0.75), inset 0 1px 0 rgba(255,175,130,0.5), inset 0 -1px 0 rgba(0,0,0,0.3)',
+    iconColor: '#fff0e8',
+    tileBorderColor: 'rgba(170,90,40,0.45)',
+    tileGlowColor: 'rgba(170,90,40,0.08)',
+  },
+  // Tier 3 — Silver
+  motor_de_ideas: {
+    medallionBg: 'linear-gradient(145deg, #7a7a8a 0%, #9898a8 15%, #b8b8c8 28%, #e0e0f0 42%, #f4f4ff 50%, #d0d0e0 60%, #a8a8b8 75%, #808090 100%)',
+    medallionShadow: '0 6px 20px -4px rgba(140,140,170,0.6), inset 0 1px 0 rgba(255,255,255,0.75), inset 0 -1px 0 rgba(0,0,0,0.2)',
+    iconColor: '#1a1a2a',
+    tileBorderColor: 'rgba(160,160,190,0.4)',
+    tileGlowColor: 'rgba(160,160,190,0.07)',
+  },
+  // Tier 4 — Gold
+  circulo_intimo: {
+    medallionBg: 'linear-gradient(145deg, #7a5c10 0%, #a88020 15%, #d4a828 28%, #f8d040 40%, #ffe040 48%, #f8c830 58%, #c89020 72%, #906800 87%, #6a4e08 100%)',
+    medallionShadow: '0 6px 24px -4px rgba(200,160,20,0.8), inset 0 1px 0 rgba(255,245,150,0.6), inset 0 -1px 0 rgba(0,0,0,0.25)',
+    iconColor: '#2a1800',
+    tileBorderColor: 'rgba(200,158,20,0.5)',
+    tileGlowColor: 'rgba(200,158,20,0.1)',
+  },
+  // Tier 5 — Rose Gold
+  promesa_cumplida: {
+    medallionBg: 'linear-gradient(145deg, #8a5858 0%, #b07878 15%, #d0a090 28%, #f0c0b0 42%, #f8c8b8 50%, #e0a898 60%, #c08080 75%, #8a5858 100%)',
+    medallionShadow: '0 6px 20px -4px rgba(200,130,130,0.65), inset 0 1px 0 rgba(255,225,215,0.5), inset 0 -1px 0 rgba(0,0,0,0.2)',
+    iconColor: '#2a1010',
+    tileBorderColor: 'rgba(200,130,130,0.4)',
+    tileGlowColor: 'rgba(200,130,130,0.08)',
+  },
+  // Tier 6 — Platinum
+  negocio_en_marcha: {
+    medallionBg: 'linear-gradient(145deg, #a0a0b4 0%, #c0c0d4 15%, #d8d8ec 28%, #f0f0fc 40%, #ffffff 50%, #e8e8f8 60%, #ccccde 75%, #a8a8bc 87%, #909098 100%)',
+    medallionShadow: '0 6px 24px -4px rgba(180,180,220,0.7), inset 0 1px 0 rgba(255,255,255,0.85), inset 0 -1px 0 rgba(0,0,0,0.15)',
+    iconColor: '#18182a',
+    tileBorderColor: 'rgba(190,190,230,0.45)',
+    tileGlowColor: 'rgba(190,190,230,0.08)',
+  },
+  // Tier 7 — Titanium
+  directorio_dorado: {
+    medallionBg: 'linear-gradient(145deg, #2a2f3c 0%, #3c4454 15%, #505a6c 28%, #687080 40%, #747e90 50%, #60686e 62%, #484e5a 75%, #333844 87%, #252830 100%)',
+    medallionShadow: '0 6px 20px -4px rgba(60,80,120,0.65), inset 0 1px 0 rgba(200,210,240,0.25), inset 0 -1px 0 rgba(0,0,0,0.4)',
+    iconColor: '#d0d8f0',
+    tileBorderColor: 'rgba(80,100,150,0.4)',
+    tileGlowColor: 'rgba(80,100,150,0.07)',
+  },
+  // Tier 8 — Obsidian
+  creador_imparable: {
+    medallionBg: 'linear-gradient(220deg, rgba(120,80,240,0.5) 0%, rgba(60,100,255,0.3) 35%, transparent 65%, rgba(160,60,200,0.3) 100%), linear-gradient(145deg, #0c0810 0%, #1c1228 20%, #2e1e42 40%, #22163a 60%, #140c22 80%, #080510 100%)',
+    medallionShadow: '0 6px 24px -4px rgba(100,60,220,0.8), inset 0 1px 0 rgba(180,140,255,0.35), inset 0 -1px 0 rgba(0,0,0,0.5)',
+    iconColor: '#c8b8ff',
+    tileBorderColor: 'rgba(100,60,200,0.5)',
+    tileGlowColor: 'rgba(100,60,200,0.1)',
+  },
+  // Tier 9 — Diamond / Prismatic
+  lluvia_de_billetes: {
+    medallionBg: 'linear-gradient(135deg, rgba(255,255,255,0.75) 0%, rgba(255,255,255,0.2) 30%, transparent 55%), linear-gradient(125deg, #ff6eb4 0%, #ff9548 14%, #ffe44d 28%, #72ed6a 42%, #4dc8ff 56%, #8b78ff 70%, #ff6eb4 84%, #ff9548 100%)',
+    medallionShadow: '0 6px 28px -4px rgba(160,80,255,0.85), 0 0 20px rgba(255,200,50,0.45), inset 0 1px 0 rgba(255,255,255,0.9), inset 0 -1px 0 rgba(0,0,0,0.1)',
+    iconColor: '#ffffff',
+    tileBorderColor: 'rgba(160,100,255,0.5)',
+    tileGlowColor: 'rgba(160,100,255,0.12)',
+  },
+};
 
 function BadgeTile({ badge, unlocked }: { badge: BadgeDef; unlocked: boolean }) {
   const Icon = badge.icon;
+  const mat = BADGE_MATERIALS[badge.key];
   return (
     <div
-      className={cx(
-        'relative flex flex-col items-center gap-2 rounded-2xl border p-3 text-center transition-all',
-        unlocked
-          ? 'border-(--line-soft) bg-(--surface-card)'
-          : 'border-(--line-soft) bg-(--surface-muted) opacity-50',
-      )}
+      className="relative flex flex-col items-center gap-2.5 rounded-2xl p-3.5 text-center transition-all duration-300"
+      style={{
+        background: unlocked
+          ? `radial-gradient(ellipse at 50% 0%, ${mat.tileGlowColor} 0%, transparent 70%), var(--surface-card)`
+          : 'var(--surface-muted)',
+        border: `1px solid ${unlocked ? mat.tileBorderColor : 'var(--line-soft)'}`,
+      }}
     >
+      {/* Metallic medallion */}
       <div
-        className="flex h-10 w-10 items-center justify-center rounded-full"
+        className="flex h-14 w-14 items-center justify-center rounded-full transition-all duration-300"
         style={{
-          background: unlocked ? 'var(--accent-soft-strong)' : 'transparent',
+          background: mat.medallionBg,
+          boxShadow: mat.medallionShadow,
+          filter: unlocked ? 'none' : 'saturate(0.15) brightness(0.45)',
         }}
       >
-        <Icon
-          size={22}
-          weight={unlocked ? 'fill' : 'regular'}
-          style={{ color: unlocked ? 'var(--accent-color)' : 'var(--text-tertiary)' }}
-        />
+        <Icon size={26} weight="fill" style={{ color: mat.iconColor }} />
       </div>
-      <div>
+      {/* Label */}
+      <div style={{ opacity: unlocked ? 1 : 0.5, transition: 'opacity 300ms' }}>
         <p className="text-[11px] font-semibold leading-tight text-(--text-primary)">
           {badge.label}
         </p>
@@ -520,7 +607,7 @@ function BadgeTile({ badge, unlocked }: { badge: BadgeDef; unlocked: boolean }) 
       </div>
       {!unlocked && (
         <Lock
-          size={12}
+          size={11}
           weight="fill"
           className="absolute right-2 top-2 text-(--text-tertiary)"
         />
