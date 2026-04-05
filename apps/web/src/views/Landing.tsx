@@ -214,7 +214,7 @@ export default function Landing({
         <div className="mt-8 grid items-start gap-12 sm:mt-12 lg:mt-20 lg:grid-cols-[1fr_420px] lg:gap-16 xl:grid-cols-[1fr_460px]">
           {/* Left: Hero */}
           <div className="max-w-2xl">
-            <h1 className="mt-6 text-[clamp(2.2rem,5.5vw,3.8rem)] font-black leading-[1.08] tracking-tight text-[var(--text-primary)]">
+            <h1 className="mt-2 text-[clamp(2.2rem,5.5vw,3.8rem)] font-black leading-[1.08] tracking-tight text-[var(--text-primary)]">
               El lado fácil de ser{' '}
               <span
                 className="bg-clip-text text-transparent"
@@ -226,7 +226,7 @@ export default function Landing({
               </span>
             </h1>
 
-            <div className="mt-5 flex flex-wrap gap-2">
+            <div className="mt-12 flex flex-wrap gap-2">
               {professions.map(({ label, Icon }) => (
                 <span
                   key={label}
