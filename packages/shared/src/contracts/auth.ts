@@ -35,6 +35,7 @@ export interface SessionUser {
 
 export interface MeResponse {
   user: SessionUser | null;
+  isNew?: boolean;
 }
 
 export interface ChangePasswordRequest {

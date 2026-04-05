@@ -114,7 +114,7 @@ export function createAuthRouter(
 
       setSessionUser(req, user);
 
-      const response: MeResponse = { user };
+      const response: MeResponse = { user, isNew: true };
       res.status(201).json(response);
     } catch (error) {
       console.error('Register error:', error);
@@ -394,8 +394,9 @@ export function createAuthRouter(
       );
 
       let userId: string;
+      const isNewUser = existing.length === 0;
 
-      if (existing.length === 0) {
+      if (isNewUser) {
         userId = randomUUID();
         await pool.query(
           `INSERT INTO users (id, email, password_hash, name, avatar, provider)
@@ -423,7 +424,7 @@ export function createAuthRouter(
 
       setSessionUser(req, user);
 
-      const response: MeResponse = { user };
+      const response: MeResponse = { user, isNew: isNewUser };
       res.json(response);
     } catch (error) {
       console.error('Supabase Google auth error:', error);

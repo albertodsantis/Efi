@@ -710,6 +710,7 @@ type AuthPhase = 'checking' | 'unauthenticated' | 'authenticated';
 export default function App() {
   const [authPhase, setAuthPhase] = useState<AuthPhase>('checking');
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
+  const [isNewRegistration, setIsNewRegistration] = useState(false);
 
   useEffect(() => {
     async function checkAuth() {
@@ -731,11 +732,12 @@ export default function App() {
           const { data } = await supabase.auth.getSession();
           if (data.session?.access_token) {
             // Exchange Supabase token for express-session
-            const { user } = await authApi.googleSupabase(data.session.access_token);
+            const response = await authApi.googleSupabase(data.session.access_token);
             // Sign out of Supabase — we only needed it for identity
             await supabase.auth.signOut();
-            if (user) {
-              setSessionUser(user);
+            if (response.user) {
+              setIsNewRegistration(response.isNew === true);
+              setSessionUser(response.user);
               setAuthPhase('authenticated');
               return;
             }
@@ -750,8 +752,6 @@ export default function App() {
 
     checkAuth();
   }, []);
-
-  const [isNewRegistration, setIsNewRegistration] = useState(false);
 
   const handleLogin = (user: SessionUser, isNew = false) => {
     setIsNewRegistration(isNew);
