@@ -715,7 +715,19 @@ export default function Profile() {
               <label className={labelClass}>Handle</label>
               <input
                 value={profileForm.handle || ''}
-                onChange={(event) => setProfileField('handle', event.target.value)}
+                onChange={(event) => {
+                  const newHandle = event.target.value;
+                  const cleanHandle = newHandle.replace(/^@/, '');
+                  setProfileForm((current) => {
+                    const newSocials = { ...(current.socialProfiles || {}) } as SocialProfiles;
+                    for (const field of socialProfileFields) {
+                      if (!newSocials[field.key]) {
+                        newSocials[field.key] = cleanHandle ? `@${cleanHandle}` : '';
+                      }
+                    }
+                    return { ...current, handle: newHandle, socialProfiles: newSocials };
+                  });
+                }}
                 className={fieldClass}
                 style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
                 placeholder="@tuusuario"
