@@ -246,7 +246,7 @@ export type PointEventType =
   | 'pipeline_task_paid';
 
 export type BadgeKey =
-  | 'perfil_estelar'       // Completaste tu perfil al 100%
+  | 'perfil_estelar'       // Empezaste a construir tu perfil público
   | 'vision_clara'         // Definiste 3 objetivos estratégicos
   | 'circulo_intimo'       // Agregaste 5 socios a tu red
   | 'directorio_dorado'    // 10 Socios y 10 Contactos en tu red

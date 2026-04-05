@@ -39,7 +39,7 @@ function getThresholds(level: number): { current: number; next: number } {
 // ── Prompt suggestions ────────────────────────────────────────
 
 const PROMPTS: Array<{ badge: BadgeKey; text: string }> = [
-  { badge: 'perfil_estelar', text: 'Completa tu perfil para ganar +100 ⚡' },
+  { badge: 'perfil_estelar', text: 'Activa tu perfil público para ganar +100 ⚡' },
   { badge: 'vision_clara', text: 'Define 3 objetivos estratégicos para desbloquear un emblema' },
   { badge: 'motor_de_ideas', text: 'Crea 5 entregas en tu pipeline para ganar tu próximo emblema' },
   { badge: 'circulo_intimo', text: 'Agrega 5 socios a tu red para ganar tu próximo emblema' },

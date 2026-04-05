@@ -476,7 +476,7 @@ interface BadgeDef {
 }
 
 const ALL_BADGES: BadgeDef[] = [
-  { key: 'perfil_estelar',    label: 'Perfil Estelar',    description: 'Completaste tu perfil al 100%',          icon: Star },
+  { key: 'perfil_estelar',    label: 'Perfil Público Activado', description: 'Empezaste a construir tu perfil público', icon: Star },
   { key: 'vision_clara',      label: 'Visión Clara',      description: 'Definiste 3 objetivos estratégicos',     icon: Eye },
   { key: 'circulo_intimo',    label: 'Círculo Íntimo',    description: 'Agregaste 5 socios a tu red',            icon: Users },
   { key: 'directorio_dorado', label: 'Directorio Dorado', description: '10 socios y 10 contactos en tu red',    icon: Trophy },
@@ -575,43 +575,83 @@ const BADGE_MATERIALS: Record<BadgeKey, MaterialStyle> = {
 function BadgeTile({ badge, unlocked }: { badge: BadgeDef; unlocked: boolean }) {
   const Icon = badge.icon;
   const mat = BADGE_MATERIALS[badge.key];
+
+  // Extract a more opaque spotlight color from the border color
+  const spotlightColor = mat.tileBorderColor.replace(/rgba\(([^,]+,[^,]+,[^,]+),.*\)/, 'rgba($1,0.40)');
+
   return (
-    <div
-      className="relative flex flex-col items-center gap-2.5 rounded-2xl p-3.5 text-center transition-all duration-300"
-      style={{
-        background: unlocked
-          ? `radial-gradient(ellipse at 50% 0%, ${mat.tileGlowColor} 0%, transparent 70%), var(--surface-card)`
-          : 'var(--surface-muted)',
-        border: `1px solid ${unlocked ? mat.tileBorderColor : 'var(--line-soft)'}`,
-      }}
-    >
-      {/* Metallic medallion */}
-      <div
-        className="flex h-14 w-14 items-center justify-center rounded-full transition-all duration-300"
-        style={{
-          background: mat.medallionBg,
-          boxShadow: mat.medallionShadow,
-          filter: unlocked ? 'none' : 'saturate(0.15) brightness(0.45)',
-        }}
-      >
-        <Icon size={26} weight="fill" style={{ color: mat.iconColor }} />
+    <div className="flex flex-col items-center">
+      {/* Pedestal area */}
+      <div className="relative flex flex-col items-center">
+        {/* Theatrical spotlight — only for unlocked */}
+        {unlocked && (
+          <div
+            className="pointer-events-none absolute -top-5 left-1/2 h-28 w-28 -translate-x-1/2 rounded-full blur-2xl"
+            style={{ background: spotlightColor }}
+          />
+        )}
+
+        {/* Metallic medallion */}
+        <div
+          className="relative z-10 flex h-14 w-14 items-center justify-center rounded-full"
+          style={
+            unlocked
+              ? { background: mat.medallionBg, boxShadow: mat.medallionShadow }
+              : {
+                  background: 'linear-gradient(145deg, #1c1c22 0%, #28282e 50%, #1a1a20 100%)',
+                  boxShadow: 'inset 0 2px 8px rgba(0,0,0,0.85), 0 2px 6px rgba(0,0,0,0.6)',
+                }
+          }
+        >
+          {unlocked ? (
+            <Icon size={26} weight="fill" style={{ color: mat.iconColor }} />
+          ) : (
+            <Lock size={20} weight="fill" style={{ color: '#3a3a48' }} />
+          )}
+        </div>
+
+        {/* Floating shelf plank */}
+        <div
+          className="relative z-10 mt-1.5 h-2 w-[4.5rem] rounded-sm"
+          style={
+            unlocked
+              ? {
+                  background: 'linear-gradient(180deg, #2a2a3c 0%, #18182a 100%)',
+                  borderBottom: `3px solid ${mat.tileBorderColor}`,
+                  boxShadow: `0 6px 16px -2px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.04), 0 3px 8px -2px ${mat.tileBorderColor}`,
+                }
+              : {
+                  background: 'linear-gradient(180deg, #181818 0%, #101010 100%)',
+                  borderBottom: '3px solid #252528',
+                  boxShadow: '0 4px 10px -2px rgba(0,0,0,0.6)',
+                }
+          }
+        />
       </div>
-      {/* Label */}
-      <div style={{ opacity: unlocked ? 1 : 0.5, transition: 'opacity 300ms' }}>
-        <p className="text-[11px] font-semibold leading-tight text-(--text-primary)">
+
+      {/* Museum wall plaque */}
+      <div
+        className="mt-3 w-full rounded px-2 py-1.5 text-center"
+        style={
+          unlocked
+            ? {
+                background: 'rgba(255,255,255,0.03)',
+                border: `1px solid ${mat.tileBorderColor}`,
+              }
+            : {
+                background: 'rgba(255,255,255,0.015)',
+                border: '1px solid rgba(255,255,255,0.07)',
+                opacity: 0.4,
+              }
+        }
+      >
+        <p className="text-[11px] font-semibold leading-tight" style={{ color: unlocked ? '#d0d0e0' : '#606068' }}>
           {badge.label}
         </p>
-        <p className="mt-0.5 text-[10px] leading-tight text-(--text-secondary)">
+        <p className="mt-0.5 text-[10px] leading-tight" style={{ color: unlocked ? '#787890' : '#404048' }}>
           {badge.description}
         </p>
       </div>
-      {!unlocked && (
-        <Lock
-          size={11}
-          weight="fill"
-          className="absolute right-2 top-2 text-(--text-tertiary)"
-        />
-      )}
     </div>
   );
 }
@@ -636,30 +676,44 @@ function BadgesDrawer({ unlockedBadges, onClose }: { unlockedBadges: BadgeKey[];
     <div className="fixed inset-0 z-50 flex justify-end">
       {/* Backdrop */}
       <div
-        className={`absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 ${mounted ? 'opacity-100' : 'opacity-0'}`}
+        className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${mounted ? 'opacity-100' : 'opacity-0'}`}
         onClick={onClose}
       />
       {/* Panel */}
-      <div className={`relative flex h-full w-full max-w-sm flex-col bg-(--surface-card) shadow-2xl transition-transform duration-300 ease-out ${mounted ? 'translate-x-0' : 'translate-x-full'}`}>
+      <div
+        className={`relative flex h-full w-full max-w-sm flex-col overflow-hidden shadow-2xl transition-transform duration-300 ease-out ${mounted ? 'translate-x-0' : 'translate-x-full'}`}
+        style={{ background: 'linear-gradient(180deg, #0e0e1a 0%, #090910 55%, #060608 100%)' }}
+      >
+        {/* Ambient ceiling glow */}
+        <div
+          className="pointer-events-none absolute inset-x-0 top-0 h-72"
+          style={{ background: 'radial-gradient(ellipse at 50% -10%, rgba(70,50,160,0.45) 0%, transparent 68%)' }}
+        />
+
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[var(--line-soft)] px-5 py-4">
+        <div
+          className="relative z-10 flex items-center justify-between px-5 py-4"
+          style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}
+        >
           <div>
-            <h2 className="text-base font-bold text-[var(--text-primary)]">Emblemas</h2>
-            <p className="mt-0.5 text-xs text-[var(--text-secondary)]">
+            <h2 className="text-base font-bold" style={{ color: '#dcdcf0' }}>Sala de Trofeos</h2>
+            <p className="mt-0.5 text-xs" style={{ color: '#50508a' }}>
               {unlockedBadges.length} de {ALL_BADGES.length} ganados
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]"
+            className="flex h-8 w-8 items-center justify-center rounded-lg transition-colors hover:bg-white/5"
+            style={{ color: '#50508a' }}
           >
             <X size={18} />
           </button>
         </div>
+
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-5">
-          <div className="grid grid-cols-3 gap-3">
+        <div className="relative z-10 flex-1 overflow-y-auto p-5">
+          <div className="grid grid-cols-3 gap-x-3 gap-y-7">
             {ALL_BADGES.map((badge) => (
               <BadgeTile key={badge.key} badge={badge} unlocked={unlockedBadges.includes(badge.key)} />
             ))}
