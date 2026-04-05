@@ -36,11 +36,11 @@ const features = [
   {
     icon: Users,
     title: 'Directorio',
-    description: 'Organiza marcas, contactos y seguimiento financiero.',
+    description: 'Organiza clientes y contactos con tus términos.',
   },
   {
     icon: ChartBar,
-    title: 'Perfil & Media Kit',
+    title: 'Perfil Público',
     description: 'Tu identidad profesional y materiales de presentación.',
   },
   {
@@ -192,7 +192,7 @@ export default function Landing({
               style={{ backgroundColor: `${BRAND_ORANGE}14`, color: BRAND_ORANGE }}
             >
               <Sparkle size={13} />
-              CRM para creadores
+              CRM para ti
             </div>
 
             <h1 className="mt-6 text-[clamp(2.2rem,5.5vw,3.8rem)] font-black leading-[1.08] tracking-tight text-[var(--text-primary)]">
@@ -203,12 +203,12 @@ export default function Landing({
                   backgroundImage: `linear-gradient(135deg, ${BRAND_ORANGE}, ${BRAND_PINK}, ${BRAND_PURPLE})`,
                 }}
               >
-                freelancers creativos
+                freelancers.
               </span>
             </h1>
 
             <p className="mt-5 max-w-lg text-base leading-7 text-[var(--text-secondary)] sm:text-lg sm:leading-8">
-              Gestiona colaboraciones, entregables y contactos desde un workspace
+              Gestiona clientes, colaboraciones, entregables y contactos desde un workspace
               compacto.
             </p>
 
