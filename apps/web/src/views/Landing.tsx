@@ -1,12 +1,24 @@
 import React, { useState } from 'react';
 import {
   ArrowRight,
+  Article,
+  Briefcase,
+  Broadcast,
+  Camera,
   ChartBar,
   CalendarDots,
+  ChatsCircle,
+  Compass,
   Eye,
   EyeSlash,
+  Headphones,
   Kanban,
+  Microphone,
+  MonitorPlay,
+  Presentation,
+  Radio,
   Sparkle,
+  Star,
   Users,
 } from '@phosphor-icons/react';
 import type { SessionUser } from '@shared';
@@ -21,6 +33,21 @@ const BRAND_GOLD = '#FCAF45';
 const BRAND_ORANGE = '#F56040';
 const BRAND_PINK = '#E1306C';
 const BRAND_PURPLE = '#833AB4';
+
+const professions = [
+  { label: 'Creador de contenido', Icon: Star },
+  { label: 'Podcaster',            Icon: Microphone },
+  { label: 'Streamer',             Icon: MonitorPlay },
+  { label: 'Radio',                Icon: Radio },
+  { label: 'Fotógrafo',            Icon: Camera },
+  { label: 'Copywriter',           Icon: Article },
+  { label: 'Community Manager',    Icon: ChatsCircle },
+  { label: 'Host / Presentador',   Icon: Broadcast },
+  { label: 'Conferencista',        Icon: Presentation },
+  { label: 'DJ',                   Icon: Headphones },
+  { label: 'Reclutador',           Icon: Briefcase },
+  { label: 'Coach',                Icon: Compass },
+];
 
 const features = [
   {
@@ -187,14 +214,6 @@ export default function Landing({
         <div className="mt-8 grid items-start gap-12 sm:mt-12 lg:mt-20 lg:grid-cols-[1fr_420px] lg:gap-16 xl:grid-cols-[1fr_460px]">
           {/* Left: Hero */}
           <div className="max-w-2xl">
-            <div
-              className="inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-[11px] font-bold tracking-[0.14em] uppercase"
-              style={{ backgroundColor: `${BRAND_ORANGE}14`, color: BRAND_ORANGE }}
-            >
-              <Sparkle size={13} />
-              CRM para ti
-            </div>
-
             <h1 className="mt-6 text-[clamp(2.2rem,5.5vw,3.8rem)] font-black leading-[1.08] tracking-tight text-[var(--text-primary)]">
               Tu espacio operativo para{' '}
               <span
@@ -206,6 +225,18 @@ export default function Landing({
                 freelancers.
               </span>
             </h1>
+
+            <div className="mt-5 flex flex-wrap gap-2">
+              {professions.map(({ label, Icon }) => (
+                <span
+                  key={label}
+                  className="inline-flex items-center gap-1.5 rounded-full border bg-(--surface-card)/60 px-3 py-1 text-[11px] font-semibold text-(--text-secondary) border-(--line-soft)"
+                >
+                  <Icon size={12} />
+                  {label}
+                </span>
+              ))}
+            </div>
 
             <p className="mt-5 max-w-lg text-base leading-7 text-[var(--text-secondary)] sm:text-lg sm:leading-8">
               Gestiona clientes, colaboraciones, entregables y contactos desde un workspace
@@ -446,7 +477,7 @@ export default function Landing({
         {/* Footer */}
         <div className="border-t py-8 text-center [border-color:var(--line-soft)] lg:mt-16">
           <p className="text-xs text-[var(--text-secondary)]/60">
-            Efi — workspace operativo para creadores de contenido
+            Efi - workspace operativo para freelancers.
           </p>
         </div>
       </div>
