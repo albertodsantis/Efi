@@ -62,8 +62,19 @@ export function createAuthRouter(
 
   // ── GET /me ───────────────────────────────────────────────────
 
-  router.get('/me', (req, res) => {
-    const response: MeResponse = { user: getSessionUser(req) };
+  router.get('/me', async (req, res) => {
+    const sessionUser = getSessionUser(req);
+
+    if (sessionUser?.id) {
+      const { rows } = await pool.query('SELECT id FROM users WHERE id = $1', [sessionUser.id]);
+      if (rows.length === 0) {
+        req.session.destroy(() => {});
+        const response: MeResponse = { user: null };
+        return res.json(response);
+      }
+    }
+
+    const response: MeResponse = { user: sessionUser };
     res.json(response);
   });
 

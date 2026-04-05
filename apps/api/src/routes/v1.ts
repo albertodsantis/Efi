@@ -26,25 +26,32 @@ function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'Bad request';
 }
 
-/** Require authenticated session — attaches userId to req. */
-function requireAuth(req: Request, res: Response, next: NextFunction) {
-  const user: SessionUser | undefined = (req.session as any).user;
-  if (!user?.id) {
-    return res.status(401).json({ error: 'No autenticado.' });
-  }
-  (req as any).userId = user.id;
-  next();
+/** Require authenticated session — attaches userId to req. Also verifies the user still exists in DB. */
+function requireAuth(pool: pg.Pool) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    const user: SessionUser | undefined = (req.session as any).user;
+    if (!user?.id) {
+      return res.status(401).json({ error: 'No autenticado.' });
+    }
+    const { rows } = await pool.query('SELECT id FROM users WHERE id = $1', [user.id]);
+    if (rows.length === 0) {
+      req.session.destroy(() => {});
+      return res.status(401).json({ error: 'Sesión inválida.' });
+    }
+    (req as any).userId = user.id;
+    next();
+  };
 }
 
 function getUserId(req: Request): string {
   return (req as any).userId;
 }
 
-export function createV1Router(appStore: PostgresAppStore, _pool: pg.Pool, gamification: GamificationService) {
+export function createV1Router(appStore: PostgresAppStore, pool: pg.Pool, gamification: GamificationService) {
   const router = Router();
 
   // All v1 routes require authentication
-  router.use(requireAuth);
+  router.use(requireAuth(pool));
 
   router.get('/bootstrap', async (req, res) => {
     try {
