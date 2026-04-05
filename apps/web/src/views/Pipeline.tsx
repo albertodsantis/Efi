@@ -965,46 +965,29 @@ export default function Pipeline() {
         key={iso}
         type="button"
         onClick={() => setSelectedDate(iso)}
-        className={cx(
-          'min-h-[4.5rem] rounded-[0.85rem] border p-2 text-left transition-all sm:min-h-[6.5rem] sm:rounded-[1rem] sm:p-3 xl:min-h-[8.5rem]',
-          isSelected
-            ? 'border-transparent shadow-[0_20px_45px_-28px_rgba(15,23,42,0.55)]'
-            : isToday
-              ? 'border-[var(--line-soft)] bg-[var(--surface-muted)]'
-              : 'border-transparent bg-[var(--surface-card)]/70 hover:border-[var(--line-soft)] hover:bg-[var(--surface-card)]',
-        )}
-        style={isSelected ? { backgroundColor: 'var(--accent-color)', color: 'var(--accent-foreground)' } : undefined}
+        className="group min-h-[4.5rem] rounded-[0.85rem] border border-transparent bg-[var(--surface-card)]/70 p-2 text-left sm:min-h-[6.5rem] sm:rounded-[1rem] sm:p-3 xl:min-h-[8.5rem]"
       >
         <div className="flex items-start justify-between gap-2">
           <span
             className={cx(
-              'inline-flex h-7 min-w-7 items-center justify-center rounded-[0.75rem] px-2 text-[11px] font-black sm:h-8 sm:min-w-8 sm:text-xs',
+              'inline-flex h-7 min-w-7 items-center justify-center rounded-[0.75rem] px-2 text-[11px] font-black transition-transform duration-150 group-hover:scale-110 sm:h-8 sm:min-w-8 sm:text-xs',
               isSelected
-                ? 'bg-white/18 text-inherit'
+                ? 'scale-110'
+                : '',
+              isToday
+                ? 'ring-2 ring-[var(--accent-color)] text-[var(--text-primary)]'
                 : dayTasks.length > 0
                   ? 'text-[var(--text-primary)]'
                   : 'bg-[var(--surface-muted)] text-[var(--text-secondary)]',
             )}
             style={
-              !isSelected && dayTasks.length > 0
+              dayTasks.length > 0
                 ? { background: accentGradient, color: 'var(--accent-foreground)' }
                 : undefined
             }
           >
             {date.getDate()}
           </span>
-          {dayTasks.length > 0 ? (
-            <span
-              className={cx(
-                'rounded-[0.7rem] px-1.5 py-0.5 text-[9px] font-bold tracking-[0.12em] uppercase sm:px-2 sm:py-1 sm:text-[10px]',
-                isSelected
-                  ? 'bg-white/12 text-inherit'
-                  : 'bg-[var(--surface-muted)] text-[var(--text-secondary)]',
-              )}
-            >
-              {dayTasks.length}
-            </span>
-          ) : null}
         </div>
 
         <div className="mt-2 space-y-1 sm:mt-3 sm:space-y-1.5">
@@ -1013,9 +996,7 @@ export default function Pipeline() {
               key={task.id}
               className={cx(
                 'hidden truncate rounded-[0.7rem] px-2 py-1 text-[11px] font-semibold sm:block',
-                isSelected
-                  ? 'bg-white/12 text-inherit'
-                  : 'bg-[var(--surface-muted)]/90 text-[var(--text-secondary)]',
+                'bg-[var(--surface-muted)]/90 text-[var(--text-secondary)]',
               )}
             >
               {task.title}
@@ -1026,7 +1007,7 @@ export default function Pipeline() {
               <p
                 className={cx(
                   'hidden pt-0.5 text-[11px] font-bold sm:block',
-                  isSelected ? 'text-inherit opacity-80' : 'text-[var(--text-secondary)]/70',
+                  'text-[var(--text-secondary)]/70',
                 )}
               >
                 +{dayTasks.length - 2} más
@@ -1035,7 +1016,7 @@ export default function Pipeline() {
               <p
                 className={cx(
                   'hidden pt-1 text-[11px] font-medium lg:block',
-                  isSelected ? 'text-inherit opacity-75' : 'text-[var(--text-secondary)]/70',
+                  'text-[var(--text-secondary)]/70',
                 )}
               >
                 Sin tareas
@@ -1350,7 +1331,7 @@ export default function Pipeline() {
           <OverlayModal onClose={() => setSelectedDate(null)}>
             <ModalPanel
               title={formatTaskDate(selectedDate, { day: 'numeric', month: 'long', year: 'numeric' })}
-              description="Estas son las tareas programadas para esta fecha."
+              description={selectedDateTasks.length === 1 ? '1 tarea programada para esta fecha.' : `${selectedDateTasks.length} tareas programadas para esta fecha.`}
               onClose={() => setSelectedDate(null)}
               size="lg"
             >
