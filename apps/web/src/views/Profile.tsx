@@ -4,6 +4,7 @@ import {
   BriefcaseMetal,
   CheckCircle,
   ArrowSquareOut,
+  Copy,
   FolderPlus,
   Image,
   CircleNotch,
@@ -603,6 +604,18 @@ export default function Profile() {
     window.open(`/mk/${encodeURIComponent(handle)}`, '_blank');
   };
 
+  const handleCopyLink = async () => {
+    const handle = (profileForm.handle || '').trim().replace(/^@/, '');
+    if (!handle) return;
+    const url = `${window.location.origin}/mk/${encodeURIComponent(handle)}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success('Enlace copiado');
+    } catch {
+      toast.error('Error al copiar enlace');
+    }
+  };
+
   return (
     <div className="relative">
       <div
@@ -655,8 +668,16 @@ export default function Profile() {
                   className="flex-1 justify-center sm:flex-none"
                 >
                   <ArrowSquareOut size={16} />
-                  Abrir Media Kit
+                  <span className="italic text-sm">{`/mk/${(profileForm.handle || '').trim().replace(/^@/, '')}`}</span>
                 </Button>
+                <button
+                  type="button"
+                  onClick={handleCopyLink}
+                  className="text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
+                  title="Copiar enlace"
+                >
+                  <Copy size={18} />
+                </button>
               </div>
             </div>
           </div>

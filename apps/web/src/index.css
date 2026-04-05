@@ -162,3 +162,24 @@ html.dark body {
   color: var(--text-primary);
 }
 
+/* ── CRT / Analog TV theme overlay ──────────────────────────────
+   Scanlines + vignette rendered as a fixed pseudo-element.
+   pointer-events: none ensures zero interaction cost.
+   Activates via the data-crt attribute set by AppContext.          */
+html[data-crt]::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  background:
+    radial-gradient(ellipse at 50% 50%, transparent 42%, rgba(0, 0, 0, 0.48) 100%),
+    repeating-linear-gradient(
+      0deg,
+      transparent 0px,
+      transparent 2px,
+      rgba(0, 0, 0, 0.07) 2px,
+      rgba(0, 0, 0, 0.07) 3px
+    );
+}
+

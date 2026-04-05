@@ -76,9 +76,9 @@ const tabs: Array<{
   },
   {
     id: 'profile',
-    label: 'Perfil',
-    shortLabel: 'Perfil',
-    description: 'Define identidad, objetivos y material de presentaci\u00f3n.',
+    label: 'Perfil Público',
+    shortLabel: 'Perfil Público',
+    description: 'Personaliza la página pública que enviarás a tus prospectos.',
     icon: User,
   },
   {

@@ -1,4 +1,5 @@
 export const ACCENT_OPTIONS = [
+  { name: 'CRT', value: 'retro:crt' },
   { name: 'IG', value: 'gradient:instagram' },
   { name: 'TikTok', value: 'conic:tiktok' },
   { name: 'Matcha', value: '#74A12E' },
@@ -10,6 +11,14 @@ export const ACCENT_OPTIONS = [
   { name: 'Turquesa', value: '#06B6D4' },
   { name: 'Fucsia', value: '#D946EF' },
 ] as const;
+
+// Retro presets — stored as "retro:<key>" in the database
+const RETRO_PRESETS: Record<string, { representative: string; swatch: string }> = {
+  crt: {
+    representative: '#FFB000',
+    swatch: 'radial-gradient(ellipse at 42% 38%, #FFD966 0%, #FFB000 35%, #7A4F00 70%, #140900 100%)',
+  },
+};
 
 // Gradient presets — stored as "gradient:<key>" in the database
 const GRADIENT_PRESETS: Record<string, { gradient: string; representative: string }> = {
@@ -27,6 +36,10 @@ const CONIC_PRESETS: Record<string, { conic: string; representative: string; sec
     secondary: '#25F4EE',
   },
 };
+
+export function isRetroAccent(value: string): boolean {
+  return value.startsWith('retro:');
+}
 
 export function isGradientAccent(value: string): boolean {
   return value.startsWith('gradient:');
@@ -47,6 +60,7 @@ export function getConicCss(value: string): string | null {
 }
 
 export function getSwatchCss(value: string): string {
+  if (isRetroAccent(value)) return RETRO_PRESETS[value.replace('retro:', '')]?.swatch ?? value;
   if (isGradientAccent(value)) return getGradientCss(value) || value;
   if (isConicAccent(value)) return getConicCss(value) || value;
   return value;
@@ -58,6 +72,10 @@ export function getAccentSecondary(value: string): string | null {
 }
 
 export function getRepresentativeHex(value: string): string {
+  if (isRetroAccent(value)) {
+    const key = value.replace('retro:', '');
+    return RETRO_PRESETS[key]?.representative ?? '#C96F5B';
+  }
   if (isGradientAccent(value)) {
     const key = value.replace('gradient:', '');
     return GRADIENT_PRESETS[key]?.representative ?? '#C96F5B';
@@ -71,6 +89,32 @@ export function getRepresentativeHex(value: string): string {
 
 // Surface overrides — keyed by normalized accent value, defines light + dark surface variables
 const SURFACE_THEMES: Record<string, { light: Record<string, string>; dark: Record<string, string> }> = {
+  'retro:crt': {
+    light: {
+      '--surface-app': '#0b0800',
+      '--surface-shell': 'rgba(18, 12, 0, 0.94)',
+      '--surface-card': 'rgba(24, 16, 0, 0.88)',
+      '--surface-card-strong': 'rgba(30, 20, 0, 0.96)',
+      '--surface-muted': 'rgba(20, 13, 0, 0.82)',
+      '--surface-overlay': 'rgba(14, 9, 0, 0.72)',
+      '--text-primary': '#ffd077',
+      '--text-secondary': '#b87f2a',
+      '--line-soft': 'rgba(255, 176, 0, 0.11)',
+      '--line-strong': 'rgba(255, 176, 0, 0.18)',
+    },
+    dark: {
+      '--surface-app': '#0b0800',
+      '--surface-shell': 'rgba(18, 12, 0, 0.94)',
+      '--surface-card': 'rgba(24, 16, 0, 0.88)',
+      '--surface-card-strong': 'rgba(30, 20, 0, 0.96)',
+      '--surface-muted': 'rgba(20, 13, 0, 0.82)',
+      '--surface-overlay': 'rgba(14, 9, 0, 0.72)',
+      '--text-primary': '#ffd077',
+      '--text-secondary': '#b87f2a',
+      '--line-soft': 'rgba(255, 176, 0, 0.11)',
+      '--line-strong': 'rgba(255, 176, 0, 0.18)',
+    },
+  },
   '#74a12e': {
     light: {
       '--surface-app': '#f0f4eb',
@@ -104,6 +148,7 @@ const SURFACE_OVERRIDE_KEYS = [
   '--surface-card-strong',
   '--surface-muted',
   '--surface-overlay',
+  '--text-primary',
   '--text-secondary',
   '--line-soft',
   '--line-strong',

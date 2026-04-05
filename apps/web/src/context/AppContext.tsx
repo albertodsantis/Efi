@@ -18,7 +18,7 @@ import type {
   UserProfile,
 } from '@shared';
 import { appApi } from '../lib/api';
-import { getAccentCssVariables, getGradientCss, getRepresentativeHex, getSurfaceOverrides, isGradientAccent } from '../lib/accent';
+import { getAccentCssVariables, getGradientCss, getRepresentativeHex, getSurfaceOverrides, isGradientAccent, isRetroAccent } from '../lib/accent';
 import { addLocalDays, formatLocalDateISO } from '../lib/date';
 import { toast } from '../lib/toast';
 
@@ -184,6 +184,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     Object.entries(variables).forEach(([key, value]) => {
       document.documentElement.style.setProperty(key, value);
     });
+
+    if (isRetroAccent(state.accentColor)) {
+      document.documentElement.setAttribute('data-crt', '');
+    } else {
+      document.documentElement.removeAttribute('data-crt');
+    }
 
     // Guardamos en caché para que la Landing page pueda leerlo antes de iniciar sesión
     localStorage.setItem('efi_accent_color', state.accentColor);
@@ -544,7 +550,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     setActionError(null);
 
     try {
-      const res = await appApi.updateSettings({ accentColor: color });
+      const updates: Parameters<typeof appApi.updateSettings>[0] = { accentColor: color };
+      if (isRetroAccent(color)) updates.theme = 'dark';
+      const res = await appApi.updateSettings(updates);
       setState((current) => ({
         ...current,
         accentColor: res.accentColor,
