@@ -1,11 +1,9 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Target,
   TrendUp,
   Users as UsersIcon,
   ListChecks,
-  CircleNotch,
-  Warning,
   Plus,
   PencilLine,
   Trash,
@@ -23,7 +21,6 @@ import {
 } from '../components/ui';
 import OverlayModal from '../components/OverlayModal';
 import CustomSelect from '../components/CustomSelect';
-import { appApi } from '../lib/api';
 import { toast } from '../lib/toast';
 import type { Goal, GoalAggregation, GoalPriority, GoalStatus, StrategicViewResponse } from '@shared';
 
@@ -433,34 +430,39 @@ function GoalFormModal({
 /* ── StrategicView ─────────────────────────────────────────── */
 
 export default function StrategicView() {
-  const { accentHex, accentGradient, profile, updateProfile } = useAppContext();
-  const [data, setData] = useState<StrategicViewResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { accentHex, accentGradient, profile, updateProfile, tasks, partners } = useAppContext();
   const [selectedGoalId, setSelectedGoalId] = useState<string | null>(null);
   const [modalGoal, setModalGoal] = useState<ReturnType<typeof emptyGoalForm> | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const loadData = useCallback(() => {
-    setLoading(true);
-    appApi.getStrategicView()
-      .then((res) => {
-        setData(res);
-        setError(null);
-        // Auto-select first goal if nothing selected
-        if (!selectedGoalId && res.goals.length > 0) {
-          setSelectedGoalId(res.goals[0].goal.id);
-        }
-      })
-      .catch((err) => setError(err instanceof Error ? err.message : 'Error al cargar vista estratégica'))
-      .finally(() => setLoading(false));
-  }, [selectedGoalId]);
-
-  useEffect(() => { loadData(); }, []);
+  const data = useMemo((): StrategicViewResponse => {
+    const goals = profile.goals ?? [];
+    return {
+      goals: goals.map((goal) => {
+        const goalTasks = tasks.filter((t) => t.goalId === goal.id);
+        const goalPartners = partners.filter((p) => p.goalId === goal.id);
+        const completedTasks = goalTasks.filter(
+          (t) => t.status === 'Completada' || t.status === 'Cobrado',
+        );
+        return {
+          goal,
+          taskCount: goalTasks.length,
+          totalValue: goalTasks.reduce((sum, t) => sum + (t.value ?? 0), 0),
+          completedTaskCount: completedTasks.length,
+          partnerCount: goalPartners.length,
+          partners: goalPartners.map((p) => ({ id: p.id, name: p.name })),
+        };
+      }),
+      unassigned: {
+        taskCount: tasks.filter((t) => !t.goalId).length,
+        totalValue: tasks.filter((t) => !t.goalId).reduce((sum, t) => sum + (t.value ?? 0), 0),
+        partnerCount: partners.filter((p) => !p.goalId).length,
+      },
+    };
+  }, [profile.goals, tasks, partners]);
 
   // Keep selection valid
   useEffect(() => {
-    if (!data) return;
     if (data.goals.length === 0) {
       setSelectedGoalId(null);
       return;
@@ -471,7 +473,6 @@ export default function StrategicView() {
   }, [data, selectedGoalId]);
 
   const activeGoal = useMemo(() => {
-    if (!data) return null;
     return data.goals.find((g) => g.goal.id === selectedGoalId) ?? data.goals[0] ?? null;
   }, [data, selectedGoalId]);
 
@@ -479,7 +480,6 @@ export default function StrategicView() {
     setSaving(true);
     try {
       await updateProfile({ goals: updatedGoals });
-      loadData();
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error desconocido';
       toast.error(`Error al guardar: ${msg}`);
@@ -541,25 +541,6 @@ export default function StrategicView() {
     setModalGoal(null);
     toast.success(isNew ? 'Objetivo creado' : 'Objetivo actualizado');
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <CircleNotch size={24} className="animate-spin text-(--text-secondary)" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="p-4 lg:px-8">
-        <SurfaceCard className="p-6 text-center">
-          <Warning size={32} className="mx-auto text-amber-500" />
-          <p className="mt-2 text-sm text-(--text-secondary)">{error}</p>
-        </SurfaceCard>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-5 p-4 pb-6 animate-in fade-in slide-in-from-bottom-4 duration-500 lg:px-8 lg:pt-4 lg:pb-8">
