@@ -19,6 +19,7 @@ interface BlockMeta {
 }
 
 const BLOCK_META: Record<BlockType, BlockMeta> = {
+  identity: { label: 'Identidad', description: 'Nombre, handle, avatar, redes sociales y tagline', icon: Users },
   about: { label: 'Sobre mí', description: 'Bio, foto principal y hashtags de tu nicho', icon: Users },
   metrics: { label: 'Métricas', description: 'Seguidores, engagement, audiencia y distribución geográfica', icon: ChartBar },
   portfolio: { label: 'Portfolio', description: 'Galería de imágenes de tu trabajo', icon: Image },
@@ -38,7 +39,7 @@ const BLOCK_META: Record<BlockType, BlockMeta> = {
   links: { label: 'Links', description: 'Lista de enlaces — ideal para bio de Instagram', icon: Link },
 };
 
-const AVAILABLE_BLOCKS: BlockType[] = ['about', 'metrics', 'portfolio', 'brands', 'services', 'closing', 'links'];
+const AVAILABLE_BLOCKS: BlockType[] = ['identity', 'about', 'metrics', 'portfolio', 'brands', 'services', 'closing', 'links'];
 
 interface BlockPickerDrawerProps {
   enabledBlocks: BlockType[];

@@ -1,16 +1,20 @@
 import React from 'react';
 import { Plus, Trash } from '@phosphor-icons/react';
 import type { MediaKitMetric, MediaKitProfile } from '@shared';
-import { fieldClass, labelClass, safeArr } from './block-styles';
+import { fieldClass, labelClass, safeArr, isComponentEnabled, getHiddenComponents } from './block-styles';
+import { ComponentSection, AddComponentBar } from './ComponentSection';
 
 type MetricKey = 'insightStats' | 'audienceGender' | 'ageDistribution' | 'topCountries';
 
 interface MetricsBlockProps {
   mediaKit: Pick<MediaKitProfile, 'insightStats' | 'audienceGender' | 'ageDistribution' | 'topCountries'>;
   accentHex: string;
+  enabledComponents?: string[];
   onMetricChange: (key: MetricKey, index: number, field: keyof MediaKitMetric, value: string) => void;
   onAddMetric: (key: MetricKey) => void;
   onRemoveMetric: (key: MetricKey, index: number) => void;
+  onAddComponent?: (key: string) => void;
+  onRemoveComponent?: (key: string) => void;
 }
 
 function MetricGrid({
@@ -83,53 +87,85 @@ function MetricGrid({
   );
 }
 
-export default function MetricsBlock({ mediaKit, accentHex, onMetricChange, onAddMetric, onRemoveMetric }: MetricsBlockProps) {
+export default function MetricsBlock({
+  mediaKit,
+  accentHex,
+  enabledComponents,
+  onMetricChange,
+  onAddMetric,
+  onRemoveMetric,
+  onAddComponent,
+  onRemoveComponent,
+}: MetricsBlockProps) {
+  const hidden = getHiddenComponents('metrics', enabledComponents);
+
   return (
     <div className="grid gap-6">
-      <MetricGrid
-        label="Metricas principales"
-        metricKey="insightStats"
-        items={safeArr(mediaKit.insightStats)}
-        itemLabel="Etiqueta"
-        accentHex={accentHex}
-        addLabel="Añadir métrica"
-        onMetricChange={onMetricChange}
-        onAddMetric={onAddMetric}
-        onRemoveMetric={onRemoveMetric}
-      />
-      <MetricGrid
-        label="Audiencia"
-        metricKey="audienceGender"
-        items={safeArr(mediaKit.audienceGender)}
-        itemLabel="Segmento"
-        accentHex={accentHex}
-        addLabel="Añadir segmento"
-        onMetricChange={onMetricChange}
-        onAddMetric={onAddMetric}
-        onRemoveMetric={onRemoveMetric}
-      />
-      <MetricGrid
-        label="Rangos de edad"
-        metricKey="ageDistribution"
-        items={safeArr(mediaKit.ageDistribution)}
-        itemLabel="Rango"
-        accentHex={accentHex}
-        addLabel="Añadir rango"
-        onMetricChange={onMetricChange}
-        onAddMetric={onAddMetric}
-        onRemoveMetric={onRemoveMetric}
-      />
-      <MetricGrid
-        label="Top countries"
-        metricKey="topCountries"
-        items={safeArr(mediaKit.topCountries)}
-        itemLabel="País"
-        accentHex={accentHex}
-        addLabel="Añadir país"
-        onMetricChange={onMetricChange}
-        onAddMetric={onAddMetric}
-        onRemoveMetric={onRemoveMetric}
-      />
+      {isComponentEnabled('insight_stats', enabledComponents) && (
+        <ComponentSection label="Estadísticas principales" onRemove={() => onRemoveComponent?.('insight_stats')}>
+          <MetricGrid
+            label=""
+            metricKey="insightStats"
+            items={safeArr(mediaKit.insightStats)}
+            itemLabel="Etiqueta"
+            accentHex={accentHex}
+            addLabel="Añadir métrica"
+            onMetricChange={onMetricChange}
+            onAddMetric={onAddMetric}
+            onRemoveMetric={onRemoveMetric}
+          />
+        </ComponentSection>
+      )}
+
+      {isComponentEnabled('audience_gender', enabledComponents) && (
+        <ComponentSection label="Audiencia" onRemove={() => onRemoveComponent?.('audience_gender')}>
+          <MetricGrid
+            label=""
+            metricKey="audienceGender"
+            items={safeArr(mediaKit.audienceGender)}
+            itemLabel="Segmento"
+            accentHex={accentHex}
+            addLabel="Añadir segmento"
+            onMetricChange={onMetricChange}
+            onAddMetric={onAddMetric}
+            onRemoveMetric={onRemoveMetric}
+          />
+        </ComponentSection>
+      )}
+
+      {isComponentEnabled('age_distribution', enabledComponents) && (
+        <ComponentSection label="Rangos de edad" onRemove={() => onRemoveComponent?.('age_distribution')}>
+          <MetricGrid
+            label=""
+            metricKey="ageDistribution"
+            items={safeArr(mediaKit.ageDistribution)}
+            itemLabel="Rango"
+            accentHex={accentHex}
+            addLabel="Añadir rango"
+            onMetricChange={onMetricChange}
+            onAddMetric={onAddMetric}
+            onRemoveMetric={onRemoveMetric}
+          />
+        </ComponentSection>
+      )}
+
+      {isComponentEnabled('top_countries', enabledComponents) && (
+        <ComponentSection label="Top países" onRemove={() => onRemoveComponent?.('top_countries')}>
+          <MetricGrid
+            label=""
+            metricKey="topCountries"
+            items={safeArr(mediaKit.topCountries)}
+            itemLabel="País"
+            accentHex={accentHex}
+            addLabel="Añadir país"
+            onMetricChange={onMetricChange}
+            onAddMetric={onAddMetric}
+            onRemoveMetric={onRemoveMetric}
+          />
+        </ComponentSection>
+      )}
+
+      <AddComponentBar available={hidden} onAdd={(key) => onAddComponent?.(key)} />
     </div>
   );
 }

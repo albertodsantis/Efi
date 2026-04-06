@@ -111,6 +111,7 @@ export interface SocialProfiles {
 }
 
 export type BlockType =
+  | 'identity'
   | 'about'
   | 'metrics'
   | 'portfolio'
@@ -199,6 +200,7 @@ export interface MediaKitProfile {
   // Block system control
   enabledBlocks: BlockType[];
   blockOrder: BlockType[];
+  blockComponents: Record<string, string[]>; // sparse: only blocks with explicit config appear here; absent = all components enabled
 
   // Identity block fields
   periodLabel: string;
@@ -278,6 +280,7 @@ export function createDefaultMediaKitProfile(): MediaKitProfile {
   return {
     enabledBlocks: [],
     blockOrder: [],
+    blockComponents: {},
     periodLabel: '',
     updatedLabel: '',
     tagline: '',

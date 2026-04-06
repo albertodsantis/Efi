@@ -328,6 +328,7 @@ function normalizeMediaKitProfile(
     // Block system control — preserve as-is (undefined is valid for migration)
     enabledBlocks: mediaKit?.enabledBlocks ?? fallback.enabledBlocks,
     blockOrder: mediaKit?.blockOrder ?? fallback.blockOrder,
+    blockComponents: (mediaKit?.blockComponents && typeof mediaKit.blockComponents === 'object' && !Array.isArray(mediaKit.blockComponents)) ? mediaKit.blockComponents : fallback.blockComponents,
     // Identity block
     periodLabel: normalizeText(mediaKit?.periodLabel) || fallback.periodLabel,
     updatedLabel: normalizeText(mediaKit?.updatedLabel) || fallback.updatedLabel,

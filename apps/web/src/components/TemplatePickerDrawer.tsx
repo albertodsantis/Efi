@@ -5,6 +5,7 @@ import OverlayModal from './OverlayModal';
 import { BLOCK_TEMPLATES } from '../lib/blockTemplates';
 
 const BLOCK_LABELS: Record<BlockType, string> = {
+  identity:        'Identidad',
   about:           'Sobre mí',
   metrics:         'Métricas',
   portfolio:       'Portfolio',

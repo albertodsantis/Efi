@@ -41,6 +41,7 @@ import { Avatar, Button, SurfaceCard, cx } from '../components/ui';
 import { appApi } from '../lib/api';
 import { toast } from '../lib/toast';
 
+import { BLOCK_COMPONENT_CATALOG } from '../components/profile-blocks/block-styles';
 import BlockWrapper from '../components/profile-blocks/BlockWrapper';
 import BlockPickerDrawer from '../components/BlockPickerDrawer';
 import TemplatePickerDrawer from '../components/TemplatePickerDrawer';
@@ -75,6 +76,7 @@ const PROFESSIONS_LIST = Object.keys(PROFESSION_LABELS) as FreelancerType[];
 // ─── Block labels (for BlockWrapper headers) ──────────────────────────────────
 
 const BLOCK_LABELS: Record<BlockType, string> = {
+  identity:        'Identidad',
   about:           'Sobre mí',
   metrics:         'Métricas',
   portfolio:       'Portfolio',
@@ -403,6 +405,7 @@ export default function Profile() {
     if (mk.enabledBlocks !== undefined && mk.enabledBlocks !== null) return;
 
     const auto: BlockType[] = [];
+    if (profile.name || profile.handle) auto.push('identity');
     if (mk.featuredImage || mk.aboutTitle || safeArr(mk.aboutParagraphs).some((p: any) => p?.trim()) || safeArr(mk.topicTags).some((t: any) => t?.trim())) auto.push('about');
     if (getFilledMetricCount(mk.insightStats) || getFilledMetricCount(mk.audienceGender) || getFilledMetricCount(mk.ageDistribution) || getFilledMetricCount(mk.topCountries)) auto.push('metrics');
     if (getFilledCount(mk.portfolioImages)) auto.push('portfolio');
@@ -643,6 +646,43 @@ export default function Profile() {
     });
   };
 
+  const addComponent = (blockType: BlockType, componentKey: string) => {
+    setProfileForm((current) => {
+      const catalog = BLOCK_COMPONENT_CATALOG[blockType] ?? [];
+      const allKeys = catalog.map((c) => c.key);
+      const currentEnabled = current.mediaKit?.blockComponents?.[blockType] ?? allKeys;
+      if (currentEnabled.includes(componentKey)) return current;
+      return {
+        ...current,
+        mediaKit: {
+          ...(current.mediaKit || {}),
+          blockComponents: {
+            ...(current.mediaKit?.blockComponents || {}),
+            [blockType]: [...currentEnabled, componentKey],
+          },
+        } as MediaKitProfile,
+      };
+    });
+  };
+
+  const removeComponent = (blockType: BlockType, componentKey: string) => {
+    setProfileForm((current) => {
+      const catalog = BLOCK_COMPONENT_CATALOG[blockType] ?? [];
+      const allKeys = catalog.map((c) => c.key);
+      const currentEnabled = current.mediaKit?.blockComponents?.[blockType] ?? allKeys;
+      return {
+        ...current,
+        mediaKit: {
+          ...(current.mediaKit || {}),
+          blockComponents: {
+            ...(current.mediaKit?.blockComponents || {}),
+            [blockType]: currentEnabled.filter((k: string) => k !== componentKey),
+          },
+        } as MediaKitProfile,
+      };
+    });
+  };
+
   const applyTemplate = (blocks: BlockType[]) => {
     setProfileForm((current) => ({
       ...current,
@@ -838,12 +878,35 @@ export default function Profile() {
 
   const renderBlockContent = (type: BlockType) => {
     switch (type) {
+      case 'identity':
+        return (
+          <IdentityBlock
+            name={profileForm.name || ''}
+            handle={profileForm.handle || ''}
+            avatar={profileForm.avatar || ''}
+            socialProfiles={profileForm.socialProfiles || {} as SocialProfiles}
+            mediaKit={mediaKit}
+            accentHex={accentHex}
+            uploadsEnabled={uploadsEnabled}
+            socialDropdown={socialDropdown}
+            enabledComponents={mediaKit.blockComponents?.['identity']}
+            onNameChange={(v) => setProfileField('name', v)}
+            onHandleChange={(v) => setProfileField('handle', v)}
+            onAvatarChange={(url) => setProfileField('avatar', url)}
+            onSocialChange={setSocialField}
+            onSocialDropdownChange={setSocialDropdown}
+            onMediaKitChange={(key, v) => setMediaKitField(key, v)}
+            onAddComponent={(key) => addComponent('identity', key)}
+            onRemoveComponent={(key) => removeComponent('identity', key)}
+          />
+        );
       case 'about':
         return (
           <AboutBlock
             mediaKit={mediaKit}
             accentHex={accentHex}
             uploadsEnabled={uploadsEnabled}
+            enabledComponents={mediaKit.blockComponents?.['about']}
             onFeaturedImageChange={(url) => setMediaKitField('featuredImage', url)}
             onAboutTitleChange={(v) => setMediaKitField('aboutTitle', v)}
             onParagraphChange={(i, v) => setStringListField('aboutParagraphs', i, v)}
@@ -852,6 +915,8 @@ export default function Profile() {
             onTagChange={(i, v) => setStringListField('topicTags', i, v)}
             onAddTag={() => addStringListItem('topicTags')}
             onRemoveTag={(i) => removeStringListItem('topicTags', i)}
+            onAddComponent={(key) => addComponent('about', key)}
+            onRemoveComponent={(key) => removeComponent('about', key)}
           />
         );
       case 'metrics':
@@ -859,9 +924,12 @@ export default function Profile() {
           <MetricsBlock
             mediaKit={mediaKit}
             accentHex={accentHex}
+            enabledComponents={mediaKit.blockComponents?.['metrics']}
             onMetricChange={setMetricField}
             onAddMetric={addMetric}
             onRemoveMetric={removeMetric}
+            onAddComponent={(key) => addComponent('metrics', key)}
+            onRemoveComponent={(key) => removeComponent('metrics', key)}
           />
         );
       case 'portfolio':
@@ -898,11 +966,14 @@ export default function Profile() {
           <ServicesBlock
             mediaKit={mediaKit}
             accentHex={accentHex}
+            enabledComponents={mediaKit.blockComponents?.['services']}
             onTitleChange={(v) => setMediaKitField('servicesTitle', v)}
             onDescriptionChange={(v) => setMediaKitField('servicesDescription', v)}
             onOfferingChange={setOfferingField}
             onAddOffering={addOffering}
             onRemoveOffering={removeOffering}
+            onAddComponent={(key) => addComponent('services', key)}
+            onRemoveComponent={(key) => removeComponent('services', key)}
           />
         );
       case 'closing':
@@ -910,9 +981,12 @@ export default function Profile() {
           <ClosingBlock
             mediaKit={mediaKit}
             accentHex={accentHex}
+            enabledComponents={mediaKit.blockComponents?.['closing']}
             onTitleChange={(v) => setMediaKitField('closingTitle', v)}
             onDescriptionChange={(v) => setMediaKitField('closingDescription', v)}
             onFooterNoteChange={(v) => setMediaKitField('footerNote', v)}
+            onAddComponent={(key) => addComponent('closing', key)}
+            onRemoveComponent={(key) => removeComponent('closing', key)}
           />
         );
       case 'links':
@@ -1043,30 +1117,7 @@ export default function Profile() {
 
         </div>
 
-        {/* ── Identity block (mandatory) ── */}
-        <SurfaceCard className="p-6 lg:p-7">
-          <p className="mb-5 text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/70 uppercase">
-            Identidad
-          </p>
-          <IdentityBlock
-            name={profileForm.name || ''}
-            handle={profileForm.handle || ''}
-            avatar={profileForm.avatar || ''}
-            socialProfiles={profileForm.socialProfiles || {} as SocialProfiles}
-            mediaKit={mediaKit}
-            accentHex={accentHex}
-            uploadsEnabled={uploadsEnabled}
-            socialDropdown={socialDropdown}
-            onNameChange={(v) => setProfileField('name', v)}
-            onHandleChange={(v) => setProfileField('handle', v)}
-            onAvatarChange={(url) => setProfileField('avatar', url)}
-            onSocialChange={setSocialField}
-            onSocialDropdownChange={setSocialDropdown}
-            onMediaKitChange={(key, v) => setMediaKitField(key, v)}
-          />
-        </SurfaceCard>
-
-        {/* ── Optional blocks in order ── */}
+        {/* ── Blocks in order ── */}
         {blockOrder.map((type, index) => {
           const content = renderBlockContent(type);
           if (!content) return null;
