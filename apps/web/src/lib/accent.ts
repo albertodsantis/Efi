@@ -1,5 +1,5 @@
 export const ACCENT_OPTIONS = [
-  { name: 'CRT', value: 'retro:crt' },
+  { name: 'Vintage TV', value: 'retro:crt' },
   { name: 'Dawn', value: 'gradient:dawn' },
   { name: 'IG', value: 'gradient:instagram' },
   { name: 'TikTok', value: 'conic:tiktok' },
@@ -96,10 +96,20 @@ export function getRepresentativeHex(value: string): string {
 const SURFACE_THEMES: Record<string, { light: Record<string, string>; dark: Record<string, string> }> = {
   'gradient:dawn': {
     light: {
-      '--body-theme-bg': 'linear-gradient(180deg, rgba(255, 78, 54, 0.28) 0%, rgba(255, 161, 0, 0.16) 22%, rgba(255, 217, 61, 0.06) 44%, transparent 62%), linear-gradient(180deg, color-mix(in srgb, var(--surface-app) 82%, white) 0%, var(--surface-app) 100%)',
+      '--body-theme-bg': [
+        'radial-gradient(ellipse 75% 50% at 65% 110%, rgba(255, 165, 0, 0.55) 0%, rgba(255, 80, 30, 0.22) 45%, transparent 70%)',
+        'radial-gradient(ellipse 100% 42% at 50% 88%, rgba(235, 70, 90, 0.2) 0%, transparent 65%)',
+        'linear-gradient(180deg, rgba(65, 25, 120, 0.16) 0%, rgba(200, 70, 90, 0.1) 44%, rgba(255, 110, 45, 0.06) 68%, transparent 86%)',
+        'linear-gradient(180deg, color-mix(in srgb, var(--surface-app) 86%, white) 0%, var(--surface-app) 100%)',
+      ].join(', '),
     },
     dark: {
-      '--body-theme-bg': 'linear-gradient(180deg, rgba(255, 78, 54, 0.22) 0%, rgba(255, 161, 0, 0.12) 22%, rgba(255, 217, 61, 0.05) 44%, transparent 62%), linear-gradient(180deg, color-mix(in srgb, var(--surface-app) 94%, black) 0%, var(--surface-app) 100%)',
+      '--body-theme-bg': [
+        'radial-gradient(ellipse 70% 48% at 65% 110%, rgba(255, 138, 0, 0.58) 0%, rgba(205, 55, 18, 0.3) 48%, transparent 72%)',
+        'radial-gradient(ellipse 92% 44% at 50% 84%, rgba(195, 42, 82, 0.34) 0%, transparent 68%)',
+        'linear-gradient(180deg, rgba(16, 5, 42, 0.6) 0%, rgba(80, 15, 72, 0.4) 44%, rgba(172, 45, 35, 0.22) 70%, transparent 90%)',
+        'linear-gradient(180deg, color-mix(in srgb, var(--surface-app) 95%, black) 0%, var(--surface-app) 100%)',
+      ].join(', '),
     },
   },
   'retro:crt': {
