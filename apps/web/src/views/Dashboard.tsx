@@ -445,19 +445,12 @@ function RevenueChart({ tasks, accentHex, accentGradient }: { tasks: Task[]; acc
               <span
                 className={cx(
                   'mt-2 text-[9px] font-medium uppercase tracking-wide sm:text-[10px]',
-                  isCurrent
-                    ? 'font-black text-[var(--text-primary)]'
-                    : 'text-[var(--text-secondary)]',
+                  isCurrent ? 'font-black' : 'text-[var(--text-secondary)]',
                 )}
+                style={isCurrent ? { color: accentHex } : undefined}
               >
                 {month.label}
               </span>
-              {isCurrent && (
-                <div
-                  className="mt-0.5 h-1 w-1 rounded-full"
-                  style={{ background: accentGradient }}
-                />
-              )}
             </div>
           );
         })}
