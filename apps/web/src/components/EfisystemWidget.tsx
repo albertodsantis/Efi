@@ -1,5 +1,5 @@
 import { LightningIcon as Lightning, TrophyIcon as Trophy } from '@phosphor-icons/react';
-import type { BadgeKey, EfisystemSnapshot } from '@shared';
+import type { EfisystemSnapshot } from '@shared';
 
 // ── Level config ──────────────────────────────────────────────
 
@@ -36,28 +36,6 @@ function getThresholds(level: number): { current: number; next: number } {
   return { current, next };
 }
 
-// ── Prompt suggestions ────────────────────────────────────────
-
-const PROMPTS: Array<{ badge: BadgeKey; text: string }> = [
-  { badge: 'perfil_estelar', text: 'Activa tu perfil público para ganar +100 ⚡' },
-  { badge: 'vision_clara', text: 'Define 3 objetivos estratégicos para desbloquear un emblema' },
-  { badge: 'motor_de_ideas', text: 'Crea 5 entregas en tu pipeline para ganar tu próximo emblema' },
-  { badge: 'circulo_intimo', text: 'Agrega 5 socios a tu red para ganar tu próximo emblema' },
-  { badge: 'promesa_cumplida', text: 'Completa 10 entregas para ganar tu próximo emblema' },
-  { badge: 'negocio_en_marcha', text: 'Cobra 5 entregas para desbloquear Negocio en Marcha' },
-  { badge: 'directorio_dorado', text: 'Llega a 10 socios y 10 contactos para el Directorio Dorado' },
-  { badge: 'creador_imparable', text: 'Completa 25 entregas para ganar Creador Imparable' },
-  { badge: 'lluvia_de_billetes', text: 'Cobra 20 entregas para ganar Lluvia de Billetes' },
-];
-
-function getPromptText(unlockedBadges: BadgeKey[]): string {
-  const unmet = PROMPTS.filter(({ badge }) => !unlockedBadges.includes(badge));
-  if (unmet.length === 0) return '¡Eres una Leyenda! Sigue creando ⚡';
-  const candidates = unmet.slice(0, 3);
-  const dayIndex = Math.floor(Date.now() / 86_400_000);
-  return candidates[dayIndex % candidates.length].text;
-}
-
 // ── Component ─────────────────────────────────────────────────
 
 interface Props {
@@ -67,7 +45,7 @@ interface Props {
 }
 
 export default function EfisystemWidget({ efisystem, accentHex, onOpenBadges }: Props) {
-  const { totalPoints, currentLevel, unlockedBadges } = efisystem;
+  const { totalPoints, currentLevel } = efisystem;
   const { current: currentThreshold, next: nextThreshold } = getThresholds(currentLevel);
   const isMaxLevel = currentLevel >= 10;
 
@@ -77,8 +55,6 @@ export default function EfisystemWidget({ efisystem, accentHex, onOpenBadges }: 
         100,
         ((totalPoints - currentThreshold) / (nextThreshold - currentThreshold)) * 100,
       );
-
-  const promptText = getPromptText(unlockedBadges);
 
   return (
     <div>
@@ -114,14 +90,12 @@ export default function EfisystemWidget({ efisystem, accentHex, onOpenBadges }: 
         )}
       </div>
 
-      {/* Prompt + Emblemas button */}
-      <div className="mt-3 flex items-end justify-between gap-3">
-        <p className="text-xs text-(--text-secondary) leading-relaxed">{promptText}</p>
-        {onOpenBadges && (
+      {onOpenBadges && (
+        <div className="mt-3 flex justify-end">
           <button
             type="button"
             onClick={onOpenBadges}
-            className="flex shrink-0 items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold transition-all duration-200 hover:scale-105 active:scale-95"
+            className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold transition-all duration-200 hover:scale-105 active:scale-95"
             style={{
               background: `linear-gradient(135deg, ${accentHex}22 0%, ${accentHex}38 100%)`,
               color: accentHex,
@@ -131,8 +105,8 @@ export default function EfisystemWidget({ efisystem, accentHex, onOpenBadges }: 
             <Trophy size={13} weight="fill" />
             Placas
           </button>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
