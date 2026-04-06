@@ -97,30 +97,28 @@ const SURFACE_THEMES: Record<string, { light: Record<string, string>; dark: Reco
   'gradient:dawn': {
     light: {
       '--surface-app': '#f5efed',
-      '--surface-shell': 'rgba(248, 242, 240, 0.88)',
-      '--surface-card': 'rgba(248, 242, 240, 0.84)',
-      '--surface-card-strong': 'rgba(252, 246, 244, 0.96)',
-      '--surface-muted': 'rgba(240, 234, 230, 0.82)',
-      '--surface-overlay': 'rgba(244, 238, 235, 0.72)',
+      '--surface-shell': 'rgba(245, 239, 237, 0.82)',
+      '--surface-card': 'rgba(245, 239, 237, 0.76)',
+      '--surface-card-strong': 'rgba(250, 244, 242, 0.92)',
+      '--surface-muted': 'rgba(238, 232, 228, 0.74)',
+      '--surface-overlay': 'rgba(242, 236, 232, 0.68)',
       '--text-secondary': '#7a5a52',
       '--line-soft': 'rgba(190, 90, 55, 0.12)',
       '--line-strong': 'rgba(190, 90, 55, 0.20)',
       '--body-theme-bg': [
-        // Subtle sun warmth at horizon
-        'radial-gradient(ellipse 62% 18% at 50% 50%, rgba(255, 108, 28, 0.15) 0%, transparent 68%)',
-        // Dawn sky: soft violet at top → warm peach → golden at bottom
-        'linear-gradient(180deg, rgba(46, 12, 80, 0.10) 0%, rgba(145, 28, 65, 0.10) 28%, rgba(215, 65, 28, 0.12) 52%, rgba(255, 135, 18, 0.10) 74%, rgba(255, 205, 44, 0.07) 100%)',
-        // Preserve base surface warmth
-        'linear-gradient(180deg, color-mix(in srgb, var(--surface-app) 90%, white) 0%, var(--surface-app) 100%)',
+        // Sun warmth at horizon
+        'radial-gradient(ellipse 60% 22% at 50% 50%, rgba(255, 140, 50, 0.38) 0%, transparent 72%)',
+        // Pastel sky: soft violet → rose pink → warm peach → amber → gold → surface
+        'linear-gradient(180deg, #c0aee2 0%, #daa0c8 20%, #f09078 40%, #f7b84e 60%, #fcd86e 78%, #f5efed 100%)',
       ].join(', '),
     },
     dark: {
       '--surface-app': '#06011a',
-      '--surface-shell': 'rgba(10, 4, 28, 0.90)',
-      '--surface-card': 'rgba(16, 7, 38, 0.76)',
-      '--surface-card-strong': 'rgba(20, 9, 46, 0.93)',
-      '--surface-muted': 'rgba(14, 6, 32, 0.72)',
-      '--surface-overlay': 'rgba(9, 3, 22, 0.70)',
+      '--surface-shell': 'rgba(10, 4, 28, 0.82)',
+      '--surface-card': 'rgba(16, 7, 38, 0.65)',
+      '--surface-card-strong': 'rgba(20, 9, 46, 0.80)',
+      '--surface-muted': 'rgba(14, 6, 32, 0.60)',
+      '--surface-overlay': 'rgba(9, 3, 22, 0.58)',
       '--line-soft': 'rgba(255, 145, 42, 0.11)',
       '--line-strong': 'rgba(255, 145, 42, 0.18)',
       '--body-theme-bg': [
@@ -130,6 +128,41 @@ const SURFACE_THEMES: Record<string, { light: Record<string, string>; dark: Reco
         'radial-gradient(ellipse 82% 22% at 50% 56%, rgba(220, 55, 12, 0.46) 0%, rgba(255, 108, 20, 0.18) 54%, transparent 82%)',
         // Full sky: midnight → indigo → purple → magenta → crimson → orange → gold
         'linear-gradient(180deg, #06011a 0%, #1a0845 18%, #4a1265 32%, #8a1450 44%, #c42c22 55%, #e07012 66%, #f5a500 78%, #ffd840 92%, rgba(255, 210, 50, 0.40) 100%)',
+      ].join(', '),
+    },
+  },
+  'gradient:instagram': {
+    light: {
+      '--surface-app': '#f4eef8',
+      '--surface-shell': 'rgba(244, 238, 248, 0.82)',
+      '--surface-card': 'rgba(244, 238, 248, 0.76)',
+      '--surface-card-strong': 'rgba(248, 242, 252, 0.92)',
+      '--surface-muted': 'rgba(238, 232, 244, 0.74)',
+      '--surface-overlay': 'rgba(242, 236, 248, 0.68)',
+      '--text-secondary': '#7a4a7a',
+      '--line-soft': 'rgba(180, 60, 150, 0.12)',
+      '--line-strong': 'rgba(180, 60, 150, 0.20)',
+      '--body-theme-bg': [
+        // Pink-magenta warmth at center
+        'radial-gradient(ellipse 58% 20% at 50% 52%, rgba(220, 50, 100, 0.30) 0%, transparent 72%)',
+        // Pastel IG sky: soft purple → mauve → coral → peach → golden → surface
+        'linear-gradient(180deg, #c8a8e8 0%, #e0a0cc 22%, #f07888 42%, #f8a050 62%, #fcc840 80%, #f4eef8 100%)',
+      ].join(', '),
+    },
+    dark: {
+      '--surface-app': '#0d0120',
+      '--surface-shell': 'rgba(18, 5, 38, 0.82)',
+      '--surface-card': 'rgba(25, 8, 50, 0.65)',
+      '--surface-card-strong': 'rgba(30, 10, 58, 0.80)',
+      '--surface-muted': 'rgba(22, 6, 44, 0.60)',
+      '--surface-overlay': 'rgba(16, 4, 32, 0.58)',
+      '--line-soft': 'rgba(200, 60, 180, 0.12)',
+      '--line-strong': 'rgba(200, 60, 180, 0.20)',
+      '--body-theme-bg': [
+        // Magenta core glow at mid-screen
+        'radial-gradient(ellipse 75% 25% at 50% 52%, rgba(200, 25, 90, 0.45) 0%, rgba(230, 60, 40, 0.18) 55%, transparent 80%)',
+        // Full sky: deep purple → rich purple → hot magenta → red-orange → amber → gold
+        'linear-gradient(180deg, #0d0120 0%, #200850 14%, #4a1280 26%, #7a1875 38%, #c01860 50%, #d83840 62%, #e86020 72%, #f59030 82%, #fcb840 92%, rgba(252, 184, 64, 0.40) 100%)',
       ].join(', '),
     },
   },
