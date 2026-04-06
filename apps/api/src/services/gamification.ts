@@ -116,7 +116,7 @@ export class GamificationService {
 
     await this.appStore.upsertEfisystemSummary(userId, newTotal, newLevel);
 
-    const newBadges = await this.checkBadges(userId, eventType, newLevel, prevLevel);
+    const newBadges = await this.checkBadges(userId, eventType);
 
     return { pointsEarned, newTotal, newLevel, leveledUp, newBadges };
   }
@@ -124,8 +124,6 @@ export class GamificationService {
   private async checkBadges(
     userId: string,
     eventType: PointEventType,
-    newLevel: number,
-    prevLevel: number,
   ): Promise<BadgeKey[]> {
     const unlocked: BadgeKey[] = [];
 
@@ -135,15 +133,6 @@ export class GamificationService {
         if (isNew) unlocked.push(key);
       }
     };
-
-    // Level badges
-    for (const lvl of [2, 3, 4, 5, 10] as const) {
-      if (newLevel >= lvl && prevLevel < lvl) {
-        const key = `level_${lvl}` as BadgeKey;
-        const isNew = await this.appStore.unlockBadge(userId, key as BadgeKey);
-        if (isNew) unlocked.push(key as BadgeKey);
-      }
-    }
 
     if (eventType === 'config_profile_complete') {
       await tryUnlock('perfil_estelar', async () => true);
