@@ -1,5 +1,6 @@
 export const ACCENT_OPTIONS = [
   { name: 'CRT', value: 'retro:crt' },
+  { name: 'Dawn', value: 'gradient:dawn' },
   { name: 'IG', value: 'gradient:instagram' },
   { name: 'TikTok', value: 'conic:tiktok' },
   { name: 'Matcha', value: '#74A12E' },
@@ -25,6 +26,10 @@ const GRADIENT_PRESETS: Record<string, { gradient: string; representative: strin
   instagram: {
     gradient: 'linear-gradient(135deg, #FCAF45, #F56040, #E1306C, #833AB4)',
     representative: '#E1306C',
+  },
+  dawn: {
+    gradient: 'linear-gradient(180deg, #FF4E36 0%, #FFA100 45%, #B5FF00 100%)',
+    representative: '#FFA100',
   },
 };
 

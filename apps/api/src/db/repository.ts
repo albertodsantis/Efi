@@ -92,7 +92,7 @@ function normalizeEmail(email: string | undefined) {
   return normalized.toLowerCase();
 }
 
-const ALLOWED_GRADIENTS = new Set(['instagram']);
+const ALLOWED_GRADIENTS = new Set(['instagram', 'dawn']);
 const ALLOWED_CONICS = new Set(['tiktok']);
 const ALLOWED_RETROS = new Set(['crt']);
 
