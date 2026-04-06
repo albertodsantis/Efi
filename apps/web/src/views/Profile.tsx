@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Article,
   ArrowSquareOut,
@@ -13,9 +13,7 @@ import {
   Compass,
   Copy,
   FloppyDisk,
-  FolderPlus,
   Headphones,
-  Image,
   Microphone,
   MonitorPlay,
   PencilLine,
@@ -24,19 +22,34 @@ import {
   Radio,
   Sparkle,
   Star,
-  Trash,
-  Users,
   Warning,
   X,
 } from '@phosphor-icons/react';
-import type { FreelancerType, MediaKitMetric, MediaKitOffer, MediaKitProfile, Partner, SocialProfiles, UserProfile } from '@shared';
+import type {
+  BlockType,
+  FreelancerType,
+  MediaKitMetric,
+  MediaKitOffer,
+  MediaKitProfile,
+  SocialProfiles,
+  UserProfile,
+} from '@shared';
 import OverlayModal from '../components/OverlayModal';
 import { PROFESSION_LABELS } from '../lib/professions';
 import { useAppContext } from '../context/AppContext';
 import { Avatar, Button, SurfaceCard, cx } from '../components/ui';
-import ImageUpload from '../components/ImageUpload';
 import { appApi } from '../lib/api';
 import { toast } from '../lib/toast';
+
+import BlockWrapper from '../components/profile-blocks/BlockWrapper';
+import BlockPickerDrawer from '../components/BlockPickerDrawer';
+import IdentityBlock from '../components/profile-blocks/IdentityBlock';
+import AboutBlock from '../components/profile-blocks/AboutBlock';
+import MetricsBlock from '../components/profile-blocks/MetricsBlock';
+import PortfolioBlock from '../components/profile-blocks/PortfolioBlock';
+import BrandsBlock from '../components/profile-blocks/BrandsBlock';
+import ServicesBlock from '../components/profile-blocks/ServicesBlock';
+import ClosingBlock from '../components/profile-blocks/ClosingBlock';
 
 // ─── Profession catalogue (icons + labels) ───────────────────────────────────
 
@@ -57,29 +70,28 @@ const PROFESSION_ICONS: Record<FreelancerType, React.ElementType> = {
 
 const PROFESSIONS_LIST = Object.keys(PROFESSION_LABELS) as FreelancerType[];
 
-// ─── Profile field styles ─────────────────────────────────────────────────────
+// ─── Block labels (for BlockWrapper headers) ──────────────────────────────────
 
-const fieldClass =
-  'w-full rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-card-strong)] px-4 py-3.5 text-base sm:text-sm font-medium text-[var(--text-primary)] transition-all placeholder:text-[var(--text-secondary)]/70 focus:outline-none focus:ring-2';
+const BLOCK_LABELS: Record<BlockType, string> = {
+  about:           'Sobre mí',
+  metrics:         'Métricas',
+  portfolio:       'Portfolio',
+  brands:          'Marcas',
+  services:        'Servicios',
+  closing:         'Cierre',
+  testimonials:    'Testimoniales',
+  press:           'Prensa',
+  speaking_topics: 'Temas de conferencia',
+  video_reel:      'Reel / Video',
+  equipment:       'Equipo / Gear',
+  awards:          'Premios',
+  faq:             'FAQ',
+  episodes:        'Episodios',
+  releases:        'Lanzamientos',
+  links:           'Links',
+};
 
-const textareaClass = `${fieldClass} min-h-[116px] resize-y leading-6`;
-
-const socialProfileFields: Array<{
-  key: keyof SocialProfiles;
-  label: string;
-  placeholder: string;
-}> = [
-  { key: 'instagram', label: 'Instagram', placeholder: '' },
-  { key: 'tiktok', label: 'TikTok', placeholder: '' },
-  { key: 'x', label: 'X', placeholder: '' },
-  { key: 'threads', label: 'Threads', placeholder: '' },
-  { key: 'youtube', label: 'YouTube', placeholder: '' },
-];
-
-const labelClass =
-  'mb-2 block text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/80 uppercase';
-
-type MetricKey = 'insightStats' | 'audienceGender' | 'ageDistribution' | 'topCountries';
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function escapeHtml(value: string) {
   return value
@@ -92,14 +104,8 @@ function escapeHtml(value: string) {
 
 function buildSocialHref(platform: keyof SocialProfiles, value: string) {
   const normalized = value.trim();
-  if (!normalized) {
-    return '';
-  }
-
-  if (/^https?:\/\//i.test(normalized)) {
-    return normalized;
-  }
-
+  if (!normalized) return '';
+  if (/^https?:\/\//i.test(normalized)) return normalized;
   const cleanHandle = normalized.replace(/^@/, '');
   const baseByPlatform: Record<keyof SocialProfiles, string> = {
     instagram: 'https://instagram.com/',
@@ -108,7 +114,6 @@ function buildSocialHref(platform: keyof SocialProfiles, value: string) {
     threads: 'https://www.threads.net/@',
     youtube: 'https://youtube.com/@',
   };
-
   return `${baseByPlatform[platform]}${cleanHandle}`;
 }
 
@@ -117,11 +122,13 @@ function safeArr(val: any): any[] {
 }
 
 function getFilledCount(values: any) {
-  return safeArr(values).filter((value) => typeof value === 'string' && value.trim()).length;
+  return safeArr(values).filter((v) => typeof v === 'string' && v.trim()).length;
 }
 
 function getFilledMetricCount(values: any) {
-  return safeArr(values).filter((item) => item && ((typeof item.label === 'string' && item.label.trim()) || (typeof item.value === 'string' && item.value.trim()))).length;
+  return safeArr(values).filter(
+    (item) => item && ((typeof item.label === 'string' && item.label.trim()) || (typeof item.value === 'string' && item.value.trim())),
+  ).length;
 }
 
 function getFilledOfferCount(values: any) {
@@ -130,39 +137,13 @@ function getFilledOfferCount(values: any) {
   ).length;
 }
 
-function SectionHeader({
-  icon: Icon,
-  eyebrow,
-  title,
-  description,
-  accentColor,
-}: {
-  icon: React.ElementType;
-  eyebrow: string;
-  title: string;
-  description?: string;
-  accentColor: string;
-}) {
-  return (
-    <div className="rounded-xl border border-[var(--line-soft)] bg-[var(--surface-card-strong)] p-3">
-      <div className="flex flex-wrap items-center gap-3">
-        <div
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
-          style={{ backgroundColor: `${accentColor}20`, color: accentColor }}
-        >
-          <Icon size={16} />
-        </div>
-        <div className="min-w-0">
-          <p className="text-[10px] font-bold tracking-[0.18em] text-[var(--text-secondary)]/90 uppercase">{eyebrow}</p>
-          <h2 className="text-base font-bold text-[var(--text-primary)] leading-5 truncate">{title}</h2>
-        </div>
-      </div>
-      {description ? (
-        <p className="mt-2 text-sm leading-5 text-[var(--text-secondary)]">{description}</p>
-      ) : null}
-    </div>
-  );
-}
+const socialProfileFields: Array<{ key: keyof SocialProfiles; label: string }> = [
+  { key: 'instagram', label: 'Instagram' },
+  { key: 'tiktok', label: 'TikTok' },
+  { key: 'x', label: 'X' },
+  { key: 'threads', label: 'Threads' },
+  { key: 'youtube', label: 'YouTube' },
+];
 
 // ─── ProfessionModal ──────────────────────────────────────────────────────────
 
@@ -214,7 +195,6 @@ function ProfessionModal({
   return (
     <OverlayModal onClose={onClose}>
       <div className="relative mx-auto w-full max-w-md rounded-[1.5rem] border border-[var(--line-soft)] bg-[var(--surface-card-strong)] shadow-[var(--shadow-floating)]">
-        {/* Header */}
         <div className="flex items-center justify-between border-b border-[var(--line-soft)] px-6 py-4">
           <p className="text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/80 uppercase">
             Tu actividad
@@ -242,7 +222,6 @@ function ProfessionModal({
 
         <div className="px-6 py-5">
           {!editing ? (
-            /* ── Read mode ── */
             <div>
               {primaryProfession ? (
                 <>
@@ -260,7 +239,6 @@ function ProfessionModal({
                       {PROFESSION_LABELS[primaryProfession]}
                     </span>
                   </div>
-
                   {secondaryProfessions.length > 0 && (
                     <div className="mt-4">
                       <p className="mb-2 text-[10px] font-bold tracking-widest text-[var(--text-secondary)]/60 uppercase">
@@ -282,7 +260,6 @@ function ProfessionModal({
                       </div>
                     </div>
                   )}
-
                   <p className="mt-5 text-[11px] leading-5 text-[var(--text-secondary)]/60">
                     Diseño estándar activo. Pronto: plantillas por profesión para resaltar tu talento.
                   </p>
@@ -294,17 +271,13 @@ function ProfessionModal({
               )}
             </div>
           ) : (
-            /* ── Edit mode ── */
             <div>
-              {/* Warning */}
               <div className="mb-5 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-500/20 dark:bg-amber-500/10">
                 <Warning size={16} weight="fill" className="mt-0.5 shrink-0 text-amber-500" />
                 <p className="text-xs leading-5 text-amber-700 dark:text-amber-300">
                   Cambiar tu actividad principal afectará la plantilla de tu perfil público en el futuro. Hazlo con cuidado.
                 </p>
               </div>
-
-              {/* Primary picker */}
               <p className="mb-2 text-[10px] font-bold tracking-widest text-[var(--text-secondary)]/60 uppercase">
                 Actividad principal
               </p>
@@ -334,12 +307,13 @@ function ProfessionModal({
                   );
                 })}
               </div>
-
-              {/* Secondary picker */}
               {primary && (
                 <div className="mt-4">
                   <p className="mb-2 text-[10px] font-bold tracking-widest text-[var(--text-secondary)]/60 uppercase">
-                    También hago <span className="normal-case font-normal tracking-normal text-[var(--text-tertiary)]">(opcional)</span>
+                    También hago{' '}
+                    <span className="normal-case font-normal tracking-normal text-[var(--text-tertiary)]">
+                      (opcional)
+                    </span>
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {PROFESSIONS_LIST.filter((v) => v !== primary).map((value) => {
@@ -363,8 +337,6 @@ function ProfessionModal({
                   </div>
                 </div>
               )}
-
-              {/* Actions */}
               <div className="mt-6 flex gap-3">
                 <button
                   type="button"
@@ -397,11 +369,11 @@ function ProfessionModal({
 export default function Profile() {
   const { profile, updateProfile, accentColor, accentHex, accentGradient, partners, addPartner } = useAppContext();
   const [profileForm, setProfileForm] = useState<UserProfile>(() => {
-    const safeGoals = safeArr(profile?.goals).map((g: any, i) =>
-          typeof g === 'string'
-            ? { id: `legacy-${i}`, area: '', generalGoal: g, successMetric: '', timeframe: '', status: 'Pendiente' as const, priority: 'Media' as const, revenueEstimation: 0 }
-            : g,
-        )
+    const safeGoals = safeArr(profile?.goals).map((g: any, i: number) =>
+      typeof g === 'string'
+        ? { id: `legacy-${i}`, area: '', generalGoal: g, successMetric: '', timeframe: '', status: 'Pendiente' as const, priority: 'Media' as const, revenueEstimation: 0 }
+        : g,
+    );
     return { ...(profile || {}), goals: safeGoals } as UserProfile;
   });
   const [uploadsEnabled, setUploadsEnabled] = useState(false);
@@ -413,6 +385,7 @@ export default function Profile() {
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
   const [socialDropdown, setSocialDropdown] = useState<keyof SocialProfiles | null>(null);
   const [professionModalOpen, setProfessionModalOpen] = useState(false);
+  const [blockPickerOpen, setBlockPickerOpen] = useState(false);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const savedDisplayTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -420,18 +393,40 @@ export default function Profile() {
     appApi.getUploadStatus().then((res) => setUploadsEnabled(res.enabled)).catch(() => {});
   }, []);
 
+  // One-time migration: if enabledBlocks is undefined (existing user), auto-enable blocks that have data
+  useEffect(() => {
+    const mk = profile?.mediaKit;
+    if (!mk) return;
+    if (mk.enabledBlocks !== undefined && mk.enabledBlocks !== null) return;
+
+    const auto: BlockType[] = [];
+    if (mk.featuredImage || mk.aboutTitle || safeArr(mk.aboutParagraphs).some((p: any) => p?.trim()) || safeArr(mk.topicTags).some((t: any) => t?.trim())) auto.push('about');
+    if (getFilledMetricCount(mk.insightStats) || getFilledMetricCount(mk.audienceGender) || getFilledMetricCount(mk.ageDistribution) || getFilledMetricCount(mk.topCountries)) auto.push('metrics');
+    if (getFilledCount(mk.portfolioImages)) auto.push('portfolio');
+    if (mk.brandsTitle || getFilledCount(mk.trustedBrands)) auto.push('brands');
+    if (mk.servicesTitle || mk.servicesDescription || getFilledOfferCount(mk.offerings)) auto.push('services');
+    if (mk.closingTitle || mk.closingDescription || mk.footerNote) auto.push('closing');
+
+    setProfileForm((current) => ({
+      ...current,
+      mediaKit: {
+        ...(current.mediaKit || {}),
+        enabledBlocks: auto,
+        blockOrder: auto,
+      } as MediaKitProfile,
+    }));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Sync external profile changes into local form state
   useEffect(() => {
     if (!profile) return;
-
-    const safeGoals = safeArr(profile.goals).map((g: any, i) =>
+    const safeGoals = safeArr(profile.goals).map((g: any, i: number) =>
       typeof g === 'string'
         ? { id: `legacy-${i}`, area: '', generalGoal: g, successMetric: '', timeframe: '', status: 'Pendiente' as const, priority: 'Media' as const, revenueEstimation: 0 }
         : g,
     );
     const incomingProfile = { ...profile, goals: safeGoals } as UserProfile;
     const incomingString = JSON.stringify(incomingProfile);
-
     if (incomingString !== lastSavedProfile.current) {
       setProfileForm(incomingProfile);
       profileFormRef.current = incomingProfile;
@@ -439,18 +434,15 @@ export default function Profile() {
     }
   }, [profile]);
 
-  // Debounced auto-save for profile fields
+  // Debounced auto-save
   useEffect(() => {
     const currentString = JSON.stringify(profileForm);
     if (currentString === lastSavedProfile.current) return;
-
     if (debounceTimer.current) clearTimeout(debounceTimer.current);
-
     debounceTimer.current = setTimeout(async () => {
       setSaveStatus('saving');
       try {
         const saved = await updateProfileRef.current(profileFormRef.current);
-        // Don't overwrite profileForm — user may have kept typing
         lastSavedProfile.current = JSON.stringify(saved);
         setSaveStatus('saved');
         if (savedDisplayTimer.current) clearTimeout(savedDisplayTimer.current);
@@ -460,13 +452,9 @@ export default function Profile() {
         toast.error('Error al guardar');
       }
     }, 1500);
-
-    return () => {
-      if (debounceTimer.current) clearTimeout(debounceTimer.current);
-    };
+    return () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); };
   }, [profileForm]);
 
-  // Cleanup timers on unmount
   useEffect(() => {
     return () => {
       if (debounceTimer.current) clearTimeout(debounceTimer.current);
@@ -474,48 +462,37 @@ export default function Profile() {
     };
   }, []);
 
+  // ── Derived state ──────────────────────────────────────────────────────────
+
   const mediaKit = profileForm.mediaKit || ({} as any);
-  const configuredPortfolio = getFilledCount(mediaKit.portfolioImages);
+
+  const enabledBlocks: BlockType[] = safeArr(mediaKit.enabledBlocks);
+  const blockOrder: BlockType[] = safeArr(mediaKit.blockOrder).filter((b: any) => enabledBlocks.includes(b));
+
   const configuredBrands = getFilledCount(mediaKit.trustedBrands);
-  const configuredStats =
-    getFilledMetricCount(mediaKit.insightStats) +
-    getFilledMetricCount(mediaKit.audienceGender) +
-    getFilledMetricCount(mediaKit.ageDistribution) +
-    getFilledMetricCount(mediaKit.topCountries);
-  const configuredOffers = getFilledOfferCount(mediaKit.offerings);
+
+  // ── Setters ────────────────────────────────────────────────────────────────
 
   const setProfileField = <K extends keyof UserProfile>(key: K, value: UserProfile[K]) => {
-    setProfileForm((current) => ({
-      ...current,
-      [key]: value,
-    }));
+    setProfileForm((current) => ({ ...current, [key]: value }));
   };
 
   const setSocialField = (key: keyof SocialProfiles, value: string) => {
     setProfileForm((current) => ({
       ...current,
-      socialProfiles: {
-        ...(current.socialProfiles || {}),
-        [key]: value,
-      } as SocialProfiles,
+      socialProfiles: { ...(current.socialProfiles || {}), [key]: value } as SocialProfiles,
     }));
   };
 
-  const setMediaKitField = <K extends keyof UserProfile['mediaKit']>(
-    key: K,
-    value: UserProfile['mediaKit'][K],
-  ) => {
+  const setMediaKitField = <K extends keyof MediaKitProfile>(key: K, value: MediaKitProfile[K]) => {
     setProfileForm((current) => ({
       ...current,
-      mediaKit: {
-        ...(current.mediaKit || {}),
-        [key]: value,
-      } as MediaKitProfile,
+      mediaKit: { ...(current.mediaKit || {}), [key]: value } as MediaKitProfile,
     }));
   };
 
   const setMetricField = (
-    key: MetricKey,
+    key: 'insightStats' | 'audienceGender' | 'ageDistribution' | 'topCountries',
     index: number,
     field: keyof MediaKitMetric,
     value: string,
@@ -524,21 +501,29 @@ export default function Profile() {
       ...current,
       mediaKit: {
         ...(current.mediaKit || {}),
-        [key]: safeArr(current.mediaKit?.[key]).map((item: any, itemIndex: number) =>
-          itemIndex === index ? { ...item, [field]: value } : item,
+        [key]: safeArr(current.mediaKit?.[key]).map((item: any, i: number) =>
+          i === index ? { ...item, [field]: value } : item,
         ),
       } as MediaKitProfile,
     }));
   };
 
-  const setOfferingField = (index: number, field: keyof MediaKitOffer, value: string) => {
+  const addMetric = (key: 'insightStats' | 'audienceGender' | 'ageDistribution' | 'topCountries') => {
     setProfileForm((current) => ({
       ...current,
       mediaKit: {
         ...(current.mediaKit || {}),
-        offerings: safeArr(current.mediaKit?.offerings).map((item: any, itemIndex: number) =>
-          itemIndex === index ? { ...item, [field]: value } : item,
-        ),
+        [key]: [...safeArr(current.mediaKit?.[key]), { label: '', value: '' }],
+      } as MediaKitProfile,
+    }));
+  };
+
+  const removeMetric = (key: 'insightStats' | 'audienceGender' | 'ageDistribution' | 'topCountries', index: number) => {
+    setProfileForm((current) => ({
+      ...current,
+      mediaKit: {
+        ...(current.mediaKit || {}),
+        [key]: safeArr(current.mediaKit?.[key]).filter((_: any, i: number) => i !== index),
       } as MediaKitProfile,
     }));
   };
@@ -552,36 +537,43 @@ export default function Profile() {
       ...current,
       mediaKit: {
         ...(current.mediaKit || {}),
-        [key]: safeArr(current.mediaKit?.[key]).map((item: any, itemIndex: number) => (itemIndex === index ? value : item)),
+        [key]: safeArr(current.mediaKit?.[key]).map((item: any, i: number) => (i === index ? value : item)),
       } as MediaKitProfile,
-    }));
-  };
-
-  const addMetric = (key: MetricKey) => {
-    setProfileForm((current) => ({
-      ...current,
-      mediaKit: { ...(current.mediaKit || {}), [key]: [...safeArr(current.mediaKit?.[key]), { label: '', value: '' }] } as MediaKitProfile,
-    }));
-  };
-
-  const removeMetric = (key: MetricKey, index: number) => {
-    setProfileForm((current) => ({
-      ...current,
-      mediaKit: { ...(current.mediaKit || {}), [key]: safeArr(current.mediaKit?.[key]).filter((_: any, i: number) => i !== index) } as MediaKitProfile,
     }));
   };
 
   const addStringListItem = (key: 'aboutParagraphs' | 'topicTags' | 'portfolioImages' | 'trustedBrands') => {
     setProfileForm((current) => ({
       ...current,
-      mediaKit: { ...(current.mediaKit || {}), [key]: [...safeArr(current.mediaKit?.[key]), ''] } as MediaKitProfile,
+      mediaKit: {
+        ...(current.mediaKit || {}),
+        [key]: [...safeArr(current.mediaKit?.[key]), ''],
+      } as MediaKitProfile,
     }));
   };
 
-  const removeStringListItem = (key: 'aboutParagraphs' | 'topicTags' | 'portfolioImages' | 'trustedBrands', index: number) => {
+  const removeStringListItem = (
+    key: 'aboutParagraphs' | 'topicTags' | 'portfolioImages' | 'trustedBrands',
+    index: number,
+  ) => {
     setProfileForm((current) => ({
       ...current,
-      mediaKit: { ...(current.mediaKit || {}), [key]: safeArr(current.mediaKit?.[key]).filter((_: any, i: number) => i !== index) } as MediaKitProfile,
+      mediaKit: {
+        ...(current.mediaKit || {}),
+        [key]: safeArr(current.mediaKit?.[key]).filter((_: any, i: number) => i !== index),
+      } as MediaKitProfile,
+    }));
+  };
+
+  const setOfferingField = (index: number, field: keyof MediaKitOffer, value: string) => {
+    setProfileForm((current) => ({
+      ...current,
+      mediaKit: {
+        ...(current.mediaKit || {}),
+        offerings: safeArr(current.mediaKit?.offerings).map((item: any, i: number) =>
+          i === index ? { ...item, [field]: value } : item,
+        ),
+      } as MediaKitProfile,
     }));
   };
 
@@ -605,73 +597,85 @@ export default function Profile() {
     }));
   };
 
+  // ── Block management ───────────────────────────────────────────────────────
+
+  const addBlock = (type: BlockType) => {
+    setProfileForm((current) => {
+      const enabled = safeArr(current.mediaKit?.enabledBlocks);
+      if (enabled.includes(type)) return current;
+      return {
+        ...current,
+        mediaKit: {
+          ...(current.mediaKit || {}),
+          enabledBlocks: [...enabled, type],
+          blockOrder: [...safeArr(current.mediaKit?.blockOrder), type],
+        } as MediaKitProfile,
+      };
+    });
+  };
+
+  const removeBlock = (type: BlockType) => {
+    setProfileForm((current) => ({
+      ...current,
+      mediaKit: {
+        ...(current.mediaKit || {}),
+        enabledBlocks: safeArr(current.mediaKit?.enabledBlocks).filter((b: any) => b !== type),
+        blockOrder: safeArr(current.mediaKit?.blockOrder).filter((b: any) => b !== type),
+      } as MediaKitProfile,
+    }));
+  };
+
+  const moveBlock = (type: BlockType, dir: 'up' | 'down') => {
+    setProfileForm((current) => {
+      const order = [...safeArr(current.mediaKit?.blockOrder)];
+      const idx = order.indexOf(type);
+      if (idx === -1) return current;
+      const newIdx = dir === 'up' ? idx - 1 : idx + 1;
+      if (newIdx < 0 || newIdx >= order.length) return current;
+      [order[idx], order[newIdx]] = [order[newIdx], order[idx]];
+      return {
+        ...current,
+        mediaKit: { ...(current.mediaKit || {}), blockOrder: order } as MediaKitProfile,
+      };
+    });
+  };
+
+  // ── HTML generation (legacy, block-aware in Phase 2) ──────────────────────
+
   const generateHtml = () => {
     const socialLinks = socialProfileFields
       .map((field) => {
         const value = (profileForm.socialProfiles?.[field.key] || '').trim();
         const href = buildSocialHref(field.key, value);
-        if (!value || !href) {
-          return '';
-        }
-
-        return `<a class="pill-link" href="${escapeHtml(href)}" target="_blank" rel="noreferrer">${escapeHtml(
-          value,
-        )}</a>`;
+        if (!value || !href) return '';
+        return `<a class="pill-link" href="${escapeHtml(href)}" target="_blank" rel="noreferrer">${escapeHtml(value)}</a>`;
       })
       .filter(Boolean)
       .join('');
 
     const insightCards = safeArr(mediaKit.insightStats)
       .filter((item: any) => item?.label?.trim() || item?.value?.trim())
-      .map(
-        (item) => `
-          <article class="metric-card">
-            <div class="metric-value">${escapeHtml(item.value || '-')}</div>
-            <div class="metric-label">${escapeHtml(item.label || 'Dato')}</div>
-          </article>
-        `,
-      )
+      .map((item) => `<article class="metric-card"><div class="metric-value">${escapeHtml(item.value || '-')}</div><div class="metric-label">${escapeHtml(item.label || 'Dato')}</div></article>`)
       .join('');
 
     const audienceCards = safeArr(mediaKit.audienceGender)
       .filter((item: any) => item?.label?.trim() || item?.value?.trim())
-      .map(
-        (item) => `
-          <article class="list-card">
-            <div class="list-label">${escapeHtml(item.label || 'Segmento')}</div>
-            <div class="list-value">${escapeHtml(item.value || '-')}</div>
-          </article>
-        `,
-      )
+      .map((item) => `<article class="list-card"><div class="list-label">${escapeHtml(item.label || 'Segmento')}</div><div class="list-value">${escapeHtml(item.value || '-')}</div></article>`)
       .join('');
 
     const ageCards = safeArr(mediaKit.ageDistribution)
       .filter((item: any) => item?.label?.trim() || item?.value?.trim())
-      .map(
-        (item) => `
-          <article class="list-card">
-            <div class="list-label">${escapeHtml(item.label || 'Rango')}</div>
-            <div class="list-value">${escapeHtml(item.value || '-')}</div>
-          </article>
-        `,
-      )
+      .map((item) => `<article class="list-card"><div class="list-label">${escapeHtml(item.label || 'Rango')}</div><div class="list-value">${escapeHtml(item.value || '-')}</div></article>`)
       .join('');
 
     const countryRows = safeArr(mediaKit.topCountries)
       .filter((item: any) => item?.label?.trim() || item?.value?.trim())
-      .map(
-        (item) => `
-          <div class="country-row">
-            <span>${escapeHtml(item.label || 'Pais')}</span>
-            <strong>${escapeHtml(item.value || '-')}</strong>
-          </div>
-        `,
-      )
+      .map((item) => `<div class="country-row"><span>${escapeHtml(item.label || 'Pais')}</span><strong>${escapeHtml(item.value || '-')}</strong></div>`)
       .join('');
 
     const aboutParagraphs = safeArr(mediaKit.aboutParagraphs)
-      .filter((paragraph: any) => paragraph?.trim())
-      .map((paragraph) => `<p>${escapeHtml(paragraph)}</p>`)
+      .filter((p: any) => p?.trim())
+      .map((p) => `<p>${escapeHtml(p)}</p>`)
       .join('');
 
     const topicTags = safeArr(mediaKit.topicTags)
@@ -680,38 +684,25 @@ export default function Profile() {
       .join('');
 
     const portfolioImages = safeArr(mediaKit.portfolioImages)
-      .filter((image: any) => image?.trim())
-      .map(
-        (image, index) => `
-          <figure class="portfolio-item">
-            <img src="${escapeHtml(image)}" alt="Portfolio ${index + 1}" />
-          </figure>
-        `,
-      )
+      .filter((img: any) => img?.trim())
+      .map((img, i) => `<figure class="portfolio-item"><img src="${escapeHtml(img)}" alt="Portfolio ${i + 1}" /></figure>`)
       .join('');
 
     const offerings = safeArr(mediaKit.offerings)
       .filter((item: any) => item?.title?.trim() || item?.price?.trim() || item?.description?.trim())
-      .map(
-        (item) => `
-          <article class="offer-card">
-            <div class="offer-price">${escapeHtml(item.price || '-')}</div>
-            <h3>${escapeHtml(item.title || 'Colaboracion')}</h3>
-            <p>${escapeHtml(item.description || '')}</p>
-          </article>
-        `,
-      )
+      .map((item) => `<article class="offer-card"><div class="offer-price">${escapeHtml(item.price || '-')}</div><h3>${escapeHtml(item.title || 'Colaboracion')}</h3><p>${escapeHtml(item.description || '')}</p></article>`)
       .join('');
 
     const trustedBrands = safeArr(mediaKit.trustedBrands)
       .filter((brand: any) => brand?.trim())
       .map((brand) => `<span class="brand-chip">${escapeHtml(brand)}</span>`)
       .join('');
+
     const nameParts = (profileForm.name || '').trim().split(/\s+/).filter(Boolean);
     const leadingName = nameParts[0] || profileForm.name || '';
     const trailingName = nameParts.slice(1).join(' ');
 
-    const mediaKitHtml = `
+    return `
       <html>
         <head>
           <title>Media kit - ${escapeHtml(profileForm.name)}</title>
@@ -767,25 +758,18 @@ export default function Profile() {
           <main class="page">
             <section class="hero">
               <div class="eyebrow">${escapeHtml(mediaKit.periodLabel)}</div>
-              <h1>${escapeHtml(leadingName)}${
-      trailingName ? ` <span class="accent">${escapeHtml(trailingName)}</span>` : ''
-    }</h1>
+              <h1>${escapeHtml(leadingName)}${trailingName ? ` <span class="accent">${escapeHtml(trailingName)}</span>` : ''}</h1>
               <p class="tagline">${escapeHtml(mediaKit.tagline)}</p>
               <div class="pill-row">
                 ${socialLinks}
-                <a class="pill-link" href="mailto:${escapeHtml(mediaKit.contactEmail)}">${escapeHtml(
-      mediaKit.contactEmail,
-    )}</a>
+                <a class="pill-link" href="mailto:${escapeHtml(mediaKit.contactEmail)}">${escapeHtml(mediaKit.contactEmail)}</a>
                 <a class="pill-link primary" href="#" onclick="window.print(); return false;">Descargar PDF</a>
               </div>
             </section>
-
             <div class="grid two-col">
               <section class="section">
                 <div class="about-layout">
-                  <img class="about-image" src="${escapeHtml(
-                    mediaKit.featuredImage || profileForm.avatar,
-                  )}" alt="${escapeHtml(profileForm.name)}" />
+                  <img class="about-image" src="${escapeHtml(mediaKit.featuredImage || profileForm.avatar)}" alt="${escapeHtml(profileForm.name)}" />
                   <div class="about-copy">
                     <h2>${escapeHtml(mediaKit.aboutTitle)}</h2>
                     <div class="section-copy">${aboutParagraphs}</div>
@@ -793,7 +777,6 @@ export default function Profile() {
                   </div>
                 </div>
               </section>
-
               <section class="section">
                 <div class="section-head">
                   <div>
@@ -803,69 +786,20 @@ export default function Profile() {
                 </div>
                 <div class="metrics-grid">${insightCards}</div>
                 <div class="grid">
-                  <div>
-                    <h2 style="font-size:24px;">Audiencia</h2>
-                    <div class="list-grid" style="margin-top:16px;">${audienceCards}</div>
-                  </div>
-                  <div>
-                    <h2 style="font-size:24px;">Rango de Edad</h2>
-                    <div class="list-grid" style="margin-top:16px;">${ageCards}</div>
-                  </div>
-                  <div>
-                    <h2 style="font-size:24px;">Top Countries</h2>
-                    <div class="country-list" style="margin-top:16px;">${countryRows}</div>
-                  </div>
+                  <div><h2 style="font-size:24px;">Audiencia</h2><div class="list-grid" style="margin-top:16px;">${audienceCards}</div></div>
+                  <div><h2 style="font-size:24px;">Rango de Edad</h2><div class="list-grid" style="margin-top:16px;">${ageCards}</div></div>
+                  <div><h2 style="font-size:24px;">Top Countries</h2><div class="country-list" style="margin-top:16px;">${countryRows}</div></div>
                 </div>
               </section>
             </div>
-
-            <section class="section" style="margin-top:24px;">
-              <div class="section-head">
-                <div>
-                  <h2>Portfolio</h2>
-                  <p class="section-copy">Seleccion de imagenes y piezas destacadas para mostrar el estilo de trabajo.</p>
-                </div>
-              </div>
-              <div class="portfolio-grid">${portfolioImages}</div>
-            </section>
-
-            <section class="section" style="margin-top:24px;">
-              <div class="section-head">
-                <div>
-                  <h2>${escapeHtml(mediaKit.servicesTitle)}</h2>
-                  <p class="section-copy">${escapeHtml(mediaKit.servicesDescription)}</p>
-                </div>
-              </div>
-              <div class="offer-grid">${offerings}</div>
-            </section>
-
-            <section class="section" style="margin-top:24px;">
-              <div class="section-head">
-                <div>
-                  <h2>${escapeHtml(mediaKit.brandsTitle)}</h2>
-                </div>
-              </div>
-              <div class="brand-row">${trustedBrands}</div>
-            </section>
-
-            <section class="section footer-section" style="margin-top:24px;">
-              <h2>${escapeHtml(mediaKit.closingTitle)}</h2>
-              <p class="section-copy">${escapeHtml(mediaKit.closingDescription)}</p>
-              <p style="margin-top:18px;">
-                <a href="mailto:${escapeHtml(mediaKit.contactEmail)}">${escapeHtml(
-      mediaKit.contactEmail,
-    )}</a>
-              </p>
-              <p class="footer-note">© 2026 ${escapeHtml(profileForm.name)}. ${escapeHtml(
-      mediaKit.footerNote,
-    )}</p>
-            </section>
+            <section class="section" style="margin-top:24px;"><div class="section-head"><div><h2>Portfolio</h2><p class="section-copy">Seleccion de imagenes y piezas destacadas.</p></div></div><div class="portfolio-grid">${portfolioImages}</div></section>
+            <section class="section" style="margin-top:24px;"><div class="section-head"><div><h2>${escapeHtml(mediaKit.servicesTitle)}</h2><p class="section-copy">${escapeHtml(mediaKit.servicesDescription)}</p></div></div><div class="offer-grid">${offerings}</div></section>
+            <section class="section" style="margin-top:24px;"><div class="section-head"><div><h2>${escapeHtml(mediaKit.brandsTitle)}</h2></div></div><div class="brand-row">${trustedBrands}</div></section>
+            <section class="section footer-section" style="margin-top:24px;"><h2>${escapeHtml(mediaKit.closingTitle)}</h2><p class="section-copy">${escapeHtml(mediaKit.closingDescription)}</p><p style="margin-top:18px;"><a href="mailto:${escapeHtml(mediaKit.contactEmail)}">${escapeHtml(mediaKit.contactEmail)}</a></p><p class="footer-note">© 2026 ${escapeHtml(profileForm.name)}. ${escapeHtml(mediaKit.footerNote)}</p></section>
           </main>
         </body>
       </html>
     `;
-
-    return mediaKitHtml;
   };
 
   const handleOpenMediaKit = () => {
@@ -886,8 +820,97 @@ export default function Profile() {
     }
   };
 
+  // ── Block renderer ─────────────────────────────────────────────────────────
+
+  const renderBlockContent = (type: BlockType) => {
+    switch (type) {
+      case 'about':
+        return (
+          <AboutBlock
+            mediaKit={mediaKit}
+            accentHex={accentHex}
+            uploadsEnabled={uploadsEnabled}
+            onFeaturedImageChange={(url) => setMediaKitField('featuredImage', url)}
+            onAboutTitleChange={(v) => setMediaKitField('aboutTitle', v)}
+            onParagraphChange={(i, v) => setStringListField('aboutParagraphs', i, v)}
+            onAddParagraph={() => addStringListItem('aboutParagraphs')}
+            onRemoveParagraph={(i) => removeStringListItem('aboutParagraphs', i)}
+            onTagChange={(i, v) => setStringListField('topicTags', i, v)}
+            onAddTag={() => addStringListItem('topicTags')}
+            onRemoveTag={(i) => removeStringListItem('topicTags', i)}
+          />
+        );
+      case 'metrics':
+        return (
+          <MetricsBlock
+            mediaKit={mediaKit}
+            accentHex={accentHex}
+            onMetricChange={setMetricField}
+            onAddMetric={addMetric}
+            onRemoveMetric={removeMetric}
+          />
+        );
+      case 'portfolio':
+        return (
+          <PortfolioBlock
+            mediaKit={mediaKit}
+            accentHex={accentHex}
+            uploadsEnabled={uploadsEnabled}
+            onImageChange={(i, url) => setStringListField('portfolioImages', i, url)}
+            onAddImage={() => addStringListItem('portfolioImages')}
+            onRemoveImage={(i) => removeStringListItem('portfolioImages', i)}
+          />
+        );
+      case 'brands':
+        return (
+          <BrandsBlock
+            mediaKit={mediaKit}
+            accentHex={accentHex}
+            partners={partners}
+            totalPartnersCount={partners.length}
+            configuredBrands={configuredBrands}
+            onTitleChange={(v) => setMediaKitField('brandsTitle', v)}
+            onBrandChange={(i, v) => setStringListField('trustedBrands', i, v)}
+            onAddBrand={() => addStringListItem('trustedBrands')}
+            onRemoveBrand={(i) => removeStringListItem('trustedBrands', i)}
+            onCreatePartner={async (name) => {
+              await addPartner({ name, status: 'Prospecto', contacts: [] } as any);
+              toast.success(`${name} añadida al directorio`);
+            }}
+          />
+        );
+      case 'services':
+        return (
+          <ServicesBlock
+            mediaKit={mediaKit}
+            accentHex={accentHex}
+            onTitleChange={(v) => setMediaKitField('servicesTitle', v)}
+            onDescriptionChange={(v) => setMediaKitField('servicesDescription', v)}
+            onOfferingChange={setOfferingField}
+            onAddOffering={addOffering}
+            onRemoveOffering={removeOffering}
+          />
+        );
+      case 'closing':
+        return (
+          <ClosingBlock
+            mediaKit={mediaKit}
+            accentHex={accentHex}
+            onTitleChange={(v) => setMediaKitField('closingTitle', v)}
+            onDescriptionChange={(v) => setMediaKitField('closingDescription', v)}
+            onFooterNoteChange={(v) => setMediaKitField('footerNote', v)}
+          />
+        );
+      default:
+        return null;
+    }
+  };
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+
   return (
     <div className="relative">
+      {/* Save status toast */}
       <div
         className={cx(
           'pointer-events-none fixed bottom-[calc(env(safe-area-inset-bottom,0px)+5.5rem)] left-1/2 z-150 -translate-x-1/2 lg:bottom-6',
@@ -910,7 +933,9 @@ export default function Profile() {
           )}
         </div>
       </div>
+
       <div className="space-y-5 p-4 pb-6 lg:space-y-6 lg:px-8 lg:pt-4 lg:pb-8">
+        {/* ── Profile header ── */}
         <div className="relative px-2 pb-2 lg:px-4">
           <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
             <div className="flex min-w-0 items-start gap-4">
@@ -927,7 +952,6 @@ export default function Profile() {
                 <p className="mt-2 text-sm font-semibold text-[var(--text-secondary)]">
                   {profileForm.handle || '@usuario'}
                 </p>
-                {/* Profession chip */}
                 {(() => {
                   const prof = profile.primaryProfession;
                   const Icon = prof ? PROFESSION_ICONS[prof] : null;
@@ -967,598 +991,89 @@ export default function Profile() {
             </div>
           </div>
 
-          <div className="mt-6 flex flex-wrap gap-x-8 gap-y-3 border-t border-(--line-soft) pt-5">
-            {[
-              { label: 'Insights', value: configuredStats, sub: 'métricas' },
-              { label: 'Portfolio', value: configuredPortfolio, sub: 'imágenes' },
-              { label: 'Clientes', value: configuredBrands, sub: 'clientes' },
-              { label: 'Servicios', value: configuredOffers, sub: 'tarifas' },
-            ].map(({ label, value, sub }) => (
-              <div key={label}>
-                <p className="text-[10px] font-bold tracking-[0.16em] text-(--text-secondary)/80 uppercase">{label}</p>
-                <p className="mt-0.5 text-xl font-extrabold tracking-tight text-(--text-primary)">{value}</p>
-                <p className="text-xs text-(--text-secondary)">{sub}</p>
-              </div>
-            ))}
-          </div>
         </div>
 
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
+        {/* ── Identity block (mandatory) ── */}
         <SurfaceCard className="p-6 lg:p-7">
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <label className={labelClass}>Nombre</label>
-              <input
-                value={profileForm.name || ''}
-                onChange={(event) => setProfileField('name', event.target.value)}
-                className={fieldClass}
-                style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                placeholder="Nombre artistico o profesional"
-              />
-            </div>
-            <div>
-              <label className={labelClass}>Handle</label>
-              <input
-                value={profileForm.handle || ''}
-                onChange={(event) => setProfileField('handle', event.target.value)}
-                className={fieldClass}
-                style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                placeholder="@tuusuario"
-              />
-            </div>
-            <div>
-              <label className={labelClass}>Avatar</label>
-              <ImageUpload
-                value={profileForm.avatar || ''}
-                onChange={(url) => setProfileField('avatar', url)}
-                category="avatar"
-                accentColor={accentHex}
-                uploadsEnabled={uploadsEnabled}
-                aspectRatio="aspect-square"
-                placeholder="Subir avatar"
-                className={!uploadsEnabled ? '' : 'max-w-[160px]'}
-              />
-            </div>
-            <div>
-              <label className={labelClass}>Título</label>
-              <input
-                value={mediaKit.periodLabel || ''}
-                onChange={(event) => setMediaKitField('periodLabel', event.target.value)}
-                className={fieldClass}
-                style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                placeholder=""
-              />
-            </div>
-            <div className="sm:col-span-2">
-              <label className={labelClass}>Tagline</label>
-              <input
-                value={mediaKit.tagline || ''}
-                onChange={(event) => setMediaKitField('tagline', event.target.value)}
-                className={fieldClass}
-                style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                placeholder="Humor, estilo, verticales o posicionamiento"
-              />
-            </div>
-            <div>
-              <label className={labelClass}>Email de contacto</label>
-              <input
-                value={mediaKit.contactEmail || ''}
-                onChange={(event) => setMediaKitField('contactEmail', event.target.value)}
-                className={fieldClass}
-                style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                placeholder="contacto@..."
-              />
-            </div>
-            <div>
-              <label className={labelClass}>Texto de actualizacion</label>
-              <input
-                value={mediaKit.updatedLabel || ''}
-                onChange={(event) => setMediaKitField('updatedLabel', event.target.value)}
-                className={fieldClass}
-                style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                placeholder="Marzo 2026"
-              />
-            </div>
-          </div>
-
-          <div className="mt-6 border-t border-[var(--line-soft)] pt-5">
-            <p className={labelClass}>Perfiles sociales</p>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {socialProfileFields.map((field) => (
-                <div key={field.key}>
-                  <label className={labelClass}>{field.label}</label>
-                  <div className="relative">
-                    <input
-                      value={profileForm.socialProfiles?.[field.key] || ''}
-                      onChange={(event) => setSocialField(field.key, event.target.value)}
-                      onFocus={() => {
-                        if (!profileForm.socialProfiles?.[field.key] && (profileForm.handle || '').trim()) {
-                          setSocialDropdown(field.key);
-                        }
-                      }}
-                      onBlur={() => setSocialDropdown(null)}
-                      className={fieldClass}
-                      style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                      placeholder={field.placeholder}
-                    />
-                    {socialDropdown === field.key && (() => {
-                      const cleanHandle = (profileForm.handle || '').trim().replace(/^@/, '');
-                      return cleanHandle ? (
-                        <div className="absolute left-0 right-0 top-full z-10 mt-1 overflow-hidden rounded-xl border border-[var(--line-soft)] bg-[var(--surface-card)] shadow-lg">
-                          <button
-                            type="button"
-                            onMouseDown={(e) => {
-                              e.preventDefault();
-                              setSocialField(field.key, `@${cleanHandle}`);
-                              setSocialDropdown(null);
-                            }}
-                            className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm transition-colors hover:bg-[var(--surface-muted)]"
-                          >
-                            <span className="font-bold" style={{ color: accentHex }}>@{cleanHandle}</span>
-                          </button>
-                        </div>
-                      ) : null;
-                    })()}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
+          <p className="mb-5 text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/70 uppercase">
+            Identidad
+          </p>
+          <IdentityBlock
+            name={profileForm.name || ''}
+            handle={profileForm.handle || ''}
+            avatar={profileForm.avatar || ''}
+            socialProfiles={profileForm.socialProfiles || {} as SocialProfiles}
+            mediaKit={mediaKit}
+            accentHex={accentHex}
+            uploadsEnabled={uploadsEnabled}
+            socialDropdown={socialDropdown}
+            onNameChange={(v) => setProfileField('name', v)}
+            onHandleChange={(v) => setProfileField('handle', v)}
+            onAvatarChange={(url) => setProfileField('avatar', url)}
+            onSocialChange={setSocialField}
+            onSocialDropdownChange={setSocialDropdown}
+            onMediaKitChange={(key, v) => setMediaKitField(key, v)}
+          />
         </SurfaceCard>
 
-        <SurfaceCard className="p-6 lg:p-7">
-          <div className="grid gap-4">
-            <div>
-              <label className={labelClass}>Imagen principal</label>
-              <ImageUpload
-                value={mediaKit.featuredImage || ''}
-                onChange={(url) => setMediaKitField('featuredImage', url)}
-                category="media-kit"
-                accentColor={accentHex}
-                uploadsEnabled={uploadsEnabled}
-                aspectRatio="aspect-video"
-                placeholder="Subir portada"
-              />
-            </div>
-            <div>
-              <label className={labelClass}>Titulo de presentacion</label>
-              <input
-                value={mediaKit.aboutTitle || ''}
-                onChange={(event) => setMediaKitField('aboutTitle', event.target.value)}
-                className={fieldClass}
-                style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                placeholder="Hola! Soy..."
-              />
-            </div>
-            <div className="space-y-4">
-              {safeArr(mediaKit.aboutParagraphs).map((paragraph: any, index: number) => (
-                <div key={index} className="group relative">
-                  <div className="mb-2 flex items-center justify-between">
-                    <label className="text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/80 uppercase">Párrafo {index + 1}</label>
-                    <button type="button" onClick={() => removeStringListItem('aboutParagraphs', index)} className="text-[var(--text-secondary)] opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100">
-                      <Trash size={14} />
-                    </button>
-                  </div>
-                <textarea
-                  value={typeof paragraph === 'string' ? paragraph : ''}
-                  onChange={(event) =>
-                    setStringListField('aboutParagraphs', index, event.target.value)
-                  }
-                  className={textareaClass}
-                  style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                  placeholder="Describe tu voz, tu universo y como trabajas con marcas."
-                />
-                </div>
-              ))}
-              <button type="button" onClick={() => addStringListItem('aboutParagraphs')} className="mt-2 flex items-center gap-1.5 text-sm font-bold text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]">
-                <Plus size={14} weight="regular" /> Añadir párrafo
-              </button>
-            </div>
-            <div>
-              <p className={labelClass}>Tags</p>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {safeArr(mediaKit.topicTags).map((tag: any, index: number) => (
-                  <div key={index} className="group relative">
-                    <input
-                      value={typeof tag === 'string' ? tag : ''}
-                      onChange={(event) => setStringListField('topicTags', index, event.target.value)}
-                      className={fieldClass}
-                      style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                      placeholder={`#Tag${index + 1}`}
-                    />
-                    <button type="button" onClick={() => removeStringListItem('topicTags', index)} className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100">
-                      <X size={14} weight="regular" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-              <button type="button" onClick={() => addStringListItem('topicTags')} className="mt-3 flex items-center gap-1.5 text-sm font-bold text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]">
-                <Plus size={14} weight="regular" /> Añadir tag
-              </button>
-            </div>
-          </div>
-        </SurfaceCard>
-      </div>
+        {/* ── Optional blocks in order ── */}
+        {blockOrder.map((type, index) => {
+          const content = renderBlockContent(type);
+          if (!content) return null;
+          return (
+            <BlockWrapper
+              key={type}
+              title={BLOCK_LABELS[type]}
+              onMoveUp={index > 0 ? () => moveBlock(type, 'up') : undefined}
+              onMoveDown={index < blockOrder.length - 1 ? () => moveBlock(type, 'down') : undefined}
+              onRemove={() => removeBlock(type)}
+            >
+              {content}
+            </BlockWrapper>
+          );
+        })}
 
-      <SurfaceCard className="p-6 lg:p-7">
-        <div className="grid gap-6">
-          <div>
-            <p className={labelClass}>Metricas principales</p>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {safeArr(mediaKit.insightStats).map((item: any, index: number) => (
-                <div
-                  key={index}
-                  className="group relative rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-muted)] p-4"
-                >
-                  <button
-                    type="button"
-                    onClick={() => removeMetric('insightStats', index)}
-                    className="absolute right-3 top-3 text-[var(--text-secondary)] opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100"
-                  >
-                    <Trash size={14} />
-                  </button>
-                  <label className={labelClass}>Etiqueta</label>
-                  <input
-                    value={item?.label || ''}
-                    onChange={(event) =>
-                      setMetricField('insightStats', index, 'label', event.target.value)
-                    }
-                    className={fieldClass}
-                    style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                    placeholder="Seguidores"
-                  />
-                  <label className={`${labelClass} mt-4`}>Valor</label>
-                  <input
-                    value={item?.value || ''}
-                    onChange={(event) =>
-                      setMetricField('insightStats', index, 'value', event.target.value)
-                    }
-                    className={fieldClass}
-                    style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                    placeholder=""
-                  />
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => addMetric('insightStats')}
-                className="flex min-h-[120px] items-center justify-center rounded-[1rem] border border-dashed border-[var(--line-soft)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]"
-              >
-                <div className="flex flex-col items-center gap-2">
-                  <Plus size={20} weight="regular" />
-                  <span className="text-sm font-bold">Añadir métrica</span>
-                </div>
-              </button>
-            </div>
+        {/* ── Empty state ── */}
+        {blockOrder.length === 0 && (
+          <div className="rounded-2xl border border-dashed border-[var(--line-soft)] bg-[var(--surface-card)] px-6 py-12 text-center">
+            <Sparkle size={28} className="mx-auto mb-3 text-[var(--text-secondary)]/50" weight="duotone" />
+            <p className="text-sm font-bold text-[var(--text-primary)]">Tu perfil está vacío</p>
+            <p className="mt-1 text-sm text-[var(--text-secondary)]">
+              Elige qué quieres mostrar en tu media kit
+            </p>
+            <button
+              type="button"
+              onClick={() => setBlockPickerOpen(true)}
+              className="mt-5 inline-flex items-center gap-2 rounded-2xl border border-[var(--line-soft)] bg-[var(--surface-card-strong)] px-5 py-2.5 text-sm font-bold text-[var(--text-primary)] transition-all hover:bg-[var(--surface-muted)] active:scale-[0.98]"
+            >
+              <Plus size={15} />
+              Agregar primer bloque
+            </button>
           </div>
+        )}
 
-          <div>
-            <p className={labelClass}>Audiencia</p>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {safeArr(mediaKit.audienceGender).map((item: any, index: number) => (
-                <div
-                  key={index}
-                  className="group relative rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-muted)] p-4"
-                >
-                  <button
-                    type="button"
-                    onClick={() => removeMetric('audienceGender', index)}
-                    className="absolute right-3 top-3 text-[var(--text-secondary)] opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100"
-                  >
-                    <Trash size={14} />
-                  </button>
-                  <label className={labelClass}>Segmento</label>
-                  <input
-                    value={item?.label || ''}
-                    onChange={(event) =>
-                      setMetricField('audienceGender', index, 'label', event.target.value)
-                    }
-                    className={fieldClass}
-                    style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                    placeholder=""
-                  />
-                  <label className={`${labelClass} mt-4`}>Valor</label>
-                  <input
-                    value={item?.value || ''}
-                    onChange={(event) =>
-                      setMetricField('audienceGender', index, 'value', event.target.value)
-                    }
-                    className={fieldClass}
-                    style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                    placeholder="%"
-                  />
-                </div>
-              ))}
-              <button type="button" onClick={() => addMetric('audienceGender')} className="flex min-h-[120px] items-center justify-center rounded-[1rem] border border-dashed border-[var(--line-soft)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]">
-                <div className="flex flex-col items-center gap-2">
-                  <Plus size={16} weight="regular" />
-                  <span className="text-sm font-bold">Añadir segmento</span>
-                </div>
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <p className={labelClass}>Rangos de edad</p>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {safeArr(mediaKit.ageDistribution).map((item: any, index: number) => (
-                <div
-                  key={index}
-                  className="group relative rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-muted)] p-4"
-                >
-                  <button
-                    type="button"
-                    onClick={() => removeMetric('ageDistribution', index)}
-                    className="absolute right-3 top-3 text-[var(--text-secondary)] opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100"
-                  >
-                    <Trash size={14} />
-                  </button>
-                  <label className={labelClass}>Rango</label>
-                  <input
-                    value={item?.label || ''}
-                    onChange={(event) =>
-                      setMetricField('ageDistribution', index, 'label', event.target.value)
-                    }
-                    className={fieldClass}
-                    style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                    placeholder=""
-                  />
-                  <label className={`${labelClass} mt-4`}>Valor</label>
-                  <input
-                    value={item?.value || ''}
-                    onChange={(event) =>
-                      setMetricField('ageDistribution', index, 'value', event.target.value)
-                    }
-                    className={fieldClass}
-                    style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                    placeholder="%"
-                  />
-                </div>
-              ))}
-              <button type="button" onClick={() => addMetric('ageDistribution')} className="flex min-h-[120px] items-center justify-center rounded-[1rem] border border-dashed border-[var(--line-soft)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]">
-                <div className="flex flex-col items-center gap-2">
-                  <Plus size={16} weight="regular" />
-                  <span className="text-sm font-bold">Añadir rango</span>
-                </div>
-              </button>
-            </div>
-          </div>
-
-          <div>
-            <p className={labelClass}>Top countries</p>
-            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              {safeArr(mediaKit.topCountries).map((item: any, index: number) => (
-                <div
-                  key={index}
-                  className="group relative rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-muted)] p-4"
-                >
-                  <button
-                    type="button"
-                    onClick={() => removeMetric('topCountries', index)}
-                    className="absolute right-3 top-3 text-[var(--text-secondary)] opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100"
-                  >
-                    <Trash size={14} />
-                  </button>
-                  <label className={labelClass}>Pais</label>
-                  <input
-                    value={item?.label || ''}
-                    onChange={(event) =>
-                      setMetricField('topCountries', index, 'label', event.target.value)
-                    }
-                    className={fieldClass}
-                    style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                    placeholder=""
-                  />
-                  <label className={`${labelClass} mt-4`}>Valor</label>
-                  <input
-                    value={item?.value || ''}
-                    onChange={(event) =>
-                      setMetricField('topCountries', index, 'value', event.target.value)
-                    }
-                    className={fieldClass}
-                    style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                    placeholder="%"
-                  />
-                </div>
-              ))}
-              <button type="button" onClick={() => addMetric('topCountries')} className="flex min-h-[120px] items-center justify-center rounded-[1rem] border border-dashed border-[var(--line-soft)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]">
-                <div className="flex flex-col items-center gap-2">
-                  <Plus size={16} weight="regular" />
-                  <span className="text-sm font-bold">Añadir país</span>
-                </div>
-              </button>
-            </div>
-          </div>
-        </div>
-      </SurfaceCard>
-
-      <div className="grid gap-5 xl:grid-cols-[minmax(0,1.02fr)_minmax(0,0.98fr)]">
-        <SurfaceCard className="p-6 lg:p-7">
-          <p className={labelClass}>Imagenes del portfolio</p>
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {safeArr(mediaKit.portfolioImages).map((image: any, index: number) => (
-              <div key={index} className="group relative">
-                <div className="mb-2 flex items-center justify-between">
-                  <label className="text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/80 uppercase">Imagen {index + 1}</label>
-                  <button type="button" onClick={() => removeStringListItem('portfolioImages', index)} className="text-[var(--text-secondary)] opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100">
-                    <Trash size={14} />
-                  </button>
-                </div>
-                <ImageUpload
-                  value={typeof image === 'string' ? image : ''}
-                  onChange={(url) => setStringListField('portfolioImages', index, url)}
-                  category="portfolio"
-                  accentColor={accentHex}
-                  uploadsEnabled={uploadsEnabled}
-                  aspectRatio="aspect-[4/3]"
-                  placeholder={`Imagen ${index + 1}`}
-                />
-              </div>
-            ))}
-          </div>
-          <button type="button" onClick={() => addStringListItem('portfolioImages')} className="mt-3 flex items-center gap-1.5 text-sm font-bold text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]">
-            <Plus size={14} weight="regular" /> Añadir imagen
+        {/* ── Add block button ── */}
+        {blockOrder.length > 0 && (
+          <button
+            type="button"
+            onClick={() => setBlockPickerOpen(true)}
+            className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-[var(--line-soft)] bg-[var(--surface-card)] py-4 text-sm font-bold text-[var(--text-secondary)] transition-all hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)] active:scale-[0.99]"
+          >
+            <Plus size={15} />
+            Agregar bloque
           </button>
-        </SurfaceCard>
-
-        <SurfaceCard className="p-6 lg:p-7">
-          <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_180px]">
-            <div>
-              <label className={labelClass}>Titulo del bloque de marcas</label>
-              <input
-                value={mediaKit.brandsTitle || ''}
-                onChange={(event) => setMediaKitField('brandsTitle', event.target.value)}
-                className={fieldClass}
-                style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                placeholder=""
-              />
-            </div>
-            <div className="rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-muted)] px-4 py-4">
-              <p className="text-[10px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/80 uppercase">
-                Clientes cargados
-              </p>
-              <p className="mt-2 text-2xl font-extrabold tracking-tight text-[var(--text-primary)]">
-                {configuredBrands}
-                <span className="ml-1 text-sm font-medium text-[var(--text-secondary)]">
-                  / {partners.length} en directorio
-                </span>
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-4 grid gap-4 sm:grid-cols-2">
-            {safeArr(mediaKit.trustedBrands).map((brand: any, index: number) => (
-              <div key={index} className="group relative">
-                <div className="mb-2 flex items-center justify-between">
-                  <label className="text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/80 uppercase">Cliente {index + 1}</label>
-                  <button type="button" onClick={() => removeStringListItem('trustedBrands', index)} className="text-[var(--text-secondary)] opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100">
-                    <Trash size={14} />
-                  </button>
-                </div>
-                <BrandInput
-                  value={typeof brand === 'string' ? brand : ''}
-                  onChange={(val) => setStringListField('trustedBrands', index, val)}
-                  partners={partners}
-                  onCreateInDirectory={async (name) => {
-                    await addPartner({ name, status: 'Prospecto', contacts: [] } as any);
-                    toast.success(`${name} añadida al directorio`);
-                  }}
-                  accentColor={accentHex}
-                />
-              </div>
-            ))}
-          </div>
-          <button type="button" onClick={() => addStringListItem('trustedBrands')} className="mt-3 flex items-center gap-1.5 text-sm font-bold text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]">
-            <Plus size={14} weight="regular" /> Añadir marca
-          </button>
-        </SurfaceCard>
-
-        <SurfaceCard className="p-6 lg:p-7">
-          <div className="grid gap-6">
-            <div>
-              <label className={labelClass}>Titulo del bloque de tarifas</label>
-              <input
-                value={mediaKit.servicesTitle || ''}
-                onChange={(event) => setMediaKitField('servicesTitle', event.target.value)}
-                className={fieldClass}
-                style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                placeholder=""
-              />
-            </div>
-            <div>
-              <label className={labelClass}>Descripcion del bloque de tarifas</label>
-              <textarea
-                value={mediaKit.servicesDescription || ''}
-                onChange={(event) => setMediaKitField('servicesDescription', event.target.value)}
-                className={textareaClass}
-                style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                placeholder=""
-              />
-            </div>
-
-            <div className="grid gap-4">
-              {safeArr(mediaKit.offerings).map((offering: any, index: number) => (
-                <div
-                  key={index}
-                  className="group relative rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-muted)] p-4"
-                >
-                  <div className="mb-4 flex items-center justify-between">
-                    <p className="text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/80 uppercase">Oferta {index + 1}</p>
-                    <button type="button" onClick={() => removeOffering(index)} className="text-[var(--text-secondary)] opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100"><Trash size={14} /></button>
-                  </div>
-                  <div className="grid gap-4">
-                    <input
-                      value={offering?.title || ''}
-                      onChange={(event) => setOfferingField(index, 'title', event.target.value)}
-                      className={fieldClass}
-                      style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                      placeholder=""
-                    />
-                    <input
-                      value={offering?.price || ''}
-                      onChange={(event) => setOfferingField(index, 'price', event.target.value)}
-                      className={fieldClass}
-                      style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                      placeholder=""
-                    />
-                    <textarea
-                      value={offering?.description || ''}
-                      onChange={(event) =>
-                        setOfferingField(index, 'description', event.target.value)
-                      }
-                      className={textareaClass}
-                      style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                      placeholder=""
-                    />
-                  </div>
-                </div>
-              ))}
-              <button type="button" onClick={addOffering} className="flex min-h-[60px] items-center justify-center gap-2 rounded-[1rem] border border-dashed border-[var(--line-soft)] bg-[var(--surface-card)] text-[var(--text-secondary)] transition-all hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]">
-                <Plus size={16} weight="regular" /> <span className="text-sm font-bold">Añadir oferta</span>
-              </button>
-            </div>
-          </div>
-        </SurfaceCard>
-
-        <SurfaceCard className="p-6 lg:p-7">
-          <div className="grid gap-4">
-            <div>
-              <label className={labelClass}>Titulo del cierre</label>
-              <input
-                value={mediaKit.closingTitle || ''}
-                onChange={(event) => setMediaKitField('closingTitle', event.target.value)}
-                className={fieldClass}
-                style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                placeholder=""
-              />
-            </div>
-            <div>
-              <label className={labelClass}>Descripcion del cierre</label>
-              <textarea
-                value={mediaKit.closingDescription || ''}
-                onChange={(event) =>
-                  setMediaKitField('closingDescription', event.target.value)
-                }
-                className={textareaClass}
-                style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                placeholder=""
-              />
-            </div>
-            <div>
-              <label className={labelClass}>Texto del footer</label>
-              <input
-                value={mediaKit.footerNote || ''}
-                onChange={(event) => setMediaKitField('footerNote', event.target.value)}
-                className={fieldClass}
-                style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                placeholder=""
-              />
-            </div>
-          </div>
-        </SurfaceCard>
+        )}
       </div>
 
-      </div>
+      {/* ── Modals ── */}
+      {blockPickerOpen && (
+        <BlockPickerDrawer
+          enabledBlocks={enabledBlocks}
+          accentHex={accentHex}
+          onAdd={addBlock}
+          onClose={() => setBlockPickerOpen(false)}
+        />
+      )}
 
       {professionModalOpen && (
         <ProfessionModal
@@ -1572,93 +1087,6 @@ export default function Profile() {
             toast.success('Actividad actualizada');
           }}
         />
-      )}
-    </div>
-  );
-}
-
-/* ── BrandInput – autocomplete with directory suggestions ── */
-
-function BrandInput({
-  value,
-  onChange,
-  partners,
-  onCreateInDirectory,
-  accentColor,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  partners: Partner[];
-  onCreateInDirectory: (name: string) => void;
-  accentColor: string;
-}) {
-  const [focused, setFocused] = useState(false);
-  const [creatingBrand, setCreatingBrand] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const inputVal = value.trim().toLowerCase();
-
-  const suggestions = inputVal.length > 0
-    ? partners.filter((p) => p.name.toLowerCase().includes(inputVal) && p.name.toLowerCase() !== inputVal)
-    : partners;
-
-  const exactMatch = partners.some((p) => p.name.toLowerCase() === inputVal);
-  const showDropdown = focused && (suggestions.length > 0 || (inputVal.length > 0 && !exactMatch));
-
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) setFocused(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  const handleCreate = async () => {
-    setCreatingBrand(true);
-    try {
-      await onCreateInDirectory(value.trim());
-    } finally {
-      setCreatingBrand(false);
-      setFocused(false);
-    }
-  };
-
-  return (
-    <div ref={containerRef} className="relative">
-      <input
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onFocus={() => setFocused(true)}
-        className={fieldClass}
-        style={{ '--tw-ring-color': accentColor } as React.CSSProperties}
-        placeholder=""
-      />
-      {showDropdown && (
-        <div className="absolute z-[100] mt-2 max-h-52 w-full overflow-auto rounded-[1rem] border bg-[var(--surface-card-strong)] p-1.5 shadow-[var(--shadow-medium)] animate-in fade-in zoom-in-95 duration-100 [border-color:var(--line-soft)]">
-          {suggestions.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => { onChange(p.name); setFocused(false); }}
-              className="flex w-full items-center rounded-[0.75rem] px-3 py-2.5 text-left text-sm font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-muted)]/60 hover:text-[var(--text-primary)]"
-            >
-              {p.name}
-            </button>
-          ))}
-          {inputVal.length > 0 && !exactMatch && (
-            <button
-              type="button"
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={handleCreate}
-              disabled={creatingBrand}
-              className="flex w-full items-center gap-2 rounded-[0.75rem] px-3 py-2.5 text-left text-sm font-bold transition-colors hover:bg-[var(--surface-muted)]/60"
-              style={{ color: accentColor }}
-            >
-              <FolderPlus size={14} />
-              {creatingBrand ? 'Creando...' : `Crear "${value.trim()}" en directorio`}
-            </button>
-          )}
-        </div>
       )}
     </div>
   );

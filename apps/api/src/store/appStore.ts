@@ -325,27 +325,48 @@ function normalizeMediaKitProfile(
   const fallback = currentMediaKit;
 
   return {
+    // Block system control — preserve as-is (undefined is valid for migration)
+    enabledBlocks: mediaKit?.enabledBlocks ?? fallback.enabledBlocks,
+    blockOrder: mediaKit?.blockOrder ?? fallback.blockOrder,
+    // Identity block
     periodLabel: normalizeText(mediaKit?.periodLabel) || fallback.periodLabel,
     updatedLabel: normalizeText(mediaKit?.updatedLabel) || fallback.updatedLabel,
     tagline: normalizeText(mediaKit?.tagline),
     contactEmail: normalizeText(mediaKit?.contactEmail),
+    // About block
     featuredImage: normalizeText(mediaKit?.featuredImage),
     aboutTitle: normalizeText(mediaKit?.aboutTitle) || fallback.aboutTitle,
     aboutParagraphs: normalizeStringList(mediaKit?.aboutParagraphs, fallback.aboutParagraphs),
     topicTags: normalizeStringList(mediaKit?.topicTags, fallback.topicTags),
+    // Metrics block
     insightStats: normalizeMetricList(mediaKit?.insightStats, fallback.insightStats),
     audienceGender: normalizeMetricList(mediaKit?.audienceGender, fallback.audienceGender),
     ageDistribution: normalizeMetricList(mediaKit?.ageDistribution, fallback.ageDistribution),
     topCountries: normalizeMetricList(mediaKit?.topCountries, fallback.topCountries),
+    // Portfolio block
     portfolioImages: normalizeStringList(mediaKit?.portfolioImages, fallback.portfolioImages),
+    // Services block
     servicesTitle: normalizeText(mediaKit?.servicesTitle) || fallback.servicesTitle,
     servicesDescription: normalizeText(mediaKit?.servicesDescription),
     offerings: normalizeOfferList(mediaKit?.offerings, fallback.offerings),
+    // Brands block
     brandsTitle: normalizeText(mediaKit?.brandsTitle) || fallback.brandsTitle,
     trustedBrands: normalizeStringList(mediaKit?.trustedBrands, fallback.trustedBrands),
+    // Closing block
     closingTitle: normalizeText(mediaKit?.closingTitle) || fallback.closingTitle,
     closingDescription: normalizeText(mediaKit?.closingDescription),
     footerNote: normalizeText(mediaKit?.footerNote) || fallback.footerNote,
+    // New block data (pass through arrays as-is, fall back to empty)
+    testimonials: Array.isArray(mediaKit?.testimonials) ? mediaKit.testimonials : fallback.testimonials,
+    press: Array.isArray(mediaKit?.press) ? mediaKit.press : fallback.press,
+    speakingTopics: Array.isArray(mediaKit?.speakingTopics) ? mediaKit.speakingTopics : fallback.speakingTopics,
+    videoReels: Array.isArray(mediaKit?.videoReels) ? mediaKit.videoReels : fallback.videoReels,
+    equipment: Array.isArray(mediaKit?.equipment) ? mediaKit.equipment : fallback.equipment,
+    awards: Array.isArray(mediaKit?.awards) ? mediaKit.awards : fallback.awards,
+    faq: Array.isArray(mediaKit?.faq) ? mediaKit.faq : fallback.faq,
+    episodes: Array.isArray(mediaKit?.episodes) ? mediaKit.episodes : fallback.episodes,
+    releases: Array.isArray(mediaKit?.releases) ? mediaKit.releases : fallback.releases,
+    links: Array.isArray(mediaKit?.links) ? mediaKit.links : fallback.links,
   };
 }
 

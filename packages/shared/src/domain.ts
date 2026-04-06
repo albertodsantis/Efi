@@ -110,6 +110,24 @@ export interface SocialProfiles {
   youtube: string;
 }
 
+export type BlockType =
+  | 'about'
+  | 'metrics'
+  | 'portfolio'
+  | 'brands'
+  | 'services'
+  | 'closing'
+  | 'testimonials'
+  | 'press'
+  | 'speaking_topics'
+  | 'video_reel'
+  | 'equipment'
+  | 'awards'
+  | 'faq'
+  | 'episodes'
+  | 'releases'
+  | 'links';
+
 export interface MediaKitMetric {
   label: string;
   value: string;
@@ -121,28 +139,113 @@ export interface MediaKitOffer {
   description: string;
 }
 
+export interface MediaKitTestimonial {
+  quote: string;
+  author: string;
+  company: string;
+  role: string;
+}
+
+export interface MediaKitPressItem {
+  publication: string;
+  headline: string;
+  url: string;
+  year: string;
+}
+
+export interface MediaKitSpeakingTopic {
+  title: string;
+  description: string;
+}
+
+export interface MediaKitVideoReel {
+  url: string;
+  label: string;
+}
+
+export interface MediaKitEquipmentItem {
+  item: string;
+  description: string;
+}
+
+export interface MediaKitAward {
+  name: string;
+  issuer: string;
+  year: string;
+}
+
+export interface MediaKitFaqItem {
+  question: string;
+  answer: string;
+}
+
+export interface MediaKitEpisode {
+  title: string;
+  description: string;
+  listenUrl: string;
+}
+
+export interface MediaKitRelease {
+  name: string;
+  platforms: { label: string; url: string }[];
+}
+
+export interface MediaKitLink {
+  label: string;
+  url: string;
+}
+
 export interface MediaKitProfile {
+  // Block system control
+  enabledBlocks: BlockType[];
+  blockOrder: BlockType[];
+
+  // Identity block fields
   periodLabel: string;
   updatedLabel: string;
   tagline: string;
   contactEmail: string;
+
+  // About block fields
   featuredImage: string;
   aboutTitle: string;
   aboutParagraphs: string[];
   topicTags: string[];
+
+  // Metrics block fields
   insightStats: MediaKitMetric[];
   audienceGender: MediaKitMetric[];
   ageDistribution: MediaKitMetric[];
   topCountries: MediaKitMetric[];
+
+  // Portfolio block fields
   portfolioImages: string[];
+
+  // Services block fields
   servicesTitle: string;
   servicesDescription: string;
   offerings: MediaKitOffer[];
+
+  // Brands block fields
   brandsTitle: string;
   trustedBrands: string[];
+
+  // Closing block fields
   closingTitle: string;
   closingDescription: string;
   footerNote: string;
+
+  // New block data fields
+  testimonials: MediaKitTestimonial[];
+  press: MediaKitPressItem[];
+  speakingTopics: MediaKitSpeakingTopic[];
+  videoReels: MediaKitVideoReel[];
+  equipment: MediaKitEquipmentItem[];
+  awards: MediaKitAward[];
+  faq: MediaKitFaqItem[];
+  episodes: MediaKitEpisode[];
+  releases: MediaKitRelease[];
+  links: MediaKitLink[];
 }
 
 export type GoalStatus = 'Pendiente' | 'En Curso' | 'Alcanzado' | 'Cancelado';
@@ -173,52 +276,39 @@ export function createEmptySocialProfiles(): SocialProfiles {
 
 export function createDefaultMediaKitProfile(): MediaKitProfile {
   return {
+    enabledBlocks: [],
+    blockOrder: [],
     periodLabel: '',
     updatedLabel: '',
     tagline: '',
     contactEmail: '',
     featuredImage: '',
     aboutTitle: '',
-    aboutParagraphs: ['', '', ''],
-    topicTags: ['', '', '', ''],
-    insightStats: [
-      { label: 'Seguidores', value: '' },
-      { label: 'Engagement Rate', value: '' },
-      { label: 'Alcance ultimo mes', value: '' },
-      { label: 'Reproducciones ultimo mes', value: '' },
-    ],
-    audienceGender: [
-      { label: 'Mujeres', value: '' },
-      { label: 'Hombres', value: '' },
-    ],
-    ageDistribution: [
-      { label: '25-34', value: '' },
-      { label: '18-24', value: '' },
-      { label: '35-44', value: '' },
-      { label: '45+', value: '' },
-    ],
-    topCountries: [
-      { label: '', value: '' },
-      { label: '', value: '' },
-      { label: '', value: '' },
-      { label: '', value: '' },
-      { label: '', value: '' },
-      { label: '', value: '' },
-    ],
-    portfolioImages: Array.from({ length: 7 }, () => ''),
+    aboutParagraphs: [],
+    topicTags: [],
+    insightStats: [],
+    audienceGender: [],
+    ageDistribution: [],
+    topCountries: [],
+    portfolioImages: [],
     servicesTitle: '',
     servicesDescription: '',
-    offerings: [
-      { title: '', price: '', description: '' },
-      { title: '', price: '', description: '' },
-      { title: '', price: '', description: '' },
-      { title: '', price: '', description: '' },
-    ],
+    offerings: [],
     brandsTitle: '',
-    trustedBrands: Array.from({ length: 10 }, () => ''),
+    trustedBrands: [],
     closingTitle: '',
     closingDescription: '',
     footerNote: '',
+    testimonials: [],
+    press: [],
+    speakingTopics: [],
+    videoReels: [],
+    equipment: [],
+    awards: [],
+    faq: [],
+    episodes: [],
+    releases: [],
+    links: [],
   };
 }
 
