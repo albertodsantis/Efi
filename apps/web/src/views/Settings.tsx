@@ -34,7 +34,7 @@ import { toast } from '../lib/toast';
 import { ACCENT_OPTIONS, getSwatchCss } from '../lib/accent';
 
 const TEMPLATE_VARIABLES = [
-  { key: 'brandName', label: 'Marca' },
+  { key: 'brandName', label: 'Cliente' },
   { key: 'contactName', label: 'Contacto' },
   { key: 'creatorName', label: 'Creador' },
   { key: 'deliverable', label: 'Entregable' },

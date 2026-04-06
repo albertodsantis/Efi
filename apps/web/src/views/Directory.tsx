@@ -274,7 +274,7 @@ export default function Directory() {
       setSelectedPartnerId(partnerId);
       setIsAddingPartner(false);
       setNewPartner({ name: '', status: 'Prospecto', partnershipType: 'Por definir', keyTerms: '', startDate: '', endDate: '', monthlyRevenue: '', annualRevenue: '', mainChannel: '' });
-      toast.success(`Marca ${name} añadida al directorio`);
+      toast.success(`Cliente ${name} añadido al directorio`);
     } finally { setSaving(false); }
   };
 
@@ -294,7 +294,7 @@ export default function Directory() {
         mainChannel: editingPartner.mainChannel,
       } as any);
       setEditingPartner(null);
-      toast.success('Marca actualizada');
+      toast.success('Cliente actualizado');
     } finally { setSaving(false); }
   };
 
@@ -359,7 +359,7 @@ export default function Directory() {
         <div className="space-y-4 xl:sticky xl:top-4 xl:self-start">
           <div className="flex flex-wrap gap-2">
             {[
-              { icon: Buildings, label: 'Marcas', value: `${activePartners} / ${partners.length}` },
+              { icon: Buildings, label: 'Clientes', value: `${activePartners} / ${partners.length}` },
               { icon: Envelope, label: 'Contactos', value: String(totalContacts) },
             ].map((item) => (
               <div

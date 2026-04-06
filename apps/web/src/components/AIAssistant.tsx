@@ -243,7 +243,7 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
             const { name, status } = call.args as any;
             await addPartner({ name, status: status || 'Prospecto', contacts: [] });
             functionResponses.push({
-              functionResponse: { name: call.name, response: { result: 'Marca anadida con exito.' } },
+              functionResponse: { name: call.name, response: { result: 'Cliente añadido con exito.' } },
             });
           } else if (call.name === 'add_contact') {
             const { partnerName, name, role, email, ig } = call.args as any;
@@ -260,11 +260,11 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
             if (partner) {
               await updatePartner(partner.id, { status: status as any });
               functionResponses.push({
-                functionResponse: { name: call.name, response: { result: 'Estado de la marca actualizado con exito.' } },
+                functionResponse: { name: call.name, response: { result: 'Estado del cliente actualizado con exito.' } },
               });
             } else {
               functionResponses.push({
-                functionResponse: { name: call.name, response: { error: 'Marca no encontrada.' } },
+                functionResponse: { name: call.name, response: { error: 'Cliente no encontrado.' } },
               });
             }
           }

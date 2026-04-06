@@ -970,7 +970,7 @@ export default function Profile() {
             {[
               { label: 'Insights', value: configuredStats, sub: 'métricas' },
               { label: 'Portfolio', value: configuredPortfolio, sub: 'imágenes' },
-              { label: 'Marcas', value: configuredBrands, sub: 'marcas' },
+              { label: 'Clientes', value: configuredBrands, sub: 'clientes' },
               { label: 'Servicios', value: configuredOffers, sub: 'tarifas' },
             ].map(({ label, value, sub }) => (
               <div key={label}>
@@ -1400,7 +1400,7 @@ export default function Profile() {
             </div>
             <div className="rounded-[1rem] border border-[var(--line-soft)] bg-[var(--surface-muted)] px-4 py-4">
               <p className="text-[10px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/80 uppercase">
-                Marcas cargadas
+                Clientes cargados
               </p>
               <p className="mt-2 text-2xl font-extrabold tracking-tight text-[var(--text-primary)]">
                 {configuredBrands}
@@ -1415,7 +1415,7 @@ export default function Profile() {
             {safeArr(mediaKit.trustedBrands).map((brand: any, index: number) => (
               <div key={index} className="group relative">
                 <div className="mb-2 flex items-center justify-between">
-                  <label className="text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/80 uppercase">Marca {index + 1}</label>
+                  <label className="text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/80 uppercase">Cliente {index + 1}</label>
                   <button type="button" onClick={() => removeStringListItem('trustedBrands', index)} className="text-[var(--text-secondary)] opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100">
                     <Trash size={14} />
                   </button>

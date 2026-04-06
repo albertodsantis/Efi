@@ -198,7 +198,7 @@ function GoalDetail({
           <div className="rounded-[0.7rem] bg-(--surface-muted)/60 px-3 py-2.5">
             <div className="flex items-center gap-1.5 text-(--text-secondary)">
               <UsersIcon size={12} />
-              <span className="text-[10px] font-bold uppercase tracking-wide">Marcas</span>
+              <span className="text-[10px] font-bold uppercase tracking-wide">Clientes</span>
             </div>
             <p className="mt-1 text-lg font-black text-(--text-primary)">{partnerCount}</p>
           </div>
@@ -230,7 +230,7 @@ function GoalDetail({
         {partners.length > 0 && (
           <div className="mt-5">
             <p className="text-[10px] font-bold uppercase tracking-wide text-(--text-secondary)">
-              Marcas vinculadas
+              Clientes vinculados
             </p>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {partners.map((p) => (

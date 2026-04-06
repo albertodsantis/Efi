@@ -1013,7 +1013,7 @@ export default function Dashboard() {
                 </div>
                 <div>
                   <p className="text-[10px] font-bold tracking-[0.14em] text-[var(--text-secondary)] uppercase">
-                    Marcas
+                    Clientes
                   </p>
                   <p className="mt-1 text-xl font-black tracking-tight text-[var(--text-primary)]">
                     {periodSummary.activePartners}
