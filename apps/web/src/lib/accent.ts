@@ -96,19 +96,40 @@ export function getRepresentativeHex(value: string): string {
 const SURFACE_THEMES: Record<string, { light: Record<string, string>; dark: Record<string, string> }> = {
   'gradient:dawn': {
     light: {
+      '--surface-app': '#f5efed',
+      '--surface-shell': 'rgba(248, 242, 240, 0.88)',
+      '--surface-card': 'rgba(248, 242, 240, 0.84)',
+      '--surface-card-strong': 'rgba(252, 246, 244, 0.96)',
+      '--surface-muted': 'rgba(240, 234, 230, 0.82)',
+      '--surface-overlay': 'rgba(244, 238, 235, 0.72)',
+      '--text-secondary': '#7a5a52',
+      '--line-soft': 'rgba(190, 90, 55, 0.12)',
+      '--line-strong': 'rgba(190, 90, 55, 0.20)',
       '--body-theme-bg': [
-        'radial-gradient(ellipse 75% 50% at 65% 110%, rgba(255, 165, 0, 0.55) 0%, rgba(255, 80, 30, 0.22) 45%, transparent 70%)',
-        'radial-gradient(ellipse 100% 42% at 50% 88%, rgba(235, 70, 90, 0.2) 0%, transparent 65%)',
-        'linear-gradient(180deg, rgba(65, 25, 120, 0.16) 0%, rgba(200, 70, 90, 0.1) 44%, rgba(255, 110, 45, 0.06) 68%, transparent 86%)',
-        'linear-gradient(180deg, color-mix(in srgb, var(--surface-app) 86%, white) 0%, var(--surface-app) 100%)',
+        // Subtle sun warmth at horizon
+        'radial-gradient(ellipse 62% 18% at 50% 50%, rgba(255, 108, 28, 0.15) 0%, transparent 68%)',
+        // Dawn sky: soft violet at top → warm peach → golden at bottom
+        'linear-gradient(180deg, rgba(46, 12, 80, 0.10) 0%, rgba(145, 28, 65, 0.10) 28%, rgba(215, 65, 28, 0.12) 52%, rgba(255, 135, 18, 0.10) 74%, rgba(255, 205, 44, 0.07) 100%)',
+        // Preserve base surface warmth
+        'linear-gradient(180deg, color-mix(in srgb, var(--surface-app) 90%, white) 0%, var(--surface-app) 100%)',
       ].join(', '),
     },
     dark: {
+      '--surface-app': '#06011a',
+      '--surface-shell': 'rgba(10, 4, 28, 0.90)',
+      '--surface-card': 'rgba(16, 7, 38, 0.76)',
+      '--surface-card-strong': 'rgba(20, 9, 46, 0.93)',
+      '--surface-muted': 'rgba(14, 6, 32, 0.72)',
+      '--surface-overlay': 'rgba(9, 3, 22, 0.70)',
+      '--line-soft': 'rgba(255, 145, 42, 0.11)',
+      '--line-strong': 'rgba(255, 145, 42, 0.18)',
       '--body-theme-bg': [
-        'radial-gradient(ellipse 70% 48% at 65% 110%, rgba(255, 138, 0, 0.58) 0%, rgba(205, 55, 18, 0.3) 48%, transparent 72%)',
-        'radial-gradient(ellipse 92% 44% at 50% 84%, rgba(195, 42, 82, 0.34) 0%, transparent 68%)',
-        'linear-gradient(180deg, rgba(16, 5, 42, 0.6) 0%, rgba(80, 15, 72, 0.4) 44%, rgba(172, 45, 35, 0.22) 70%, transparent 90%)',
-        'linear-gradient(180deg, color-mix(in srgb, var(--surface-app) 95%, black) 0%, var(--surface-app) 100%)',
+        // Sun disk: tiny bright core at horizon
+        'radial-gradient(ellipse 14% 7% at 50% 55%, rgba(255, 225, 155, 0.22) 0%, transparent 100%)',
+        // Horizon glow burst
+        'radial-gradient(ellipse 82% 22% at 50% 56%, rgba(220, 55, 12, 0.46) 0%, rgba(255, 108, 20, 0.18) 54%, transparent 82%)',
+        // Full sky: midnight → indigo → purple → magenta → crimson → orange → gold
+        'linear-gradient(180deg, #06011a 0%, #1a0845 18%, #4a1265 32%, #8a1450 44%, #c42c22 55%, #e07012 66%, #f5a500 78%, #ffd840 92%, rgba(255, 210, 50, 0.40) 100%)',
       ].join(', '),
     },
   },
