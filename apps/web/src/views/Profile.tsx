@@ -43,11 +43,11 @@ const SOCIAL_PLATFORMS: {
   Icon: React.ElementType;
   placeholder: string;
 }[] = [
-  { key: 'instagram', label: 'Instagram',   Icon: InstagramLogo, placeholder: '@tuhandle' },
-  { key: 'tiktok',    label: 'TikTok',      Icon: TiktokLogo,    placeholder: '@tuhandle' },
-  { key: 'x',         label: 'X (Twitter)', Icon: XLogo,         placeholder: '@tuhandle' },
-  { key: 'youtube',   label: 'YouTube',     Icon: YoutubeLogo,   placeholder: '@tucanal'  },
-  { key: 'threads',   label: 'Threads',     Icon: ThreadsLogo,   placeholder: '@tuhandle' },
+  { key: 'instagram', label: 'Instagram',   Icon: InstagramLogo, placeholder: '' },
+  { key: 'tiktok',    label: 'TikTok',      Icon: TiktokLogo,    placeholder: '' },
+  { key: 'x',         label: 'X (Twitter)', Icon: XLogo,         placeholder: '' },
+  { key: 'youtube',   label: 'YouTube',     Icon: YoutubeLogo,   placeholder: '' },
+  { key: 'threads',   label: 'Threads',     Icon: ThreadsLogo,   placeholder: '' },
 ];
 
 type SaveStatus = 'idle' | 'saving' | 'saved';
@@ -80,6 +80,7 @@ export default function Profile() {
   });
 
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
+  const [focusedSocial, setFocusedSocial] = useState<keyof SocialProfiles | null>(null);
   const [uploadsEnabled, setUploadsEnabled] = useState(false);
   const [pdfUploading, setPdfUploading] = useState(false);
   const pdfInputRef = useRef<HTMLInputElement>(null);
@@ -208,23 +209,9 @@ export default function Profile() {
 
       {/* ── Header ──────────────────────────────────────────────────────── */}
       <ScreenHeader
-        title="Mi página"
-        description="Tu página pública con tus enlaces, redes y documento."
         actions={
-          <div className="flex items-center gap-2 pt-2">
-            {saveStatus === 'saving' && (
-              <span className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
-                <CircleNotch className="animate-spin" size={13} />
-                Guardando…
-              </span>
-            )}
-            {saveStatus === 'saved' && (
-              <span className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
-                <CheckCircle size={13} />
-                Guardado
-              </span>
-            )}
-            {publicUrl && (
+          publicUrl ? (
+            <div className="pt-2">
               <a
                 href={publicUrl}
                 target="_blank"
@@ -234,8 +221,8 @@ export default function Profile() {
                 <ArrowSquareOut size={13} />
                 Ver página
               </a>
-            )}
-          </div>
+            </div>
+          ) : undefined
         }
       />
 
@@ -294,7 +281,7 @@ export default function Profile() {
                   type="text"
                   value={form.tagline}
                   onChange={(e) => patch({ tagline: e.target.value })}
-                  placeholder="Fotógrafa · México · Bodas & retratos"
+                  placeholder=""
                   maxLength={120}
                   className={inputClass}
                 />
@@ -326,19 +313,43 @@ export default function Profile() {
             Redes sociales
           </p>
           <div className="flex flex-col gap-3">
-            {SOCIAL_PLATFORMS.map(({ key, label, Icon, placeholder }) => (
-              <div key={key} className="flex items-center gap-3">
-                <Icon size={18} className="text-[var(--text-secondary)] shrink-0" />
-                <input
-                  type="text"
-                  value={form.socialProfiles[key]}
-                  onChange={(e) => patchSocial(key, e.target.value)}
-                  placeholder={placeholder}
-                  aria-label={label}
-                  className={inputClass}
-                />
-              </div>
-            ))}
+            {SOCIAL_PLATFORMS.map(({ key, label, Icon, placeholder }) => {
+              const suggestion = publicHandle ? `@${publicHandle}` : null;
+              const showSuggestion =
+                focusedSocial === key &&
+                suggestion !== null &&
+                form.socialProfiles[key] !== suggestion;
+              return (
+                <div key={key} className="flex items-center gap-3">
+                  <Icon size={18} className="text-[var(--text-secondary)] shrink-0" />
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={form.socialProfiles[key]}
+                      onChange={(e) => patchSocial(key, e.target.value)}
+                      onFocus={() => setFocusedSocial(key)}
+                      onBlur={() => setTimeout(() => setFocusedSocial(null), 150)}
+                      placeholder={placeholder}
+                      aria-label={label}
+                      className={inputClass}
+                    />
+                    {showSuggestion && (
+                      <div className="absolute left-0 right-0 top-full mt-1 z-10 rounded-[0.8rem] border border-[color:var(--line-soft)] bg-[var(--surface-card)] shadow-lg overflow-hidden">
+                        <button
+                          onMouseDown={() => {
+                            patchSocial(key, suggestion!);
+                            setFocusedSocial(null);
+                          }}
+                          className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-left hover:bg-[var(--surface-muted)] transition-colors"
+                        >
+                          <span className="text-[var(--text-secondary)] font-mono">{suggestion}</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </SurfaceCard>
@@ -499,6 +510,25 @@ export default function Profile() {
           )}
         </div>
       </SurfaceCard>
+
+      {/* ── Save status pill ────────────────────────────────────────────── */}
+      {saveStatus !== 'idle' && (
+        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 lg:bottom-6 lg:left-auto lg:right-6 lg:translate-x-0 pointer-events-none">
+          <div className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-[var(--surface-card)] border border-[color:var(--line-soft)] shadow-lg text-sm text-[var(--text-secondary)]">
+            {saveStatus === 'saving' ? (
+              <>
+                <CircleNotch className="animate-spin" size={14} />
+                Guardando…
+              </>
+            ) : (
+              <>
+                <CheckCircle size={14} />
+                Guardado
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
     </div>
   );
