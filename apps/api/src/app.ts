@@ -93,7 +93,7 @@ export async function createApp(): Promise<{
   });
 
   // Public profile route (no auth required) — mounted at root so /@handle is matched explicitly
-  app.use(createMediaKitRouter(pool));
+  app.use(createMediaKitRouter(pool, env.NODE_ENV !== 'production'));
 
   const gamification = new GamificationService(appStore);
   app.use('/api/v1', createV1Router(appStore, pool, gamification));

@@ -372,13 +372,18 @@ function generateEfiLinkHtml(params: {
 </html>`;
 }
 
-export function createMediaKitRouter(pool: pg.Pool): Router {
+export function createMediaKitRouter(pool: pg.Pool, isDev = false): Router {
   const router = Router();
 
   // Regex ensures we only match /@somehandle (no slashes) — avoids intercepting Vite's /@vite/client etc.
-  router.get(/^\/@([^/]+)$/, async (req, res) => {
+  // In dev mode we also skip Vite plugin paths like /@react-refresh which have no slash but aren't user handles.
+  router.get(/^\/@([^/]+)$/, async (req, res, next) => {
     try {
       const rawHandle = (req.params as any)[0] as string;
+
+      if (isDev && /^(react-refresh|vite|id|fs)/.test(rawHandle)) {
+        return next();
+      }
       const handle = rawHandle.startsWith('@') ? rawHandle : `@${rawHandle}`;
 
       const { rows } = await pool.query(
