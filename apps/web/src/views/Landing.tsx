@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import gsap from 'gsap';
 import {
   ArrowRight,
   Article,
@@ -94,6 +95,63 @@ export default function Landing({
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const pillsContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      const pills = gsap.utils.toArray<HTMLElement>('.profession-pill');
+
+      // Phase 1 — Toy Story entrance: pills snap into place from random scatter
+      gsap.fromTo(
+        pills,
+        {
+          opacity: 0,
+          x: () => gsap.utils.random(-15, 15),
+          y: () => gsap.utils.random(-12, 12),
+          rotation: () => gsap.utils.random(-5, 5),
+        },
+        {
+          opacity: 1,
+          x: 0,
+          y: 0,
+          rotation: 0,
+          duration: 0.65,
+          ease: 'back.out(1.5)',
+          stagger: 0.015,
+          delay: 0.1,
+        },
+      );
+
+      // Phase 2 — Hover: each pill tilts to its own fixed random direction
+      pills.forEach((pill) => {
+        const dir = Math.random() > 0.5 ? 1 : -1;
+        const angle = gsap.utils.random(2, 4);
+
+        pill.addEventListener('mouseenter', () => {
+          gsap.to(pill, {
+            y: -3,
+            rotation: dir * angle,
+            duration: 0.3,
+            ease: 'elastic.out(1, 0.5)',
+            overwrite: true,
+          });
+        });
+
+        pill.addEventListener('mouseleave', () => {
+          gsap.to(pill, {
+            y: 0,
+            rotation: 0,
+            duration: 0.5,
+            ease: 'elastic.out(1, 0.4)',
+            overwrite: true,
+          });
+        });
+      });
+    }, pillsContainerRef);
+
+    return () => ctx.revert();
+  }, []);
 
   const switchMode = (newMode: AuthMode) => {
     setMode(newMode);
@@ -226,11 +284,11 @@ export default function Landing({
               </span>
             </h1>
 
-            <div className="mt-12 flex flex-wrap gap-2">
+            <div ref={pillsContainerRef} className="mt-12 flex flex-wrap gap-2">
               {professions.map(({ label, Icon }) => (
                 <span
                   key={label}
-                  className="inline-flex items-center gap-1.5 rounded-full border bg-(--surface-card)/60 px-3 py-1 text-[11px] font-semibold text-(--text-secondary) border-(--line-soft)"
+                  className="profession-pill inline-flex items-center gap-1.5 rounded-full border bg-(--surface-card)/60 px-3 py-1 text-[11px] font-semibold text-(--text-secondary) border-(--line-soft) cursor-default"
                 >
                   <Icon size={12} />
                   {label}
