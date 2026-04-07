@@ -19,7 +19,7 @@ import {
 } from '@phosphor-icons/react';
 import type { EfiProfile, ProfileLink, SocialProfiles } from '@shared';
 import { useAppContext } from '../context/AppContext';
-import { Avatar, Button, ScreenHeader, SurfaceCard, cx } from '../components/ui';
+import { ScreenHeader, SurfaceCard, cx } from '../components/ui';
 import { appApi } from '../lib/api';
 import { toast } from '../lib/toast';
 import ImageUpload from '../components/ImageUpload';
@@ -43,32 +43,28 @@ const SOCIAL_PLATFORMS: {
   Icon: React.ElementType;
   placeholder: string;
 }[] = [
-  { key: 'instagram', label: 'Instagram', Icon: InstagramLogo, placeholder: '@tuhandle' },
-  { key: 'tiktok',    label: 'TikTok',    Icon: TiktokLogo,    placeholder: '@tuhandle' },
-  { key: 'x',         label: 'X (Twitter)', Icon: XLogo,       placeholder: '@tuhandle' },
-  { key: 'youtube',   label: 'YouTube',   Icon: YoutubeLogo,   placeholder: '@tucanal' },
-  { key: 'threads',   label: 'Threads',   Icon: ThreadsLogo,   placeholder: '@tuhandle' },
+  { key: 'instagram', label: 'Instagram',   Icon: InstagramLogo, placeholder: '@tuhandle' },
+  { key: 'tiktok',    label: 'TikTok',      Icon: TiktokLogo,    placeholder: '@tuhandle' },
+  { key: 'x',         label: 'X (Twitter)', Icon: XLogo,         placeholder: '@tuhandle' },
+  { key: 'youtube',   label: 'YouTube',     Icon: YoutubeLogo,   placeholder: '@tucanal'  },
+  { key: 'threads',   label: 'Threads',     Icon: ThreadsLogo,   placeholder: '@tuhandle' },
 ];
 
-// ─── Save status ──────────────────────────────────────────────────────────────
-
 type SaveStatus = 'idle' | 'saving' | 'saved';
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function nanoid() {
   return Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10);
 }
 
+// ─── Shared input class ───────────────────────────────────────────────────────
+
+const inputClass =
+  'w-full rounded-[0.8rem] border border-[color:var(--line-soft)] bg-[var(--surface-card-strong)] px-4 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/60 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40 transition-all';
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function Profile() {
-  const {
-    profile,
-    accentColor,
-    accentHex,
-    updateProfile,
-  } = useAppContext();
+  const { profile, accentHex, updateProfile } = useAppContext();
 
   const [form, setForm] = useState<ProfileForm>({
     name: profile.name,
@@ -89,7 +85,6 @@ export default function Profile() {
   const pdfInputRef = useRef<HTMLInputElement>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Keep form in sync when profile loads from server
   useEffect(() => {
     setForm({
       name: profile.name,
@@ -114,7 +109,6 @@ export default function Profile() {
   const triggerSave = (updated: ProfileForm) => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     setSaveStatus('saving');
-
     saveTimerRef.current = setTimeout(async () => {
       try {
         await updateProfile({
@@ -157,9 +151,7 @@ export default function Profile() {
 
   const updateLink = (id: string, field: keyof Omit<ProfileLink, 'id'>, value: string) => {
     patchEfi({
-      links: form.efiProfile.links.map((l) =>
-        l.id === id ? { ...l, [field]: value } : l,
-      ),
+      links: form.efiProfile.links.map((l) => (l.id === id ? { ...l, [field]: value } : l)),
     });
   };
 
@@ -171,9 +163,9 @@ export default function Profile() {
     const links = [...form.efiProfile.links];
     const idx = links.findIndex((l) => l.id === id);
     if (idx === -1) return;
-    const swapIdx = dir === 'up' ? idx - 1 : idx + 1;
-    if (swapIdx < 0 || swapIdx >= links.length) return;
-    [links[idx], links[swapIdx]] = [links[swapIdx], links[idx]];
+    const swap = dir === 'up' ? idx - 1 : idx + 1;
+    if (swap < 0 || swap >= links.length) return;
+    [links[idx], links[swap]] = [links[swap], links[idx]];
     patchEfi({ links });
   };
 
@@ -199,13 +191,9 @@ export default function Profile() {
     }
   };
 
-  const removePdf = () => {
-    patchEfi({ pdf_url: null });
-  };
-
   // ── Public URL ────────────────────────────────────────────────────────────
 
-  const publicHandle = form.handle.startsWith('@') ? form.handle.slice(1) : form.handle;
+  const publicHandle = form.handle.replace(/^@/, '');
   const publicUrl = publicHandle ? `${window.location.origin}/@${publicHandle}` : null;
 
   const copyPublicUrl = () => {
@@ -216,20 +204,23 @@ export default function Profile() {
   // ─────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="space-y-5 p-4 pb-6 lg:space-y-6 lg:px-8 lg:pt-4 lg:pb-8">
+
+      {/* ── Header ──────────────────────────────────────────────────────── */}
       <ScreenHeader
-        title="Perfil"
+        title="Mi página"
+        description="Tu página pública con tus enlaces, redes y documento."
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 pt-2">
             {saveStatus === 'saving' && (
-              <span className="flex items-center gap-1 text-xs text-[var(--color-text-secondary)]">
-                <CircleNotch className="animate-spin" size={12} />
+              <span className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
+                <CircleNotch className="animate-spin" size={13} />
                 Guardando…
               </span>
             )}
             {saveStatus === 'saved' && (
-              <span className="flex items-center gap-1 text-xs text-[var(--color-text-secondary)]">
-                <CheckCircle size={12} />
+              <span className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
+                <CheckCircle size={13} />
                 Guardado
               </span>
             )}
@@ -238,9 +229,9 @@ export default function Profile() {
                 href={publicUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-full border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors"
+                className="flex items-center gap-1.5 text-xs font-medium px-3.5 py-2 rounded-xl border border-[color:var(--line-soft)] bg-[var(--surface-card)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
               >
-                <ArrowSquareOut size={12} />
+                <ArrowSquareOut size={13} />
                 Ver página
               </a>
             )}
@@ -248,255 +239,267 @@ export default function Profile() {
         }
       />
 
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-2xl mx-auto p-4 md:p-6 flex flex-col gap-6">
+      {/* ── Identity ────────────────────────────────────────────────────── */}
+      <SurfaceCard className="overflow-hidden">
+        <div className="p-6 lg:p-7">
+          <p className="mb-5 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--text-secondary)]/80">
+            Identidad
+          </p>
 
-          {/* ── Identity ─────────────────────────────────────────────────── */}
-          <SurfaceCard>
-            <h2 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide mb-4">
-              Identidad
-            </h2>
-            <div className="flex gap-4 items-start">
-              <div className="shrink-0">
-                <ImageUpload
-                  value={form.avatar}
-                  onChange={(url) => patch({ avatar: url })}
-                  category="avatar"
-                  accentColor={accentHex}
-                  aspectRatio="aspect-square"
-                  className="w-20 h-20 rounded-full"
-                  uploadsEnabled={uploadsEnabled}
-                  placeholder="Foto"
-                />
-              </div>
-              <div className="flex-1 flex flex-col gap-3">
-                <div>
-                  <label className="block text-xs text-[var(--color-text-secondary)] mb-1">Nombre</label>
-                  <input
-                    type="text"
-                    value={form.name}
-                    onChange={(e) => patch({ name: e.target.value })}
-                    placeholder="Tu nombre"
-                    className="w-full bg-transparent border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs text-[var(--color-text-secondary)] mb-1">Handle</label>
-                  <div className="flex items-center border border-[var(--color-border)] rounded-lg overflow-hidden">
-                    <span className="px-3 py-2 text-sm text-[var(--color-text-secondary)] bg-[var(--color-surface-raised)] select-none">@</span>
-                    <input
-                      type="text"
-                      value={form.handle.replace(/^@/, '')}
-                      onChange={(e) => patch({ handle: e.target.value.replace(/^@/, '') })}
-                      placeholder="tuhandle"
-                      className="flex-1 bg-transparent px-2 py-2 text-sm focus:outline-none"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs text-[var(--color-text-secondary)] mb-1">Bio corta</label>
-                  <input
-                    type="text"
-                    value={form.tagline}
-                    onChange={(e) => patch({ tagline: e.target.value })}
-                    placeholder="Fotógrafo de bodas y retratos · México"
-                    maxLength={120}
-                    className="w-full bg-transparent border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
-                  />
-                </div>
-              </div>
+          <div className="flex gap-5 items-start">
+            {/* Avatar */}
+            <div className="shrink-0">
+              <ImageUpload
+                value={form.avatar}
+                onChange={(url) => patch({ avatar: url })}
+                category="avatar"
+                accentColor={accentHex}
+                aspectRatio="aspect-square"
+                className="!w-20 !h-20 !rounded-full"
+                uploadsEnabled={uploadsEnabled}
+                placeholder="Foto"
+              />
             </div>
 
-            {publicUrl && (
-              <div className="mt-4 flex items-center gap-2 p-2.5 rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)]">
-                <GlobeSimple size={14} className="text-[var(--color-text-secondary)] shrink-0" />
-                <span className="text-xs text-[var(--color-text-secondary)] flex-1 truncate">{publicUrl}</span>
-                <button
-                  onClick={copyPublicUrl}
-                  className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors"
-                >
-                  <Copy size={14} />
-                </button>
+            {/* Fields */}
+            <div className="flex-1 flex flex-col gap-3 min-w-0">
+              <div>
+                <label className="block mb-1.5 text-xs font-medium text-[var(--text-secondary)]">Nombre</label>
+                <input
+                  type="text"
+                  value={form.name}
+                  onChange={(e) => patch({ name: e.target.value })}
+                  placeholder="Tu nombre"
+                  className={inputClass}
+                />
               </div>
-            )}
-          </SurfaceCard>
 
-          {/* ── Social profiles ───────────────────────────────────────────── */}
-          <SurfaceCard>
-            <h2 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide mb-4">
-              Redes sociales
-            </h2>
-            <div className="flex flex-col gap-3">
-              {SOCIAL_PLATFORMS.map(({ key, label, Icon, placeholder }) => (
-                <div key={key} className="flex items-center gap-2">
-                  <Icon size={18} className="text-[var(--color-text-secondary)] shrink-0" />
+              <div>
+                <label className="block mb-1.5 text-xs font-medium text-[var(--text-secondary)]">Handle</label>
+                <div className="flex items-center rounded-[0.8rem] border border-[color:var(--line-soft)] bg-[var(--surface-card-strong)] overflow-hidden focus-within:ring-2 focus-within:ring-[var(--accent)]/40 transition-all">
+                  <span className="px-3 py-3 text-sm text-[var(--text-secondary)] select-none shrink-0">@</span>
                   <input
                     type="text"
-                    value={form.socialProfiles[key]}
-                    onChange={(e) => patchSocial(key, e.target.value)}
-                    placeholder={placeholder}
-                    className="flex-1 bg-transparent border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
+                    value={form.handle.replace(/^@/, '')}
+                    onChange={(e) => patch({ handle: e.target.value.replace(/^@/, '') })}
+                    placeholder="tuhandle"
+                    className="flex-1 bg-transparent px-1 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/60 focus:outline-none"
                   />
+                </div>
+              </div>
+
+              <div>
+                <label className="block mb-1.5 text-xs font-medium text-[var(--text-secondary)]">Bio corta</label>
+                <input
+                  type="text"
+                  value={form.tagline}
+                  onChange={(e) => patch({ tagline: e.target.value })}
+                  placeholder="Fotógrafa · México · Bodas & retratos"
+                  maxLength={120}
+                  className={inputClass}
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Public URL bar */}
+          {publicUrl && (
+            <div className="mt-5 flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-[var(--surface-muted)] border border-[color:var(--line-soft)]">
+              <GlobeSimple size={13} className="text-[var(--text-secondary)] shrink-0" />
+              <span className="text-xs text-[var(--text-secondary)] flex-1 truncate font-mono">{publicUrl}</span>
+              <button
+                onClick={copyPublicUrl}
+                title="Copiar enlace"
+                className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0"
+              >
+                <Copy size={13} />
+              </button>
+            </div>
+          )}
+        </div>
+      </SurfaceCard>
+
+      {/* ── Redes sociales ──────────────────────────────────────────────── */}
+      <SurfaceCard className="overflow-hidden">
+        <div className="p-6 lg:p-7">
+          <p className="mb-5 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--text-secondary)]/80">
+            Redes sociales
+          </p>
+          <div className="flex flex-col gap-3">
+            {SOCIAL_PLATFORMS.map(({ key, label, Icon, placeholder }) => (
+              <div key={key} className="flex items-center gap-3">
+                <Icon size={18} className="text-[var(--text-secondary)] shrink-0" />
+                <input
+                  type="text"
+                  value={form.socialProfiles[key]}
+                  onChange={(e) => patchSocial(key, e.target.value)}
+                  placeholder={placeholder}
+                  aria-label={label}
+                  className={inputClass}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      </SurfaceCard>
+
+      {/* ── Mis enlaces ─────────────────────────────────────────────────── */}
+      <SurfaceCard className="overflow-hidden">
+        <div className="p-6 lg:p-7">
+          <div className="flex items-center justify-between mb-5">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--text-secondary)]/80">
+              Mis enlaces
+            </p>
+            <button
+              onClick={addLink}
+              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-lg border border-[color:var(--line-soft)] bg-[var(--surface-muted)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+            >
+              <Plus size={12} />
+              Añadir
+            </button>
+          </div>
+
+          {form.efiProfile.links.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-10 gap-2 text-[var(--text-secondary)]">
+              <Link size={28} className="opacity-30" />
+              <p className="text-sm">Agrega tus enlaces más importantes</p>
+              <p className="text-xs opacity-60">YouTube, newsletter, booking, portfolio…</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {form.efiProfile.links.map((link, idx) => (
+                <div key={link.id} className="flex items-center gap-2">
+                  {/* Reorder buttons */}
+                  <div className="flex flex-col gap-0.5 shrink-0">
+                    <button
+                      onClick={() => moveLink(link.id, 'up')}
+                      disabled={idx === 0}
+                      className="p-0.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] disabled:opacity-20 transition-colors"
+                    >
+                      <ArrowUp size={12} />
+                    </button>
+                    <button
+                      onClick={() => moveLink(link.id, 'down')}
+                      disabled={idx === form.efiProfile.links.length - 1}
+                      className="p-0.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] disabled:opacity-20 transition-colors"
+                    >
+                      <ArrowDown size={12} />
+                    </button>
+                  </div>
+
+                  <input
+                    type="text"
+                    value={link.label}
+                    onChange={(e) => updateLink(link.id, 'label', e.target.value)}
+                    placeholder="Etiqueta"
+                    className={cx(inputClass, 'w-32 shrink-0')}
+                  />
+                  <input
+                    type="url"
+                    value={link.url}
+                    onChange={(e) => updateLink(link.id, 'url', e.target.value)}
+                    placeholder="https://…"
+                    className={cx(inputClass, 'flex-1 min-w-0')}
+                  />
+                  <button
+                    onClick={() => removeLink(link.id)}
+                    className="shrink-0 p-1 text-[var(--text-secondary)] hover:text-red-500 transition-colors"
+                  >
+                    <Trash size={15} />
+                  </button>
                 </div>
               ))}
             </div>
-          </SurfaceCard>
+          )}
+        </div>
+      </SurfaceCard>
 
-          {/* ── Links ─────────────────────────────────────────────────────── */}
-          <SurfaceCard>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide">
-                Mis enlaces
-              </h2>
-              <button
-                onClick={addLink}
-                className="flex items-center gap-1 text-xs px-3 py-1.5 rounded-full border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors"
-              >
-                <Plus size={12} />
-                Añadir enlace
-              </button>
-            </div>
+      {/* ── Documento PDF ───────────────────────────────────────────────── */}
+      <SurfaceCard className="overflow-hidden">
+        <div className="p-6 lg:p-7">
+          <p className="mb-1 text-[11px] font-bold uppercase tracking-[0.18em] text-[var(--text-secondary)]/80">
+            Documento (PDF)
+          </p>
+          <p className="mb-5 text-xs text-[var(--text-secondary)]">
+            Sube tu dossier, media kit o portafolio. Aparecerá como botón en tu página.
+          </p>
 
-            {form.efiProfile.links.length === 0 ? (
-              <div className="text-center py-8 text-sm text-[var(--color-text-secondary)]">
-                <Link size={24} className="mx-auto mb-2 opacity-40" />
-                <p>Agrega tus enlaces importantes aquí.</p>
-                <p className="text-xs mt-1 opacity-60">YouTube, newsletter, booking, portfolio…</p>
-              </div>
-            ) : (
-              <div className="flex flex-col gap-2">
-                {form.efiProfile.links.map((link, idx) => (
-                  <div key={link.id} className="flex items-center gap-2">
-                    <div className="flex flex-col gap-0.5">
-                      <button
-                        onClick={() => moveLink(link.id, 'up')}
-                        disabled={idx === 0}
-                        className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)] disabled:opacity-20 transition-colors"
-                      >
-                        <ArrowUp size={12} />
-                      </button>
-                      <button
-                        onClick={() => moveLink(link.id, 'down')}
-                        disabled={idx === form.efiProfile.links.length - 1}
-                        className="text-[var(--color-text-secondary)] hover:text-[var(--color-text)] disabled:opacity-20 transition-colors"
-                      >
-                        <ArrowDown size={12} />
-                      </button>
-                    </div>
-                    <input
-                      type="text"
-                      value={link.label}
-                      onChange={(e) => updateLink(link.id, 'label', e.target.value)}
-                      placeholder="Etiqueta"
-                      className="w-32 shrink-0 bg-transparent border border-[var(--color-border)] rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
-                    />
-                    <input
-                      type="url"
-                      value={link.url}
-                      onChange={(e) => updateLink(link.id, 'url', e.target.value)}
-                      placeholder="https://…"
-                      className="flex-1 bg-transparent border border-[var(--color-border)] rounded-lg px-2.5 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
-                    />
-                    <button
-                      onClick={() => removeLink(link.id)}
-                      className="text-[var(--color-text-secondary)] hover:text-red-500 transition-colors shrink-0"
-                    >
-                      <Trash size={14} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </SurfaceCard>
-
-          {/* ── PDF / Dossier ──────────────────────────────────────────────── */}
-          <SurfaceCard>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wide">
-                Documento (PDF)
-              </h2>
-            </div>
-            <p className="text-xs text-[var(--color-text-secondary)] mb-4">
-              Sube tu dossier, media kit o portafolio en PDF. Aparecerá como un botón en tu página.
-            </p>
-
-            {form.efiProfile.pdf_url ? (
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border)]">
-                  <FilePdf size={20} className="text-[var(--color-text-secondary)] shrink-0" />
-                  <span className="text-sm flex-1 truncate text-[var(--color-text-secondary)]">
-                    PDF subido
-                  </span>
-                  <a
-                    href={form.efiProfile.pdf_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text)] transition-colors"
-                  >
-                    <ArrowSquareOut size={14} />
-                  </a>
-                  <button
-                    onClick={removePdf}
-                    className="text-[var(--color-text-secondary)] hover:text-red-500 transition-colors"
-                  >
-                    <Trash size={14} />
-                  </button>
-                </div>
-                <div>
-                  <label className="block text-xs text-[var(--color-text-secondary)] mb-1">
-                    Texto del botón
-                  </label>
-                  <input
-                    type="text"
-                    value={form.efiProfile.pdf_label}
-                    onChange={(e) => patchEfi({ pdf_label: e.target.value })}
-                    placeholder="Ver mi media kit"
-                    className="w-full bg-transparent border border-[var(--color-border)] rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--color-accent)]"
-                  />
-                </div>
-              </div>
-            ) : (
-              <div>
-                <input
-                  ref={pdfInputRef}
-                  type="file"
-                  accept="application/pdf"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handlePdfFile(file);
-                    e.target.value = '';
-                  }}
-                />
-                <button
-                  onClick={() => pdfInputRef.current?.click()}
-                  disabled={pdfUploading || !uploadsEnabled}
-                  className={cx(
-                    'w-full flex flex-col items-center justify-center gap-2 py-8 rounded-xl border-2 border-dashed border-[var(--color-border)] transition-colors',
-                    uploadsEnabled
-                      ? 'hover:border-[var(--color-accent)] cursor-pointer'
-                      : 'opacity-50 cursor-not-allowed',
-                  )}
+          {form.efiProfile.pdf_url ? (
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--surface-muted)] border border-[color:var(--line-soft)]">
+                <FilePdf size={18} className="text-[var(--text-secondary)] shrink-0" />
+                <span className="text-sm flex-1 truncate text-[var(--text-secondary)]">PDF subido</span>
+                <a
+                  href={form.efiProfile.pdf_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
                 >
-                  {pdfUploading ? (
-                    <CircleNotch size={20} className="animate-spin text-[var(--color-text-secondary)]" />
-                  ) : (
-                    <FilePdf size={20} className="text-[var(--color-text-secondary)]" />
-                  )}
-                  <span className="text-sm text-[var(--color-text-secondary)]">
-                    {pdfUploading
-                      ? 'Subiendo…'
-                      : uploadsEnabled
-                      ? 'Subir PDF (máx. 20 MB)'
-                      : 'Almacenamiento no configurado'}
-                  </span>
+                  <ArrowSquareOut size={15} />
+                </a>
+                <button
+                  onClick={() => patchEfi({ pdf_url: null })}
+                  className="text-[var(--text-secondary)] hover:text-red-500 transition-colors"
+                >
+                  <Trash size={15} />
                 </button>
               </div>
-            )}
-          </SurfaceCard>
 
+              <div>
+                <label className="block mb-1.5 text-xs font-medium text-[var(--text-secondary)]">
+                  Texto del botón
+                </label>
+                <input
+                  type="text"
+                  value={form.efiProfile.pdf_label}
+                  onChange={(e) => patchEfi({ pdf_label: e.target.value })}
+                  placeholder="Ver mi media kit"
+                  className={inputClass}
+                />
+              </div>
+            </div>
+          ) : (
+            <>
+              <input
+                ref={pdfInputRef}
+                type="file"
+                accept="application/pdf"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handlePdfFile(file);
+                  e.target.value = '';
+                }}
+              />
+              <button
+                onClick={() => pdfInputRef.current?.click()}
+                disabled={pdfUploading || !uploadsEnabled}
+                className={cx(
+                  'w-full flex flex-col items-center justify-center gap-2.5 py-10 rounded-xl border-2 border-dashed transition-colors',
+                  'border-[color:var(--line-soft)] text-[var(--text-secondary)]',
+                  uploadsEnabled && !pdfUploading
+                    ? 'hover:border-[var(--accent)] hover:text-[var(--text-primary)] cursor-pointer'
+                    : 'opacity-50 cursor-not-allowed',
+                )}
+              >
+                {pdfUploading ? (
+                  <CircleNotch size={22} className="animate-spin" />
+                ) : (
+                  <FilePdf size={22} />
+                )}
+                <span className="text-sm">
+                  {pdfUploading
+                    ? 'Subiendo…'
+                    : uploadsEnabled
+                    ? 'Subir PDF (máx. 20 MB)'
+                    : 'Almacenamiento no configurado'}
+                </span>
+              </button>
+            </>
+          )}
         </div>
-      </div>
+      </SurfaceCard>
+
     </div>
   );
 }
