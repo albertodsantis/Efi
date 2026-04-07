@@ -20,8 +20,8 @@ Rules:
 ### 3.1 Entry States
 
 1. `Auth Loading`
-2. `Logged Out`
-3. `First Login Onboarding`
+2. `Logged Out` → Landing page
+3. `First Login Onboarding` (WelcomeColorPicker → WelcomeOnboarding)
 4. `App Ready`
 
 ### 3.2 Main App Screens
@@ -30,38 +30,46 @@ Rules:
 2. `Pipeline`
 3. `Directory (Directorio)`
 4. `Strategic View (Estrategia)`
-5. `Profile (Perfil)`
+5. `Profile (Perfil Público)`
 6. `Settings (Ajustes)`
-7. `AI Assistant` (conditional — only available when GEMINI_API_KEY is configured)
+7. `AI Assistant` (conditional — only when `GEMINI_API_KEY` is configured)
 
 ### 3.3 Substates and Modals
 
-1. `Pipeline > Add/Edit Task Modal` (includes goal selector)
+1. `Pipeline > Add/Edit Task Modal` (includes goal selector, checklist)
 2. `Pipeline > Calendar Day Detail Modal`
 3. `Directory > Partner Expanded`
 4. `Directory > Add/Edit Contact Modal`
 5. `Directory > Compose Message Modal`
 6. `Strategic View > Goal Detail`
 7. `Strategic View > Add/Edit Goal Modal`
-8. `Profile > Media Kit Preview`
-9. `Settings > Add/Edit Template Modal`
-10. `Google OAuth Popup / Callback`
-11. `AI Assistant > Chat Interface`
-12. `Onboarding Tour Overlay`
-13. `Global Error Toast / Inline Error`
+8. `Profile > Block Editor` (per-block inline editing)
+9. `Profile > BlockPickerDrawer` (add blocks)
+10. `Profile > TemplatePickerDrawer` (load a template into blocks)
+11. `Settings > Add/Edit Template Modal`
+12. `Settings > Change Password Modal`
+13. `Settings > Delete Account Confirmation`
+14. `Google OAuth Popup / Callback`
+15. `AI Assistant > Chat Interface`
+16. `Onboarding Tour Overlay`
+17. `Global Error Toast / Inline Error`
+18. `EfisystemWidget Popover` (level/XP/badges)
 
 ## 4. Primary Navigation Flow
 
 ```text
-Logged Out
-  -> Sign in with Google
+Logged Out (Landing)
+  -> Register with email/password
+  -> OR Sign in with Google
   -> Auth Loading
   -> First Login Onboarding (first run only)
+       -> WelcomeColorPicker
+       -> WelcomeOnboarding (profession picker)
   -> Dashboard
        -> Pipeline
        -> Directory
        -> Strategic View (Estrategia)
-       -> Profile
+       -> Profile (Perfil Público)
        -> Settings
        -> AI Assistant (conditional)
 ```
@@ -85,180 +93,220 @@ Primary sections:
 
 ```text
 User without session
-  -> Google sign-in
-  -> Account created or restored
-  -> Empty workspace or optional development seed data loaded
-  -> Onboarding tour shown (React Joyride, 700ms delay)
+  -> Lands on Landing page (login/register forms)
+  -> Registers with email/password OR signs in with Google
+  -> Account created
+  -> WelcomeColorPicker: user selects an accent color
+  -> WelcomeOnboarding: user selects primary profession (and optional secondary)
+  -> Dashboard
+  -> Onboarding tour auto-starts after 700ms delay
   -> Tour covers: Inicio, Pipeline, Directorio, Estrategia, Perfil, Ajustes, AI Assistant
   -> Tour uses responsive step targeting (mobile bottom nav vs desktop sidebar)
   -> Tour tooltips match current theme and accent color
-  -> Dashboard
 ```
 
 Rules:
 
 - onboarding runs once per user, completion persisted in localStorage
-- onboarding can be reset from Settings to replay the tour
-- if initial loading fails, the app shows retry and does not enter a broken shell state
+- onboarding can be reset from Settings
+- if initial loading fails, the app shows a retry state and does not enter a broken shell
 
-## 6. Dashboard (Inicio)
+## 6. Authentication
 
-### 6.1 Goal
+### 6.1 Landing Page
 
-Provide immediate visibility into the creator's operational and financial state with goal tracking.
+The Landing page (`views/Landing.tsx`) is the unauthenticated entry point. It presents:
 
-### 6.2 Core Elements
+- login form (email + password)
+- register form (name, email, password)
+- Google sign-in button
 
-- **GoalsMarquee**: draggable horizontal scroll displaying the user's professional goals, positioned at the top of the dashboard
+### 6.2 Email/Password Flow
+
+```text
+Landing
+  -> Fill register form (name, email, password) → POST /api/auth/register
+  -> OR fill login form (email, password) → POST /api/auth/login
+  -> Session set → redirect to WelcomeColorPicker (new user) or Dashboard (returning)
+```
+
+### 6.3 Google OAuth Flow
+
+```text
+Landing
+  -> Tap "Sign in with Google"
+  -> GET /api/auth/google/login → OAuth URL
+  -> Supabase Google OAuth popup/redirect
+  -> Callback → session set → redirect to app
+```
+
+### 6.4 Session and Logout
+
+- session cookie is `httpOnly`, 30-day max age
+- `GET /api/auth/me` is called on startup; if no session → Landing
+- `POST /api/auth/logout` destroys the session → Landing
+
+## 7. Dashboard (Inicio)
+
+### 7.1 Goal
+
+Provide immediate visibility into the creator's operational and financial state.
+
+### 7.2 Core Elements
+
+- **GoalsMarquee**: draggable horizontal scroll of active goals, positioned at the top
+- **EfisystemWidget**: level, XP bar, and badge progress (accessible from Dashboard)
 - **Operational summary card**: annual revenue goal, open pipeline value, closed/billed value
-- **Period filter**: segmented control with This Month / Last Month / This Year / All Time — scopes all metrics on the dashboard
-- **Task breakdown**: horizontal progress bars showing task count by status (Pendiente, En Progreso, En Revision, Completada, Cobrado)
-- **Upcoming tasks list**: next 4 tasks sorted by due date, with partner name, value, and relative date label
-- **Summary stats panel**: tasks due today, tasks due tomorrow, tasks this week, active partners count, total contacts count, overdue tasks count
-- **Complete-task quick actions**: checkbox or button on each upcoming task to mark it complete without navigating to Pipeline
+- **Period filter**: This Month / Last Month / This Year / All Time — scopes all metrics
+- **Task breakdown**: horizontal progress bars by status (Pendiente, En Progreso, En Revisión, Completada, Cobrado)
+- **Upcoming tasks list**: next 4 tasks by due date with partner, value, relative date
+- **Summary stats panel**: today, tomorrow, this week, active partners, total contacts, overdue
+- **Complete-task quick actions**: mark upcoming tasks complete without leaving Dashboard
 
-### 6.3 Transitions
+### 7.3 Transitions
 
-- tapping a task routes to Pipeline or opens the task for editing
-- tapping a partner name routes to Directory with that partner expanded
-- if there are no tasks, show an empty state with a CTA to create one
-- period filter updates all metric cards and lists in place without navigation
+- tapping a task opens it for editing in Pipeline
+- tapping a partner name opens Directory with that partner expanded
+- empty state shows a CTA to create the first task
+- period filter updates all metric cards and lists in place
 
-## 7. Pipeline
+## 8. Pipeline
 
-### 7.1 Subviews
+### 8.1 Subviews
 
 - `Kanban` (default) — drag-and-drop columns by status
 - `List` — full tabular list of all tasks
 - `Calendar` — monthly calendar grid with task indicators
 
-### 7.1.1 Workspace Controls
+### 8.2 Workspace Controls
 
 - `Kanban / Lista / Mes` segmented control for view switching
 - `Nueva tarea` button to open task creation modal
-- `Actualizar Calendar` button to sync with Google Calendar
+- `Actualizar Calendar` button to pull date changes from Google Calendar
 - Search bar: searches across task title, description, and partner name
 
-### 7.2 Kanban View
+### 8.3 Kanban View
 
 ```text
 Pipeline (Kanban)
-  -> 5 columns: Pendiente | En Progreso | En Revision | Completada | Cobrado
-  -> Each column shows task cards with title, partner, value, relative date
-  -> Drag a task card between columns to change status (@dnd-kit)
+  -> 5 columns: Pendiente | En Progreso | En Revisión | Completada | Cobrado
+  -> Each card shows: title, partner, value, relative due date, checklist progress
+  -> Drag a card between columns to change status (@dnd-kit)
   -> Drag to reorder within a column
-  -> Status color coding on each card
   -> Click a card to open Edit Task Modal
 ```
 
-### 7.3 Create Task Flow
+### 8.4 Create Task Flow
 
 ```text
 Pipeline
-  -> Tap "Nueva tarea" or "+"
+  -> Tap "Nueva tarea"
   -> Add Task Modal opens
   -> Fill title, partner (autocomplete), value, date, description
-  -> Partner field: type to search existing partners, select from dropdown
-  -> If partner name doesn't match any existing partner: auto-create option
-  -> Optionally select a strategic goal from the goal selector dropdown
-  -> Save
-  -> Task persists to backend
-  -> Pipeline view refreshes
-  -> Modal closes
+  -> Optionally add checklist items
+  -> Optionally link to a strategic goal via goal selector dropdown
+  -> Partner: type to search existing, select from dropdown, or auto-create if not found
+  -> Save → task persists to backend → modal closes → pipeline refreshes
 ```
 
 Rules:
 
 - every task must be associated with a partner
-- partner autocomplete searches existing partners by name
-- if the partner does not exist, the flow auto-creates it as a new partner
-- tasks can optionally be linked to a strategic goal via the goal selector
-- after save, the modal closes and the user returns to the previous context
+- if the partner does not exist, it is auto-created as a new `Prospecto` partner
+- status transition timestamps (`completedAt`, `cobradoAt`) are recorded automatically
+- gamification may award XP on task creation
 
-### 7.4 Edit Task Flow
+### 8.5 Edit Task Flow
 
 ```text
 Pipeline
   -> Click existing task card
-  -> Edit Task Modal opens (same form as create, pre-filled)
-  -> Modify any field
+  -> Edit Task Modal opens (pre-filled)
+  -> Modify any field or checklist
   -> Save or Delete
   -> Pipeline refreshes
 ```
 
-### 7.5 View Switching Flow
+### 8.6 Checklist Flow
+
+```text
+Edit Task Modal
+  -> Add checklist item: type text → add
+  -> Check/uncheck items inline
+  -> Delete items
+  -> Checklist progress shown on task card (e.g. "2/4")
+```
+
+### 8.7 View Switching
 
 ```text
 Pipeline
   -> Toggle Kanban / Lista / Mes
-  -> The app preserves search query during the session
+  -> Search query preserved during session
   -> View renders with current task data
 ```
 
 Pipeline status flow:
 
-`Pendiente` -> `En Progreso` -> `En Revision` -> `Completada` -> `Cobrado`
+`Pendiente` → `En Progreso` → `En Revisión` → `Completada` → `Cobrado`
 
-### 7.6 List View
+### 8.8 List View
 
 ```text
 Pipeline (List)
-  -> All tasks in a scrollable table/list
+  -> All tasks in a scrollable list
   -> Columns: title, partner, status, value, due date
   -> Status color coding
-  -> Relative date labels (Today / Tomorrow / In X days)
+  -> Relative date labels
   -> Click a row to open Edit Task Modal
 ```
 
-### 7.7 Calendar View
+### 8.9 Calendar View
 
 ```text
 Pipeline (Calendar)
-  -> Monthly grid with forward/backward month navigation
-  -> Days with tasks show task indicators (dots or counts)
+  -> Monthly grid with forward/backward navigation
+  -> Days with tasks show indicators
   -> Click a day to open Day Detail Modal
 ```
 
-### 7.8 Day Detail Modal
+### 8.10 Day Detail Modal
 
 ```text
-Pipeline Calendar
+Calendar Day
   -> Tap a day with tasks
   -> Day Detail Modal opens
-  -> Lists all tasks for that specific day
-  -> Each task shows title, partner, value, status
+  -> Lists all tasks for that day with title, partner, value, status
   -> Can sync individual tasks with Google Calendar
-  -> Close modal to return to calendar
 ```
 
-### 7.9 Calendar Sync Flow
+### 8.11 Calendar Sync Flow
 
 ```text
-Task card or Day Detail Modal
-  -> Tap "Sync" on a task
-  -> If Google Calendar is disconnected: show error with CTA to Settings
-  -> If Google Calendar is connected: POST sync to backend
-  -> Task receives googleCalendarEventId
-  -> Show synced state indicator
+Task card
+  -> Tap sync icon
+  -> If Calendar disconnected: toast error with CTA to Settings
+  -> If connected: POST /api/calendar/sync
+  -> Task receives gcalEventId; sync indicator shown
 ```
 
-### 7.10 Sync-Down Flow
+### 8.12 Sync-Down Flow
 
 ```text
 Pipeline
   -> Tap "Actualizar Calendar"
-  -> Backend loads linked Google Calendar events
+  -> POST /api/calendar/sync-down with all gcalEventIds
   -> Local task dates update to match Calendar changes
-  -> UI refreshes with updated dates
+  -> UI refreshes
 ```
 
-## 8. Directory (Directorio)
+## 9. Directory (Directorio)
 
-### 8.1 Goal
+### 9.1 Goal
 
-Manage partners (brands), their contacts, financial data, and outreach in a single operational context.
+Manage partners (brands), their contacts, financial data, and outreach in one place.
 
-### 8.2 Main Flow
+### 9.2 Main Flow
 
 ```text
 Directory
@@ -266,334 +314,271 @@ Directory
   -> Partner list with status badges and financial summary
   -> Expand a partner card
   -> Review: contacts, financial data, partnership details, task metrics
-  -> Add / edit / delete contact
+  -> Add / edit / delete contacts
   -> Open message composer with template
   -> Send via email or WhatsApp
 ```
 
-### 8.3 Partner Card (Expanded)
+### 9.3 Partner Card (Expanded)
 
-When a partner is expanded, the following sections are visible:
+- **Status**: one of 6 statuses with color coding
+- **Partnership type**: Permanente, Plazo Fijo, One Time, Por Definir
+- **Financial tracking**: monthly and annual revenue
+- **Date range**: start date, end date
+- **Source**: how the partner was acquired
+- **Logo, keywords, main channel**
+- **Task metrics**: total and open tasks
+- **Contacts list**
 
-- **Status**: one of 6 statuses (Prospecto, En Negociacion, Activo, Inactivo, On Hold, Relacion Culminada)
-- **Partnership type**: Permanente, Unica Vez, or Por Definir
-- **Financial tracking**: monthly revenue and annual revenue
-- **Date range**: start date and end date of the partnership
-- **Logo and keywords**: visual identity and tagging
-- **Task metrics**: total tasks and open tasks count for this partner
-- **Contacts list**: all contacts associated with this partner
-
-### 8.4 Contact Flow
+### 9.4 Contact Flow
 
 ```text
 Expanded partner
   -> Tap "Add Contact"
-  -> Add Contact Modal opens
-  -> Fill: name, role, email, Instagram handle, phone number
-  -> Save
-  -> Contact appears under the partner
+  -> Add Contact Modal: name, role, email, Instagram, phone
+  -> Save → contact appears under the partner
 ```
 
-Each contact card displays:
+Each contact card shows: name, role, email (tap to compose), Instagram, phone (tap for WhatsApp).
 
-- name and role
-- email (tap to compose via template or open mail client)
-- Instagram handle
-- phone number (tap to open WhatsApp)
-
-### 8.5 Outreach Flow
+### 9.5 Outreach Flow
 
 ```text
 Contact card
-  -> Tap email icon or "Send" button
+  -> Tap email or WhatsApp icon
   -> Compose Message Modal opens
-  -> Select a template from saved templates
+  -> Select a saved template
   -> Variables auto-resolve: {{brandName}}, {{contactName}}, {{creatorName}}, {{deliverable}}, {{mediaKitLink}}
-  -> Review subject and body with resolved values
+  -> Review resolved subject and body
   -> Choose: Open in email client OR Open in WhatsApp
 ```
 
-Rules:
-
-- template variables must resolve before opening the external client
-- if an associated deliverable is missing, the flow uses explicit fallback text
-- WhatsApp integration opens WhatsApp Web or the WhatsApp app with the pre-composed message
-- email integration opens the default mail client with subject and body pre-filled
-
-### 8.6 Partner Status Management
+### 9.6 Partner Management
 
 ```text
 Expanded partner
-  -> Tap status badge or edit button
-  -> Select new status from dropdown
-  -> Status updates immediately
-  -> Partner card reflects new status with appropriate color coding
+  -> Edit partner details: name, status, type, revenue, dates, source, logo
+  -> Delete partner (with confirmation, if no tasks are linked)
+  -> Archive partner by setting status to Relación Culminada
 ```
 
-## 9. Profile (Perfil)
-
-### 9.1 Goal
-
-Let the user maintain a professional identity, social presence, media kit, and goals — all with auto-save.
-
-### 9.2 Basic Info Flow
-
-```text
-Profile
-  -> Edit name, handle, avatar, bio
-  -> Changes auto-save with 1-second debounce
-  -> No explicit save button needed
-```
-
-### 9.3 Social Profiles Flow
-
-```text
-Profile > Social Profiles section
-  -> Edit links for: Instagram, TikTok, X (Twitter), Threads, YouTube
-  -> Each field accepts a URL or handle
-  -> Changes auto-save with 1-second debounce
-```
-
-### 9.4 Media Kit Flow
-
-```text
-Profile > Media Kit section
-  -> Edit 13 media kit sections:
-     - Portfolio images (upload/manage)
-     - Topic tags
-     - Trusted brands
-     - Audience metrics:
-       - Insight stats (followers, reach, engagement, etc.)
-       - Gender distribution
-       - Age distribution
-       - Top countries
-     - Service offerings with pricing
-     - About paragraphs with customizable content
-  -> Changes auto-save with 1-second debounce
-  -> Tap "Preview" to generate HTML media kit
-  -> Media Kit Preview opens in-app
-  -> Review the rendered HTML document
-  -> Close preview to return to editing
-```
-
-### 9.5 Goals Management
-
-Goals are managed exclusively in the Strategic View (Estrategia) tab, not in the Profile view.
-
-See section 9.6 for the full Strategic View flow.
-
-### 9.6 Strategic View (Estrategia)
-
-#### 9.6.1 Goal
-
-Map operational effort (tasks and partners) to strategic objectives. Provides aggregated metrics per goal showing task counts, total value, completion progress, and linked partners.
-
-#### 9.6.2 Layout
-
-Master-detail layout following the same pattern as the Directory view:
-
-- Left pane: goal list with summary metrics and status badges, plus "Nuevo objetivo" button
-- Right pane: selected goal detail card with progress bar, metrics grid, linked partners, and revenue estimation
-- Below goal list: unassigned effort card showing tasks/value/partners not linked to any goal
-
-#### 9.6.3 Summary KPIs
-
-Top-level KPI row showing total objectives, tasks, value, and partners across all goals.
-
-#### 9.6.4 Goal CRUD Flow
-
-```text
-Strategic View
-  -> View goal list in left pane
-  -> Tap "Nuevo objetivo"
-  -> Goal form modal opens
-  -> Fill: area, general goal, success metric, specific target, timeframe, status, priority, revenue estimation
-  -> Status options: Pendiente, En Curso, Alcanzado, Cancelado
-  -> Priority options: Baja, Media, Alta
-  -> Timeframe options: 1 año, 2 años, 3 años
-  -> Save
-  -> Goal appears in the list and aggregation data refreshes
-  -> Select a goal to see its detail in the right pane
-  -> Tap edit icon on goal detail to open edit modal
-  -> Delete option is inside the edit modal (not on the detail card)
-```
-
-#### 9.6.5 Goal-Task Relationship
-
-Tasks and partners can be linked to goals via optional `goalId` foreign keys:
-
-- Tasks: linked via the goal selector in the Pipeline task creation/edit form
-- Partners: linked via the `goalId` field on the partner entity
-- Relationships use `ON DELETE SET NULL` — deleting a goal unlinks but does not delete associated tasks/partners
-- The Strategic View aggregates linked tasks and partners per goal for metrics
-
-#### 9.6.6 Data Source
-
-The Strategic View fetches aggregated data from `GET /api/v1/strategic-view`, which returns:
-
-- Per-goal aggregation: task count, total value, completed task count, partner count, partner names
-- Unassigned totals: tasks, value, and partners not linked to any goal
-
-Goal CRUD operations use `PATCH /api/v1/profile` with the `goals` array (DELETE all + INSERT pattern).
-
-## 10. Settings (Ajustes)
+## 10. Public Profile (Perfil Público)
 
 ### 10.1 Goal
 
-Centralize visual customization, notifications, integrations, templates, and app configuration.
+Let the user build a modular public-facing profile composed from content blocks, then share it as a URL.
 
-### 10.2 Main Flows
-
-```text
-Settings
-  -> Appearance: select accent color from 24-color palette grid
-  -> Appearance: toggle dark/light theme
-  -> Notifications: toggle browser push notifications (with permission handling)
-  -> Integration: connect/disconnect Google Calendar
-  -> Templates: manage message templates
-  -> Onboarding: reset tour to replay the guided walkthrough
-```
-
-### 10.3 Accent Color Flow
+### 10.2 Profile Header
 
 ```text
-Settings > Appearance
-  -> 24-color palette displayed as a grid
-  -> Tap a color swatch to select it
-  -> Accent color updates immediately across the entire UI
-  -> Selection persists across sessions
+Profile
+  -> Edit display name, handle, avatar
+  -> Set primary profession and secondary professions
+  -> Changes auto-save on blur/debounce
 ```
 
-### 10.4 Theme Toggle Flow
+### 10.3 Block Composer Flow
 
 ```text
-Settings > Appearance
-  -> Toggle between dark and light mode
-  -> Theme changes immediately across the entire UI
-  -> Selection persists across sessions
+Profile
+  -> View active blocks in order
+  -> Tap "+" or "Agregar bloque" → BlockPickerDrawer opens
+  -> Select a block type from the library
+  -> Block is added to the profile
+  -> Fill block fields and tap Save on that block
+  -> Reorder blocks via drag-and-drop
+  -> Remove a block via block header action
+
+BlockPickerDrawer
+  -> Lists all 16+ available block types
+  -> Shows which blocks are already added
+  -> Tap a block type to add it
+
+TemplatePickerDrawer
+  -> Lists saved message templates
+  -> Selecting a template loads its content into a compatible block
 ```
 
-### 10.5 Push Notifications Flow
+### 10.4 Block Save Flow
 
 ```text
-Settings > Notifications
-  -> Toggle push notifications on
-  -> Browser requests notification permission (if not already granted)
-  -> If permission granted: notifications enabled, daily and tomorrow task reminders active
-  -> If permission denied: toggle reverts, user informed about browser settings
-  -> Toggle push notifications off: reminders stop
+Block (e.g. About, Services, Metrics)
+  -> Edit content fields
+  -> Tap block Save button
+  -> PATCH /api/v1/profile with updated mediaKit data
+  -> Block shows saved state
 ```
 
-### 10.6 Google Calendar OAuth Flow
+Note: each block is saved individually with an explicit save action — there is no global auto-save or debounced save on the block composer.
+
+### 10.5 Social Profiles Flow
 
 ```text
-Settings > Integration
-  -> Tap "Connect Google Calendar"
-  -> Backend returns OAuth URL
-  -> Google OAuth popup window opens
-  -> User authorizes in popup
-  -> Callback succeeds
-  -> Popup closes automatically
-  -> Settings reflects "Connected" state
-  -> Disconnect option becomes available
+Profile > Social Profiles section
+  -> Edit Instagram, TikTok, X, Threads, YouTube links
+  -> Auto-save on blur
 ```
 
-### 10.7 Template Management Flow
+### 10.6 Public Profile URL
 
-```text
-Settings > Templates
-  -> View list of saved templates
-  -> Tap "Add Template"
-  -> Add/Edit Template Modal opens
-  -> Fill: name, subject, body
-  -> Variable documentation panel shows available placeholders:
-     {{brandName}}, {{contactName}}, {{creatorName}}, {{deliverable}}, {{mediaKitLink}}
-  -> Save
-  -> Template becomes available in the Directory message composer
-  -> Edit or delete existing templates
-```
+The public profile is accessible at `/mk/:handle` with no authentication required. The server renders an HTML page from the saved profile data. Viewers see only enabled blocks in the defined order.
 
-### 10.8 Onboarding Reset Flow
-
-```text
-Settings
-  -> Tap "Reset Tour" button
-  -> localStorage tour completion flag is cleared
-  -> Onboarding tour replays on next navigation or page load
-```
-
-## 11. AI Assistant (Experimental)
+## 11. Settings (Ajustes)
 
 ### 11.1 Goal
 
-Provide a conversational interface for managing tasks and partners using natural language, powered by Gemini.
+Centralize visual customization, notifications, integrations, templates, and account management.
 
-### 11.2 Availability
+### 11.2 Accent Color Flow
 
-- the AI Assistant is only rendered when the GEMINI_API_KEY environment variable is configured on the backend
-- if the key is not present, the AI Assistant entry point is hidden from navigation
-- this is an experimental feature and may be disabled at any time
+```text
+Settings > Appearance
+  -> Accent palette grid: flat colors, gradient presets, conic presets, retro themes
+  -> Tap a swatch to select it
+  -> Accent updates immediately across the entire UI
+  -> Selection persists (PATCH /api/v1/settings)
+```
 
-### 11.3 Chat Flow
+### 11.3 Theme Toggle
+
+```text
+Settings > Appearance
+  -> Toggle dark/light mode
+  -> Theme changes immediately
+  -> Persists via PATCH /api/v1/settings
+```
+
+### 11.4 Push Notifications Flow
+
+```text
+Settings > Notifications
+  -> Toggle notifications on
+  -> Browser requests permission
+  -> If granted: daily and tomorrow task reminders active
+  -> If denied: toggle reverts, user informed about browser settings
+```
+
+### 11.5 Google Calendar OAuth Flow
+
+```text
+Settings > Integrations
+  -> Tap "Conectar Google Calendar"
+  -> GET /api/auth/google/url → OAuth URL
+  -> OAuth popup opens
+  -> User authorizes in popup
+  -> Popup closes automatically
+  -> Settings reflects "Connected" state
+```
+
+### 11.6 Template Management Flow
+
+```text
+Settings > Templates
+  -> View saved templates (name, body)
+  -> Tap "Add Template"
+  -> Modal: fill name and body
+  -> Variable documentation panel shows available placeholders
+  -> Save → template available in message composer
+  -> Edit or delete existing templates
+```
+
+### 11.7 Change Password Flow
+
+```text
+Settings > Account (email provider only)
+  -> Tap "Change Password"
+  -> Modal: current password + new password
+  -> POST /api/auth/change-password
+  -> Success confirmation
+```
+
+### 11.8 Delete Account Flow
+
+```text
+Settings > Account
+  -> Tap "Delete Account"
+  -> ConfirmDialog: requires typing confirmation text
+  -> DELETE /api/auth/account
+  -> Session cleared → Landing page
+```
+
+### 11.9 Onboarding Reset Flow
+
+```text
+Settings
+  -> Tap "Reset Tour"
+  -> localStorage tour flag cleared
+  -> Tour replays on next page load
+```
+
+## 12. AI Assistant (Experimental)
+
+### 12.1 Availability
+
+Only rendered when `GEMINI_API_KEY` is configured on the backend. Hidden from navigation otherwise.
+
+### 12.2 Chat Flow
 
 ```text
 AI Assistant
-  -> Chat interface with scrollable message history
-  -> Type a message in the text input
-  -> OR tap the microphone icon for voice input
-  -> Voice input uses Web Speech API configured for Spanish (es)
-  -> Send message to Gemini backend
-  -> AI processes the request using function calling
-  -> Supported functions:
-     - get_app_data: retrieve tasks, partners, contacts, profile data
-     - add_task: create a new task
-     - update_task_status: change a task's status
-     - add_partner: create a new partner
-     - add_contact: add a contact to a partner
-     - update_partner_status: change a partner's status
-  -> AI response appears in the chat
-  -> If the AI performed an action, the app data refreshes to reflect changes
+  -> Type a message OR tap microphone for voice input
+  -> Voice: Web Speech API, Spanish locale
+  -> Send → Gemini backend processes with function calling
+  -> Supported functions: get_app_data, add_task, update_task_status,
+     add_partner, add_contact, update_partner_status
+  -> AI response in chat
+  -> If action performed: app data refreshes
 ```
 
-### 11.4 Voice Input Flow
+## 13. Onboarding Tour
 
-```text
-AI Assistant
-  -> Tap microphone icon
-  -> Browser requests microphone permission (if not already granted)
-  -> Speech recognition starts (Spanish locale)
-  -> User speaks command
-  -> Transcribed text appears in the input field
-  -> User reviews and sends, or edits before sending
-```
-
-## 12. Onboarding Tour
-
-### 12.1 Goal
-
-Guide first-time users through all primary sections of the app so they understand the layout and capabilities.
-
-### 12.2 Tour Flow
+### 13.1 Tour Flow
 
 ```text
 First login or tour reset
-  -> 700ms delay for smooth start
+  -> 700ms delay
   -> React Joyride tour begins
-  -> Steps cover (in order):
-     1. Dashboard (Inicio) — operational overview
-     2. Pipeline — task management and views
-     3. Directory (Directorio) — partner and contact management
-     4. Profile (Perfil) — identity and media kit
-     5. Settings (Ajustes) — customization and integrations
-     6. AI Assistant — conversational management (if available)
+  -> Steps (in order):
+     1. Dashboard (Inicio)
+     2. Pipeline
+     3. Directory (Directorio)
+     4. Strategic View (Estrategia)
+     5. Profile (Perfil)
+     6. Settings (Ajustes)
+     7. AI Assistant (if available)
   -> Each step highlights the relevant navigation element
-  -> Tooltips are theme-aware (match dark/light mode and accent color)
-  -> Responsive: targets sidebar items on desktop, bottom nav items on mobile
-  -> User can skip the tour at any step
-  -> Tour completion state saved to localStorage
+  -> Tooltips are theme-aware (dark/light, accent color)
+  -> Responsive: targets sidebar items on desktop, bottom nav on mobile
+  -> User can skip at any step
+  -> Completion saved to localStorage
 ```
 
-## 13. System States
+## 14. Gamification — Efisystem
+
+### 14.1 Award Flow
+
+```text
+User performs an action (e.g. creates a task)
+  -> Backend mutation runs
+  -> GamificationService.award() called with event type and userId
+  -> Points recorded in efisystem_transactions
+  -> efisystem_summary updated
+  -> If badge threshold met: efisystem_badges row inserted
+  -> EfisystemAward returned inline in API response
+  -> Frontend receives award
+  -> If leveledUp or newBadges: Confetti animation plays
+  -> EfisystemWidget updates to reflect new state
+```
+
+### 14.2 EfisystemWidget
+
+Available from the Dashboard. Shows:
+
+- current level and XP total
+- XP progress bar toward next level
+- unlocked badges grid
+
+## 15. System States
 
 Required global states:
 
@@ -601,83 +586,97 @@ Required global states:
 - `ready`
 - `empty`
 - `saving`
-- `auto-saving` (profile fields with debounce)
-- `syncing`
+- `auto-saving` (profile header fields with debounce)
+- `syncing` (Calendar operations)
 - `error`
-- `unauthorized`
+- `unauthorized` (session expired → redirect to Landing)
 
 Canonical rules:
 
 - no view may depend on demo data once the production app is active
 - every optimistic update must reconcile with the server response
-- auto-save must provide visual feedback (e.g., subtle indicator) so the user knows data was persisted
+- auto-save provides visual feedback so the user knows data was persisted
+- explicit saves (block composer) require a visible save button and state indicator
 
-## 14. Primary State Transitions
+## 16. Primary State Transitions
 
-### 14.1 Auth
+### 16.1 Auth
 
-- `logged_out -> authenticating -> authenticated`
-- `authenticated -> session_expired -> logged_out`
+- `logged_out → authenticating → authenticated`
+- `authenticated → session_expired → logged_out`
+- `logged_out → registering → authenticated → onboarding`
 
-### 14.2 Tasks
+### 16.2 Tasks
 
-- `idle -> creating -> created`
-- `idle -> updating -> updated`
-- `idle -> deleting -> deleted`
-- `idle -> dragging -> dropped -> status_updated`
-- `idle -> syncing_calendar -> synced`
-- `syncing_calendar -> failed`
+- `idle → creating → created`
+- `idle → updating → updated`
+- `idle → deleting → deleted`
+- `idle → dragging → dropped → status_updated`
+- `idle → syncing_calendar → synced`
+- `syncing_calendar → failed`
 
-### 14.3 Partners
+### 16.3 Partners
 
-- `idle -> creating -> created`
-- `idle -> updating -> updated`
-- `idle -> auto_creating (from task form) -> created`
+- `idle → creating → created`
+- `idle → updating → updated`
+- `idle → deleting → deleted`
+- `idle → auto_creating (from task form) → created`
 
-### 14.4 Profile
+### 16.4 Profile
 
-- `idle -> editing -> debounce_waiting -> auto_saved`
-- `idle -> generating_media_kit -> preview_ready`
+- `idle → editing_header → debounce_waiting → auto_saved`
+- `idle → editing_block → block_saved`
+- `idle → adding_block → block_added`
+- `idle → reordering_blocks → order_saved`
 
-### 14.5 Goals
+### 16.5 Goals
 
-- `idle -> creating -> created`
-- `idle -> updating -> updated`
-- `idle -> deleting -> deleted`
+- `idle → creating → created`
+- `idle → updating → updated`
+- `idle → deleting → deleted`
 
-### 14.6 Google Integration
+### 16.6 Google Integration
 
-- `disconnected -> oauth_pending -> connected`
-- `connected -> disconnecting -> disconnected`
-- `connected -> token_expired -> reconnect_required`
+- `disconnected → oauth_pending → connected`
+- `connected → disconnecting → disconnected`
+- `connected → token_expired → reconnect_required`
 
-### 14.7 AI Assistant
+### 16.7 AI Assistant
 
-- `idle -> sending_message -> waiting_for_response -> response_received`
-- `idle -> voice_recording -> transcribing -> text_ready`
-- `response_received -> function_executed -> data_refreshed`
+- `idle → sending_message → waiting_for_response → response_received`
+- `idle → voice_recording → transcribing → text_ready`
+- `response_received → function_executed → data_refreshed`
 
-### 14.8 Notifications
+### 16.8 Notifications
 
-- `disabled -> requesting_permission -> enabled`
-- `requesting_permission -> permission_denied -> disabled`
-- `enabled -> toggled_off -> disabled`
+- `disabled → requesting_permission → enabled`
+- `requesting_permission → permission_denied → disabled`
+- `enabled → toggled_off → disabled`
 
-### 14.9 Onboarding
+### 16.9 Onboarding
 
-- `not_seen -> running -> completed`
-- `running -> skipped`
-- `completed -> reset -> not_seen`
+- `not_seen → running → completed`
+- `running → skipped`
+- `completed → reset → not_seen`
 
-## 15. Non-Negotiable UX Rules
+### 16.10 Gamification
+
+- `idle → action_taken → award_evaluated`
+- `award_evaluated → points_added → widget_updated`
+- `award_evaluated → badge_unlocked → confetti_played`
+- `award_evaluated → level_up → confetti_played → widget_updated`
+
+## 17. Non-Negotiable UX Rules
 
 - primary navigation never disappears in normal states
-- destructive actions require confirmation
+- destructive actions require confirmation via ConfirmDialog
 - external errors explain the next step
 - responsive design is required: desktop sidebar and mobile bottom nav are both first-class experiences
 - the user must always understand whether data was saved, failed, or is still syncing
-- auto-save must be visually indicated so edits are never silently lost
+- auto-save for profile header fields must be visually indicated
+- explicit save for block composer blocks must be clearly actionable
 - the AI assistant must not block or interfere with core app functionality
-- drag-and-drop in Pipeline must provide clear visual feedback during the drag operation
+- drag-and-drop in Pipeline must provide clear visual feedback during drag
 - accent color and theme changes must apply immediately without page reload
 - push notification permission must be requested only when the user explicitly enables notifications
+- gamification awards must be non-disruptive — confetti and level-up indicators should not block the user flow

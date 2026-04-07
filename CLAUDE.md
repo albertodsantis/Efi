@@ -4,16 +4,37 @@
 
 - `npm run dev` — start Express + Vite dev server (http://127.0.0.1:3000)
 - `npm run build` — production build (Vite frontend + esbuild backend)
+- `npm run preview` — preview the production build
+- `npm run clean` — delete `apps/api/dist` and `apps/web/dist`
 - `npm run lint` — type-check with `tsc --noEmit`
 - `GET /api/health` — health check endpoint
 
 ## Project
 
-Efi is a multi-user personal CRM for content creators/influencers. Each user has their own isolated data (tasks, partners, profile, settings, templates). No collaborative workspaces — each account is a personal workspace. Monorepo structure:
+Efi is a compact CRM for independent professionals — content creators, podcasters, streamers, photographers, copywriters, DJs, speakers, coaches, and more. It provides a personal operational workspace to manage partnerships, track deliverables, and maintain a professional profile — all from a single responsive web app. Each user has their own isolated data (tasks, partners, profile, settings, templates). No collaborative workspaces — each account is a personal workspace.
+
+Features: Dashboard (Inicio), Pipeline (Kanban/List/Calendar + Google Calendar sync), Directory (Directorio), Strategy (Estrategia), Public Profile (Perfil Público — modular block composer), Settings (Ajustes), AI Assistant (Gemini), Onboarding.
+
+Monorepo structure:
 
 - `apps/web/src/` — React 19 SPA (Vite, Tailwind CSS 4, TypeScript)
+  - `components/` — ui.tsx, AIAssistant, BlockPickerDrawer, Confetti, ConfirmDialog, CustomSelect, EfisystemWidget, ErrorBoundary, ImageUpload, LegalModal, MoreOptionsMenu, NotificationBell, OnboardingTour, OverlayModal, TemplatePickerDrawer, Toaster, profile-blocks/
+  - `views/` — Dashboard, Directory, Landing, Pipeline, Profile, Settings, StrategicView, WelcomeColorPicker, WelcomeOnboarding
+  - `context/AppContext.tsx` — global app state
+  - `lib/` — api.ts, accent.ts, blockTemplates.ts, date.ts, professions.ts, supabase.ts, toast.ts
 - `apps/api/src/` — Express backend (auth, business logic, integrations)
+  - `server.ts`, `app.ts` — entry points
+  - `config/` — env.ts (environment config)
+  - `routes/` — auth.ts, calendar.ts, mediakit.ts, v1.ts
+  - `db/` — connection.ts, repository.ts, migrate.ts, migrations/
+  - `lib/` — storage.ts
+  - `services/` — gamification.ts
+  - `store/` — appStore.ts
 - `packages/shared/src/` — domain types and API contracts (no framework deps)
+  - `domain.ts`, `contracts/` (appData.ts, auth.ts, googleCalendar.ts)
+- `api/index.js` — Vercel serverless entry point
+- `docker-compose.yml` — local PostgreSQL container
+- `vercel.json` — Vercel deployment config
 
 ## Language Policy
 
@@ -22,9 +43,11 @@ Efi is a multi-user personal CRM for content creators/influencers. Each user has
 
 ## Current State
 
-- PostgreSQL (Supabase) with multi-tenant data isolation (all tables scoped by user_id)
-- Email/password + Google OAuth authentication (bcrypt, express-session)
-- No CI/CD or production deployment
+- PostgreSQL (Supabase) with multi-tenant data isolation (all tables scoped by `user_id`)
+- Email/password + Google OAuth authentication (bcrypt, express-session, connect-pg-simple)
+- File uploads via multer; drag-and-drop via @dnd-kit
+- Vercel deployment config present (`vercel.json`, `api/index.js`)
+- No CI/CD pipeline; no production deployment yet
 
 ## Key Conventions
 

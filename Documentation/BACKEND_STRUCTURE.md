@@ -2,7 +2,7 @@
 
 ## 1. Purpose
 
-This document defines the backend architecture, data model, API contract, and validation layer for Efi. The backend is a modular monolith with a REST API, currently backed by an in-memory store with PostgreSQL 16 planned as the target database.
+This document defines the backend architecture, data model, API contract, and validation layer for Efi. The backend is a modular monolith backed by PostgreSQL (via Supabase) with full multi-tenant data isolation.
 
 ## 2. Language and Audience Context
 
@@ -14,74 +14,107 @@ Product-facing behavior still follows these rules:
 - visible UI text remains in Spanish
 - backend contracts and engineering documentation remain in English
 
-Repository strategy still applies:
-
-- the backend is the system of record for desktop web, mobile web, and future native clients
-- backend contracts must not assume a single long-term client surface
-
 ## 3. Architecture
 
 Architecture type: `modular monolith`
 
 Layers:
 
-1. `HTTP Layer` - Express routes (`server.ts`, `routes/v1.ts`, `routes/auth.ts`, `routes/calendar.ts`)
-2. `Application Store` - In-memory state with validation (`store/appStore.ts`)
-3. `Shared Contracts` - TypeScript types and interfaces (`packages/shared`)
-4. `External Integrations` - Google OAuth 2.0, Google Calendar API
+1. `HTTP Layer` — Express routes (`server.ts`, `app.ts`, `routes/v1.ts`, `routes/auth.ts`, `routes/calendar.ts`, `routes/mediakit.ts`)
+2. `Auth Middleware` — `requireAuth()` in `v1.ts`; session backed by `connect-pg-simple`
+3. `Repository` — `PostgresAppStore` in `db/repository.ts`; all queries scoped by `user_id`
+4. `Database` — PostgreSQL via Supabase; 14 migrations in `db/migrations/`
+5. `Services` — `GamificationService` (`services/gamification.ts`)
+6. `Shared Contracts` — TypeScript types and interfaces (`packages/shared`)
+7. `External Integrations` — Google OAuth 2.0, Google Calendar API, Supabase Storage
 
 Canonical modules:
 
-- auth
-- dashboard
-- tasks
-- partners
-- contacts
-- templates
-- profile
-- settings
-- integrations/google-calendar
+- auth (registration, login, Google OAuth, session, logout, account deletion)
+- dashboard (summary metrics, period filtering)
+- tasks (CRUD, checklist items, Calendar event tracking)
+- partners (CRUD, status tracking, financial tracking)
+- contacts (CRUD nested under partners)
+- templates (message template CRUD)
+- profile (user profile, social profiles, modular block composer, profession)
+- settings (accent color, theme, notification preferences)
+- integrations/google-calendar (sync up, sync down)
+- public-mediakit (server-rendered HTML at `/mk/:handle`, no auth)
+- gamification/efisystem (XP points, levels, badges)
 
 Client rule:
 
 - the backend must remain usable by the current web client and by a later mobile app without redesigning the domain model
 
-## 4. Current Persistence: In-Memory Store
+## 4. Persistence: PostgreSQL via Supabase
 
-### 4.1 Implementation
+All application state is persisted in PostgreSQL hosted on Supabase. The `PostgresAppStore` class in `apps/api/src/db/repository.ts` handles all queries.
 
-All state is held in an `InMemoryAppStore` class (`apps/api/src/store/appStore.ts`). The store is initialized with seed data on server startup and resets on every restart. It uses `structuredClone` for safe copy semantics on all reads and writes.
+- `pg` pool initialized in `db/connection.ts`
+- 14 SQL migrations in `db/migrations/`, run automatically on startup via `db/migrate.ts`
+- Sessions persisted in the `session` table via `connect-pg-simple`
+- File storage (avatars, portfolio images) handled via Supabase Storage through `lib/storage.ts`
+- Full multi-tenant isolation: every table has a `user_id` foreign key; all queries filter by `user_id`
+- Row-level security enabled (migration 006)
 
-### 4.2 Planned Migration: PostgreSQL 16
+## 5. Authentication
 
-PostgreSQL 16 is the approved target database. The migration will preserve the same domain model and API contracts. Hosting target: Neon PostgreSQL or equivalent managed provider.
+### 5.1 Providers
 
-## 5. Data Model
+Two authentication providers are supported:
+
+- **Email/password**: bcryptjs, 10 rounds. Stored as `provider = 'email'` in the `users` table.
+- **Google OAuth**: popup flow using Supabase redirect in browser; user created/updated server-side with `provider = 'google'`.
+
+### 5.2 Session
+
+- `express-session` backed by `connect-pg-simple` (table: `session`)
+- Session cookie: `httpOnly`, `sameSite: 'lax'`, `secure` in production, 30-day max age
+- `SessionUser` type (`packages/shared/src/contracts/auth.ts`) stored in session: `{ id, email, name, avatar, provider }`
+
+### 5.3 Middleware
+
+`requireAuth(pool)` in `routes/v1.ts`:
+- Rejects if no session user
+- Verifies the user still exists in the `users` table (guards against deleted accounts)
+- Attaches `userId` to the request object
+- Applied to all `/api/v1/*` routes
+
+### 5.4 Rate Limiting
+
+Auth endpoints (`/api/auth/*`) are protected with `express-rate-limit`: 20 requests per 15-minute window.
+
+### 5.5 New User Setup
+
+`ensureUserData()` in `routes/auth.ts` is called on first login for any provider. It creates the `user_profile` and `user_settings` rows for the new user (`ON CONFLICT DO NOTHING`/`DO UPDATE`).
+
+## 6. Data Model
 
 All domain types are defined in `packages/shared/src/domain.ts`.
 
-### 5.1 Enumerations
+### 6.1 Enumerations
 
 `TaskStatus`
 
 - `Pendiente`
 - `En Progreso`
-- `En Revision`
+- `En Revisión`
 - `Completada`
 - `Cobrado`
 
 `PartnerStatus`
 
 - `Prospecto`
-- `En Negociacion`
+- `En Negociación`
 - `Activo`
 - `Inactivo`
 - `On Hold`
-- `Relacion Culminada`
+- `Relación Culminada`
 
 `PartnershipType`
 
 - `Permanente`
+- `Plazo Fijo`
 - `One Time`
 - `Por definir`
 
@@ -103,7 +136,15 @@ All domain types are defined in `packages/shared/src/domain.ts`.
 - `Media`
 - `Alta`
 
-### 5.2 Core Entities
+`FreelancerType`
+
+- `content_creator`, `podcaster`, `streamer`, `radio`, `photographer`, `copywriter`, `community_manager`, `host_mc`, `speaker`, `dj`, `recruiter`, `coach`
+
+`BlockType` (profile block composer)
+
+- `identity`, `about`, `metrics`, `portfolio`, `brands`, `services`, `closing`, `testimonials`, `press`, `speaking_topics`, `video_reel`, `equipment`, `awards`, `faq`, `episodes`, `releases`, `links`
+
+### 6.2 Core Entities
 
 #### Task
 
@@ -113,20 +154,33 @@ All domain types are defined in `packages/shared/src/domain.ts`.
 | title | string | required, trimmed |
 | description | string | required, trimmed |
 | partnerId | string | required, must reference existing partner |
-| goalId | string? | optional, references a goal (FK with ON DELETE SET NULL) |
+| goalId | string? | optional, ON DELETE SET NULL |
 | status | TaskStatus | required |
 | dueDate | string | required, valid date |
 | value | number | required, >= 0 |
 | gcalEventId | string? | optional, Google Calendar event ID |
+| createdAt | string | ISO timestamp |
+| completedAt | string? | set when status → Completada |
+| cobradoAt | string? | set when status → Cobrado |
+| actualPayment | number? | optional override for actual payment received |
+| checklistItems | ChecklistItem[] | per-task checklist; stored as JSONB |
+
+#### ChecklistItem
+
+| field | type |
+| --- | --- |
+| id | string |
+| text | string |
+| done | boolean |
 
 #### Partner
 
 | field | type | rules |
 | --- | --- | --- |
 | id | string | generated UUID |
-| name | string | required, trimmed, collapsed whitespace, unique (case-insensitive) |
+| name | string | required, trimmed, unique per user (case-insensitive) |
 | status | PartnerStatus | required |
-| goalId | string? | optional, references a goal (FK with ON DELETE SET NULL) |
+| goalId | string? | optional, ON DELETE SET NULL |
 | logo | string? | optional |
 | contacts | Contact[] | nested array |
 | keyTerms | string? | optional |
@@ -136,6 +190,9 @@ All domain types are defined in `packages/shared/src/domain.ts`.
 | monthlyRevenue | number? | defaults to 0 |
 | annualRevenue | number? | defaults to 0 |
 | mainChannel | string? | optional |
+| createdAt | string | ISO timestamp |
+| lastContactedAt | string? | optional, last interaction timestamp |
+| source | string? | optional, how the partner was acquired |
 
 #### Contact
 
@@ -154,8 +211,9 @@ All domain types are defined in `packages/shared/src/domain.ts`.
 | --- | --- | --- |
 | id | string | generated UUID |
 | name | string | required, trimmed |
-| subject | string | required, trimmed |
 | body | string | required, trimmed |
+
+Note: templates do not have a `subject` field (removed in migration 005).
 
 #### UserProfile
 
@@ -165,9 +223,11 @@ All domain types are defined in `packages/shared/src/domain.ts`.
 | avatar | string | required, trimmed |
 | handle | string | required, auto-prefixed with `@` |
 | socialProfiles | SocialProfiles | 5-platform object |
-| mediaKit | MediaKitProfile | 13-section media kit |
+| mediaKit | MediaKitProfile | block-based profile document |
 | goals | Goal[] | array of career goals |
 | notificationsEnabled | boolean | default false |
+| primaryProfession | FreelancerType? | optional, selected during onboarding |
+| secondaryProfessions | FreelancerType[] | optional secondary profession labels |
 
 #### SocialProfiles
 
@@ -181,49 +241,52 @@ All domain types are defined in `packages/shared/src/domain.ts`.
 
 #### MediaKitProfile
 
-A rich profile document with the following sections:
+The media kit profile is a block-based document. The block system controls which blocks are visible and in what order. Each block type has its own data fields.
+
+Block system controls:
 
 | field | type | description |
 | --- | --- | --- |
-| periodLabel | string | display period |
-| updatedLabel | string | last updated label |
-| tagline | string | creator tagline |
-| contactEmail | string | contact email |
-| featuredImage | string | hero image path |
-| aboutTitle | string | about section heading |
-| aboutParagraphs | string[] | bio paragraphs |
-| topicTags | string[] | content topic tags |
-| insightStats | MediaKitMetric[] | follower/engagement stats |
-| audienceGender | MediaKitMetric[] | gender breakdown |
-| ageDistribution | MediaKitMetric[] | age range breakdown |
-| topCountries | MediaKitMetric[] | audience geography |
-| portfolioImages | string[] | portfolio image paths |
-| servicesTitle | string | services section heading |
-| servicesDescription | string | services intro text |
-| offerings | MediaKitOffer[] | service/pricing items |
-| brandsTitle | string | brands section heading |
-| trustedBrands | string[] | brand name list |
-| closingTitle | string | CTA heading |
-| closingDescription | string | CTA text |
-| footerNote | string | footer text |
+| enabledBlocks | BlockType[] | which blocks are active/visible |
+| blockOrder | BlockType[] | display order of blocks |
+| blockComponents | Record\<string, string[]\> | per-block component visibility config |
 
-`MediaKitMetric`: `{ label: string, value: string }`
+Core block data fields (abbreviated — see `domain.ts` for full spec):
 
-`MediaKitOffer`: `{ title: string, price: string, description: string }`
+- **Identity block**: `periodLabel`, `updatedLabel`, `tagline`, `contactEmail`
+- **About block**: `featuredImage`, `aboutTitle`, `aboutParagraphs[]`, `topicTags[]`
+- **Metrics block**: `insightStats[]`, `audienceGender[]`, `ageDistribution[]`, `topCountries[]`
+- **Portfolio block**: `portfolioImages[]`
+- **Services block**: `servicesTitle`, `servicesDescription`, `offerings[]`
+- **Brands block**: `brandsTitle`, `trustedBrands[]`
+- **Closing block**: `closingTitle`, `closingDescription`, `footerNote`
+- **Testimonials block**: `testimonials[]` (`{ quote, author, company, role }`)
+- **Press block**: `press[]` (`{ publication, headline, url, year }`)
+- **Speaking topics block**: `speakingTopics[]` (`{ title, description }`)
+- **Video reel block**: `videoReels[]` (`{ url, label }`)
+- **Equipment block**: `equipment[]` (`{ item, description }`)
+- **Awards block**: `awards[]` (`{ name, issuer, year }`)
+- **FAQ block**: `faq[]` (`{ question, answer }`)
+- **Episodes block**: `episodes[]` (`{ title, description, listenUrl }`)
+- **Releases block**: `releases[]` (`{ name, platforms[] }`)
+- **Links block**: `links[]` (`{ label, url }`)
 
 #### Goal
 
 | field | type | rules |
 | --- | --- | --- |
-| id | string | generated UUID or preserved |
+| id | string | generated UUID |
 | area | string | career area |
 | generalGoal | string | goal description |
 | successMetric | string | how success is measured |
-| specificTarget | string | target value |
-| timeframe | string | time horizon |
+| timeframe | number | duration in months (1–36) |
+| targetDate | string | ISO date (createdAt + timeframe months) |
+| createdAt | string | ISO timestamp, set on first save |
 | status | GoalStatus | defaults to `Pendiente` |
 | priority | GoalPriority | defaults to `Media` |
 | revenueEstimation | number | defaults to 0 |
+
+Note: `specificTarget` field was removed in migration 009.
 
 #### AppState
 
@@ -236,56 +299,48 @@ A rich profile document with the following sections:
 | templates | Template[] |
 | theme | AppTheme |
 
-### 5.3 Relationships
+#### EfisystemSnapshot
+
+| field | type |
+| --- | --- |
+| totalPoints | number |
+| currentLevel | number |
+| unlockedBadges | BadgeKey[] |
+
+`BadgeKey` values: `perfil_estelar`, `vision_clara`, `circulo_intimo`, `directorio_dorado`, `motor_de_ideas`, `promesa_cumplida`, `creador_imparable`, `negocio_en_marcha`, `lluvia_de_billetes`
+
+### 6.3 Relationships
 
 ```text
-AppState contains:
-  tasks[]         (each task references a partner by partnerId, optionally a goal by goalId)
-  partners[]      (each partner contains contacts[], optionally references a goal by goalId)
-  profile         (contains socialProfiles, mediaKit, goals[])
-  templates[]
-  accentColor
-  theme
+users (1)
+  → user_profile (1:1)
+  → user_settings (1:1)
+  → partners (1:N)
+      → contacts (1:N per partner)
+  → tasks (1:N)
+      → checklistItems (JSONB on task)
+  → goals (1:N, stored in user_profile.goals)
+  → templates (1:N)
+  → efisystem_transactions (1:N, append-only)
+  → efisystem_badges (1:N)
+  → efisystem_summary (1:1)
 
-Goal relationships:
-  goals[] are stored in profile
-  tasks.goal_id   -> goals.id (FK, ON DELETE SET NULL)
-  partners.goal_id -> goals.id (FK, ON DELETE SET NULL)
+tasks.goal_id    → goals.id (FK, ON DELETE SET NULL)
+partners.goal_id → goals.id (FK, ON DELETE SET NULL)
 ```
-
-## 6. Validation Layer
-
-The in-memory store includes a comprehensive validation layer with the following normalizer functions:
-
-| function | behavior |
-| --- | --- |
-| `normalizeRequiredText` | trims input, throws if empty |
-| `normalizeOptionalText` | trims input, returns undefined if empty |
-| `normalizeText` | trims input, returns empty string if empty |
-| `normalizePartnerName` | trims and collapses whitespace, throws if empty |
-| `normalizeDate` | trims, validates as parseable date |
-| `normalizeMoney` | validates number >= 0 |
-| `normalizeEmail` | trims, validates email format, lowercases |
-| `normalizeAccentColor` | trims, validates 6-digit hex color |
-| `normalizeMetricList` | normalizes arrays of `{ label, value }` with fallbacks |
-| `normalizeOfferList` | normalizes arrays of `{ title, price, description }` with fallbacks |
-| `normalizeStringList` | normalizes string arrays with fallbacks |
-| `normalizeMediaKitProfile` | deep normalization of all media kit sections |
-| `findPartnerByName` | case-insensitive, whitespace-normalized partner lookup |
-
-All mutations are validated at the store level before state is modified. Validation errors are surfaced as HTTP 400 responses with Spanish-language error messages.
 
 ## 7. API Endpoints
 
 ### 7.1 Route Mounting
 
-Routes are mounted in `apps/api/src/server.ts`:
+Routes are mounted in `apps/api/src/app.ts`:
 
 ```text
 /api/health        health check (inline)
-/api/v1/*          CRUD endpoints (routes/v1.ts)
-/api/auth/*        OAuth endpoints (routes/auth.ts)
-/api/calendar/*    Calendar endpoints (routes/calendar.ts)
+/mk/*              public media kit renderer (mediakit.ts, no auth)
+/api/v1/*          authenticated CRUD endpoints (routes/v1.ts)
+/api/auth/*        auth endpoints (routes/auth.ts, rate-limited)
+/api/calendar/*    calendar endpoints (routes/calendar.ts)
 ```
 
 ### 7.2 Health
@@ -293,19 +348,15 @@ Routes are mounted in `apps/api/src/server.ts`:
 #### `GET /api/health`
 
 - auth: none
-- response 200:
-
-```json
-{ "ok": true }
-```
+- response 200: `{ "ok": true }`
 
 ### 7.3 Bootstrap
 
 #### `GET /api/v1/bootstrap`
 
-Returns the full application state in a single request. Used by the frontend on initial load.
+Returns the full application state plus the Efisystem gamification snapshot in a single request.
 
-- auth: none (session not enforced in current implementation)
+- auth: session required
 - response 200:
 
 ```json
@@ -313,213 +364,113 @@ Returns the full application state in a single request. Used by the frontend on 
   "appState": {
     "tasks": [],
     "partners": [],
-    "profile": { ... },
+    "profile": { "..." : "..." },
     "accentColor": "#C96F5B",
     "templates": [],
     "theme": "light"
+  },
+  "efisystem": {
+    "totalPoints": 0,
+    "currentLevel": 1,
+    "unlockedBadges": []
   }
 }
 ```
 
-### 7.4 Dashboard
+### 7.4 Efisystem
+
+#### `GET /api/v1/efisystem`
+
+- auth: session required
+- response 200: `EfisystemSnapshot`
+
+### 7.5 Dashboard
 
 #### `GET /api/v1/dashboard/summary`
 
-- auth: none (session not enforced in current implementation)
-- response 200:
+- auth: session required
+- query params: `period` (`this_month` | `last_month` | `this_year` | `all_time`)
+- response 200: `DashboardSummaryResponse`
 
-```json
-{
-  "activePipelineValue": 4300,
-  "tasksToday": 2,
-  "upcomingTasks": [
-    {
-      "id": "string",
-      "title": "string",
-      "description": "string",
-      "partnerId": "string",
-      "status": "Pendiente",
-      "dueDate": "2026-04-01",
-      "value": 1500
-    }
-  ]
-}
-```
-
-Note: `activePipelineValue` sums the `value` field of all tasks where status is not `Cobrado`. `upcomingTasks` returns the 4 nearest tasks sorted by due date.
-
-### 7.5 Tasks
+### 7.6 Tasks
 
 #### `GET /api/v1/tasks`
-
 - response 200: `Task[]`
 
 #### `POST /api/v1/tasks`
-
-- request:
-
-```json
-{
-  "title": "Reel de lanzamiento",
-  "description": "Video 60s",
-  "partnerId": "uuid",
-  "goalId": "optional-goal-uuid",
-  "status": "Pendiente",
-  "dueDate": "2026-04-01",
-  "value": 1500,
-  "gcalEventId": "optional-google-event-id"
-}
-```
-
-- response 201: created `Task`
-- response 400: `{ "error": "message" }` on validation failure
+- request: `CreateTaskRequest` (title, partnerId, status, dueDate, value, description, goalId?, gcalEventId?)
+- response 201: `Task`; may include `EfisystemAward` if points were earned
 
 #### `PATCH /api/v1/tasks/:taskId`
-
-- request: any valid subset of task fields
-- response 200: updated `Task`
-- response 404: `{ "error": "Task not found" }`
-- response 400: `{ "error": "message" }` on validation failure
+- request: `UpdateTaskRequest` (any subset of task fields)
+- response 200: `Task`; may include `EfisystemAward`
 
 #### `DELETE /api/v1/tasks/:taskId`
-
 - response 200: `{ "success": true }`
-- response 404: `{ "error": "Task not found" }`
 
-### 7.6 Partners
+### 7.7 Partners
 
 #### `GET /api/v1/partners`
-
 - response 200: `Partner[]`
 
 #### `POST /api/v1/partners`
-
-- request:
-
-```json
-{
-  "name": "TechBrand",
-  "status": "Prospecto",
-  "logo": "optional-url",
-  "partnershipType": "Por definir",
-  "keyTerms": "",
-  "startDate": "2026-01-01",
-  "endDate": "2026-12-31",
-  "monthlyRevenue": 1200,
-  "annualRevenue": 14400,
-  "mainChannel": "Instagram/TikTok"
-}
-```
-
-- behavior: if a partner with the same name already exists (case-insensitive, whitespace-normalized), the existing partner is returned instead of creating a duplicate
-- response 201: created or existing `Partner`
-- response 400: `{ "error": "message" }` on validation failure
+- request: `CreatePartnerRequest`
+- behavior: returns existing partner if same name already exists (case-insensitive, per user)
+- response 201: `Partner`; may include `EfisystemAward`
 
 #### `PATCH /api/v1/partners/:partnerId`
+- request: `UpdatePartnerRequest`
+- response 200: `Partner`
 
-- request: any valid subset of partner fields
-- response 200: updated `Partner`
-- response 404: `{ "error": "Partner not found" }`
-- response 400: `{ "error": "message" }` on validation failure (includes duplicate name check)
+#### `DELETE /api/v1/partners/:partnerId`
+- response 200: `{ "success": true }`
 
-### 7.7 Contacts
+### 7.8 Contacts
 
 #### `POST /api/v1/partners/:partnerId/contacts`
-
-- request:
-
-```json
-{
-  "name": "Laura Gomez",
-  "role": "PR Manager",
-  "email": "laura@techbrand.com",
-  "ig": "laurapr",
-  "phone": "optional"
-}
-```
-
-- behavior: `ig` is auto-prefixed with `@` if not already present
-- response 201: created `Contact`
-- response 404: `{ "error": "Partner not found" }`
-- response 400: `{ "error": "message" }` on validation failure
+- request: `CreateContactRequest`
+- response 201: `Contact`; may include `EfisystemAward`
 
 #### `PATCH /api/v1/contacts/:contactId`
-
-- request: any valid subset of contact fields
-- response 200: updated `Contact`
-- response 404: `{ "error": "Contact not found" }`
-- response 400: `{ "error": "message" }` on validation failure
+- request: `UpdateContactRequest`
+- response 200: `Contact`
 
 #### `DELETE /api/v1/contacts/:contactId`
-
 - response 200: `{ "success": true }`
-- response 404: `{ "error": "Contact not found" }`
 
-### 7.8 Profile
+### 7.9 Profile
 
 #### `GET /api/v1/profile`
-
 - response 200: `UserProfile`
 
 #### `PATCH /api/v1/profile`
+- request: `UpdateProfileRequest` (any subset of profile fields)
+- behavior: `socialProfiles` and `mediaKit` are partial-merged; `goals` replaces the entire array; `handle` auto-prefixed with `@`
+- response 200: `UserProfile`; may include `EfisystemAward`
 
-- request: any valid subset of profile fields
+#### `POST /api/v1/profile/avatar`
+- multipart form: `file` field
+- response 200: `{ "url": "string" }`
 
-```json
-{
-  "name": "Maggie Dayz",
-  "avatar": "/IMG_3522.JPG",
-  "handle": "@maggiedayz",
-  "socialProfiles": {
-    "instagram": "@maggiedayz",
-    "tiktok": "@maggiedayz"
-  },
-  "mediaKit": {
-    "tagline": "new tagline",
-    "insightStats": [{ "label": "Seguidores", "value": "25K" }]
-  },
-  "goals": [
-    {
-      "id": "g1",
-      "area": "Influencer / Contenido",
-      "generalGoal": "Aumentar audiencia",
-      "successMetric": "Seguidores",
-      "specificTarget": "300K",
-      "timeframe": "Anual",
-      "status": "En Curso",
-      "priority": "Alta",
-      "revenueEstimation": 14400
-    }
-  ],
-  "notificationsEnabled": true
-}
-```
-
-- behavior: `socialProfiles` and `mediaKit` are partial-merged with current values. `goals` replaces the entire array. `handle` is auto-prefixed with `@`.
-- response 200: updated `UserProfile`
-- response 400: `{ "error": "message" }` on validation failure
-
-### 7.9 Strategic View
+### 7.10 Strategic View
 
 #### `GET /api/v1/strategic-view`
 
-Returns aggregated metrics per goal, plus unassigned totals for tasks and partners not linked to any goal.
+Returns aggregated metrics per goal plus unassigned totals.
 
 - auth: session required
-- response 200:
+- response 200: `StrategicViewResponse`
 
 ```json
 {
   "goals": [
     {
-      "goal": { "id": "uuid", "area": "Contenido", "generalGoal": "Aumentar audiencia", "..." : "..." },
+      "goal": { "id": "uuid", "area": "Contenido", "..." : "..." },
       "taskCount": 5,
       "totalValue": 12000,
       "completedTaskCount": 2,
       "partnerCount": 3,
-      "partners": [
-        { "id": "uuid", "name": "TechBrand" }
-      ]
+      "partners": [{ "id": "uuid", "name": "TechBrand" }]
     }
   ],
   "unassigned": {
@@ -530,169 +481,165 @@ Returns aggregated metrics per goal, plus unassigned totals for tasks and partne
 }
 ```
 
-The endpoint runs 5 parallel SQL queries grouped by `goal_id` to aggregate task counts, values, completed counts, and partner counts per goal.
-
-### 7.10 Settings
+### 7.11 Settings
 
 #### `GET /api/v1/settings`
-
-- response 200:
-
-```json
-{
-  "accentColor": "#C96F5B",
-  "theme": "light"
-}
-```
+- response 200: `SettingsResponse` (`{ accentColor, theme }`)
 
 #### `PATCH /api/v1/settings`
+- request: `UpdateSettingsRequest`
+- response 200: updated settings
 
-- request:
-
-```json
-{
-  "accentColor": "#3B82F6",
-  "theme": "dark"
-}
-```
-
-- response 200: updated settings object
-- response 400: `{ "error": "message" }` on validation failure (invalid hex color or invalid theme)
-
-### 7.11 Templates
+### 7.12 Templates
 
 #### `GET /api/v1/templates`
-
 - response 200: `Template[]`
 
 #### `POST /api/v1/templates`
+- request: `CreateTemplateRequest` (`{ name, body }`)
+- response 201: `Template`
 
-- request:
-
-```json
-{
-  "name": "Primer contacto",
-  "subject": "Propuesta de colaboracion",
-  "body": "Hola {{contactName}},\n\n..."
-}
-```
-
-- response 201: created `Template`
-- response 400: `{ "error": "message" }` on validation failure
+#### `PATCH /api/v1/templates/:templateId`
+- request: partial `Template`
+- response 200: updated `Template`
 
 #### `DELETE /api/v1/templates/:templateId`
-
 - response 200: `{ "success": true }`
-- response 404: `{ "error": "Template not found" }`
 
-### 7.12 Auth (Google OAuth)
+### 7.13 Notifications
 
-Auth routes are mounted at `/api/auth` (not `/api/v1`).
+#### `GET /api/v1/notifications`
+- response 200: `NotificationsResponse` — list of pending app notifications (task reminders, gamification)
 
-#### `GET /api/auth/google/url`
+#### `POST /api/v1/notifications/mark-seen`
+- response 200: `{ "success": true }`
 
-Generates a Google OAuth consent URL for Calendar access.
+### 7.14 Auth (`/api/auth`)
 
-- auth: none
-- scopes requested: `calendar.events`, `calendar.readonly`
-- response 200:
+Auth routes are mounted at `/api/auth` (rate-limited).
 
-```json
-{ "url": "https://accounts.google.com/o/oauth2/v2/auth?..." }
-```
+#### `GET /api/auth/me`
+Returns the current session user or `null`.
+- response 200: `MeResponse` (`{ user: SessionUser | null }`)
 
-#### `GET /api/auth/google/callback`
+#### `POST /api/auth/register`
+Creates a new account with email/password.
+- request: `RegisterRequest` (`{ email, password, name }`)
+- response 200: `MeResponse`
 
-OAuth callback handler. Exchanges the authorization code for tokens and stores them in the session.
-
-- auth: none (OAuth redirect)
-- behavior: returns an HTML page that posts `OAUTH_AUTH_SUCCESS` to the opener window and closes itself (popup flow)
-- response: inline HTML
-
-#### `GET /api/auth/status`
-
-- response 200:
-
-```json
-{ "connected": true }
-```
+#### `POST /api/auth/login`
+Authenticates with email/password.
+- request: `LoginRequest` (`{ email, password }`)
+- response 200: `MeResponse`
 
 #### `POST /api/auth/logout`
+Destroys the session.
+- response 200: `LogoutResponse` (`{ success: true }`)
 
-Clears the session tokens.
+#### `POST /api/auth/change-password`
+- request: `ChangePasswordRequest` (`{ currentPassword?, newPassword }`)
+- response 200: `ChangePasswordResponse`
 
-- response 200:
+#### `DELETE /api/auth/account`
+Deletes the user's account and all associated data.
+- response 200: `DeleteAccountResponse`
 
-```json
-{ "success": true }
-```
+#### `GET /api/auth/google/url`
+Returns the Google OAuth URL for Calendar access.
+- response 200: `GoogleAuthUrlResponse` (`{ url }`)
 
-### 7.13 Calendar Integration
+#### `GET /api/auth/google/callback`
+OAuth callback — posts `OAUTH_AUTH_SUCCESS` to opener and closes popup.
 
-Calendar routes are mounted at `/api/calendar` (not `/api/v1`).
+#### `GET /api/auth/status`
+Returns Google Calendar connection status.
+- response 200: `AuthStatusResponse` (`{ connected: boolean }`)
+
+#### `GET /api/auth/google/login`
+Returns the Google OAuth URL for app login (Supabase redirect flow).
+- response 200: `{ url: string }`
+
+#### `GET /api/auth/google/login/callback`
+Handles Google app-login OAuth callback. Creates or updates user and session.
+
+### 7.15 Calendar (`/api/calendar`)
 
 #### `POST /api/calendar/sync`
-
-Syncs a task to Google Calendar. Creates a new event or updates an existing one if `gcalEventId` is provided.
-
-- auth: requires session tokens (returns 401 if not authenticated)
-- request:
-
-```json
-{
-  "task": {
-    "title": "Reel de lanzamiento",
-    "description": "Video 60s",
-    "partnerName": "TechBrand",
-    "dueDate": "2026-04-01",
-    "gcalEventId": "optional-existing-event-id"
-  }
-}
-```
-
-- behavior: creates an all-day calendar event with summary `Entrega: {title}` and description including the partner name. If `gcalEventId` is present, updates the existing event instead.
-- response 200:
-
-```json
-{
-  "success": true,
-  "eventId": "google-calendar-event-id"
-}
-```
-
-- response 401: `{ "error": "Not authenticated" }`
-- response 500: `{ "error": "Failed to sync to calendar" }`
+Syncs a task to Google Calendar (create or update).
+- auth: Google Calendar tokens required
+- request: `{ task: { title, description, partnerName, dueDate, gcalEventId? } }`
+- response 200: `{ success: true, eventId: string }`
 
 #### `POST /api/calendar/sync-down`
+Fetches updated dates from Google Calendar for previously synced events.
+- auth: Google Calendar tokens required
+- request: `{ eventIds: string[] }`
+- response 200: `{ success: true, updatedEvents: [{ eventId, dueDate }] }`
 
-Fetches updated dates from Google Calendar for a set of previously synced events.
+### 7.16 Public Media Kit (`/mk`)
 
-- auth: requires session tokens (returns 401 if not authenticated)
-- request:
+Server-rendered HTML — no authentication required.
+
+#### `GET /mk/:handle`
+Returns a full HTML page for the public profile matching the given handle.
+
+#### `GET /mk/:handle/card`
+Returns a compact HTML summary card for the profile.
+
+## 8. Gamification — Efisystem
+
+`GamificationService` (`services/gamification.ts`) awards XP points and unlocks badges in response to user actions.
+
+### 8.1 Point Events
+
+| Event | Trigger |
+|-------|---------|
+| `pipeline_first_task` | Creating first task |
+| `pipeline_task_moved` | Moving a task between statuses |
+| `pipeline_task_completed` | Task → Completada |
+| `pipeline_task_paid` | Task → Cobrado |
+| `pipeline_first_checklist_item` | Adding first checklist item to a task |
+| `network_first_partner` | Creating first partner |
+| `network_partner_subsequent` | Creating subsequent partners |
+| `network_first_contact` | Adding first contact |
+| `network_contact_subsequent` | Adding subsequent contacts |
+| `config_accent_change` | Changing accent color (points on 2nd change) |
+| `config_profile_complete` | Completing key profile fields |
+| `config_first_goal` | Creating first goal |
+
+### 8.2 Badges
+
+| Badge key | Condition |
+|-----------|-----------|
+| `perfil_estelar` | Started building public profile |
+| `vision_clara` | Defined 3 strategic goals |
+| `circulo_intimo` | Added 5 partners to network |
+| `directorio_dorado` | 10 partners and 10 contacts |
+| `motor_de_ideas` | Created 5 tasks in pipeline |
+| `promesa_cumplida` | Completed 10 tasks |
+| `creador_imparable` | Completed 25 tasks |
+| `negocio_en_marcha` | Paid 5 tasks (Cobrado) |
+| `lluvia_de_billetes` | Paid 20 tasks (Cobrado) |
+
+### 8.3 Storage
+
+Three tables: `efisystem_transactions` (append-only ledger), `efisystem_badges` (unique per user/badge), `efisystem_summary` (cached total/level).
+
+### 8.4 Response Shape
+
+When a mutation awards points, the API response includes an optional `EfisystemAward`:
 
 ```json
 {
-  "eventIds": ["google-event-id-1", "google-event-id-2"]
+  "pointsEarned": 10,
+  "newTotal": 45,
+  "newLevel": 2,
+  "leveledUp": true,
+  "newBadges": ["motor_de_ideas"]
 }
 ```
 
-- behavior: for each event ID, fetches the current start date from Google Calendar. Skips events that return 404 (deleted).
-- response 200:
-
-```json
-{
-  "success": true,
-  "updatedEvents": [
-    { "eventId": "google-event-id-1", "dueDate": "2026-04-03" }
-  ]
-}
-```
-
-- response 400: `{ "error": "eventIds array is required" }`
-- response 401: `{ "error": "Not authenticated" }`
-- response 500: `{ "error": "Failed to sync down from calendar" }`
-
-## 8. Error Contracts
+## 9. Error Contracts
 
 Error response format:
 
@@ -700,32 +647,31 @@ Error response format:
 { "error": "Human-readable error message" }
 ```
 
-Validation errors use Spanish-language messages from the normalize functions (e.g., `"El titulo es obligatorio."`, `"La fecha no es valida."`).
+Validation errors use Spanish-language messages (e.g., `"El título es obligatorio."`).
 
-HTTP status codes in use:
+HTTP status codes:
 
-- `200` successful read or update
-- `201` successful creation
-- `400` validation error or bad request
-- `401` not authenticated (calendar endpoints)
-- `404` resource not found
-- `500` internal server error (calendar sync failures)
+- `200` — successful read or update
+- `201` — successful creation
+- `400` — validation error or bad request
+- `401` — not authenticated
+- `404` — resource not found
+- `500` — internal server error
 
-## 9. Backend Limits and Rules
+## 10. Security
 
-- OAuth tokens are stored in the server session and are never exposed to the frontend
-- payloads are never accepted without validation (all mutations go through normalize functions)
-- no new functionality is exposed outside versioned APIs (except auth and calendar which use `/api/auth` and `/api/calendar`)
-- Calendar sync must never block base task CRUD
-- partner names are unique per case-insensitive, whitespace-normalized comparison
-- all state reads use `structuredClone` to prevent mutation leaks
-- the store is initialized with seed data for development (3 tasks, 2 partners, 4 templates, 5 goals)
+- `helmet` sets security headers on all responses (CSP disabled for SPA compatibility)
+- `express-rate-limit` on `/api/auth/*`: 20 requests / 15 min
+- session cookies: `httpOnly`, `sameSite: 'lax'`, `secure` in production
+- all SQL queries use parameterized statements via `pg`
+- Google Calendar OAuth tokens stored in server session, never exposed to the client
+- `bcryptjs` with 10 rounds for password hashing
+- file uploads validated via `multer`; stored in Supabase Storage (not local disk)
 
-## 10. Future Milestones
+## 11. Backend Rules
 
-- migrate from in-memory store to PostgreSQL 16
-- introduce real user authentication (currently single-user, no user scoping)
-- add user scoping to all queries (`user_id` foreign keys)
-- encrypt OAuth tokens at rest
-- add PATCH endpoint for templates (currently only create and delete)
-- add DELETE endpoint for partners (currently only create and update)
+- all `/api/v1/*` routes require a valid session
+- all queries are scoped by `user_id` (multi-tenant isolation)
+- partner names are unique per user (case-insensitive, whitespace-normalized)
+- Calendar sync never blocks core task CRUD
+- no new functionality exposed outside versioned APIs (auth and calendar use their own namespaces)

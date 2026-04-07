@@ -52,7 +52,7 @@ The frontend must implement the master with:
 - Spanish-first UI copy
 - accent-aware states that preserve WCAG contrast
 - compact operational layouts over decorative dashboard chrome
-- the chosen identity direction: `Soft Studio Console`
+- the chosen identity direction: `Clean Creator Console`
 - calm surface hierarchy and restrained composition
 - cardless or low-card layouts as the default starting point
 
@@ -72,27 +72,28 @@ The web app exposes the design system through CSS variables and shared primitive
 
 Typography:
 
-- primary font: system font stack
-- monospace font: `Geist Mono` for code elements
+- primary font: system font stack via `--font-primary`
+- monospace font: `Geist Mono` via `--font-mono`
+- base body size: `13px`
 
 Surface tokens (light / dark):
 
-- `--color-app`: `#f6f3ee` / `#171311`
-- `--color-shell`: shell background
-- `--color-card`: card surface
-- `--color-card-strong`: elevated card surface
-- `--color-muted`: muted background
-- `--color-overlay`: overlay surface
+- `--surface-app`: `#f6f3ee` / `#111114`
+- `--surface-shell`: shell background
+- `--surface-card`: card surface
+- `--surface-card-strong`: elevated card surface
+- `--surface-muted`: muted background
+- `--surface-overlay`: overlay surface
 
 Text tokens:
 
-- `--color-text-primary`: `#201a17` / `#f7f2ec`
-- `--color-text-secondary`: `#6b625c` / `#b6aba2`
+- `--text-primary`: `#201a17` / `#ededf0`
+- `--text-secondary`: `#6b625c` / `#a1a1ab`
 
-Border tokens:
+Border tokens (named `--line-*`, not `--border-*`):
 
-- `--color-border-soft`: 10% transparency border
-- `--color-border-strong`: stronger border
+- `--line-soft`: soft separator border
+- `--line-strong`: stronger separator border
 
 Shadow tokens:
 
@@ -100,18 +101,24 @@ Shadow tokens:
 - `--shadow-medium`: medium elevation
 - `--shadow-floating`: high elevation (popovers, modals)
 
+Note: certain accent presets (`gradient:dawn`, `gradient:instagram`, `retro:crt`, `#74a12e`) override surface, text, and line tokens dynamically via JS. See `accent.ts` → `getSurfaceOverrides()`.
+
 ### 6.3. Accent Color System
 
-The accent system uses 6 CSS variables derived at runtime by `accent.ts`:
+The accent system is multi-modal — accents can be plain hex, gradients (`gradient:<key>`), conic presets (`conic:<key>`), or retro themes (`retro:<key>`). Each stored as a string in the database.
 
-- `--color-accent`: base accent color
-- `--color-accent-foreground`: text on accent backgrounds
-- `--color-accent-soft`: subtle accent background
-- `--color-accent-soft-strong`: stronger accent background
-- `--color-accent-border`: accent-tinted border
-- `--color-accent-glow`: accent glow effect
+`accent.ts` → `getAccentCssVariables(value)` derives 8 CSS variables at runtime:
 
-All derived values must pass WCAG AA contrast requirements against their intended background.
+- `--accent-color`: representative hex
+- `--accent-gradient`: full gradient CSS or hex for flat colors; used by Button/IconButton primary tone
+- `--accent-foreground`: white or dark slate, WCAG-computed
+- `--accent-soft`: hex at 0.12 alpha
+- `--accent-soft-strong`: hex at 0.18 alpha
+- `--accent-border`: hex at 0.22 alpha
+- `--accent-glow`: hex at 0.30 alpha
+- `--accent-secondary`: secondary color for conic accents, `transparent` otherwise
+
+All derived values must pass WCAG AA contrast. See `design-system/MASTER.md §6.3` for the full palette and preset details.
 
 ### 6.4. Dark Mode
 
@@ -119,7 +126,7 @@ Dark mode is activated via the `.dark` class on the root element. All surface, t
 
 ## 7. App Shell Rules
 
-The application shell is implemented in `App.tsx` (546 lines) with responsive layout handling.
+The application shell is implemented in `App.tsx` with responsive layout handling.
 
 Current implementation:
 
@@ -127,7 +134,10 @@ Current implementation:
 - mobile uses a bottom navigation bar
 - section headers are compact and inside scrollable content
 - the shell supports custom scroll handling with keyboard shortcuts (PageUp, PageDown, Home, End)
-- accent color theming is applied at the shell level
+- accent color theming is applied at the shell level via `getAccentCssVariables` + `getSurfaceOverrides`
+- `retro:crt` accent forces dark mode and activates the CRT scanline overlay (`data-crt` on `<html>`)
+- conic accents (e.g. TikTok) show `--accent-secondary` as a colored border on the sidebar separator and mobile nav top border
+- mobile has pull-to-refresh (120px threshold, CircleNotch indicator, calls `refreshAppData`)
 - loading and error states are handled at the shell level
 
 Shell behavior rules:
@@ -145,52 +155,67 @@ Shell behavior rules:
 The shared component layer in `apps/web/src/components/ui.tsx` provides:
 
 - `cx()` - class name utility for conditional class merging
-- `SurfaceCard` - card container with 3 tone variants
-- `ScreenHeader` - consistent screen header
-- `MetricCard` - dashboard metric display
-- `StatusBadge` - status indicator with 6 tones
-- `EmptyState` - empty content placeholder
+- `SurfaceCard` - card container with 3 tone variants (`default`, `muted`, `inset`)
+- `ScreenHeader` - page-level header with eyebrow, title, description, actions
+- `MetricCard` - KPI display using `SurfaceCard tone="inset"`
+- `StatusBadge` - status indicator with 7 tones (`neutral`, `accent`, `success`, `warning`, `danger`, `info`, `review`)
+- `EmptyState` - empty content placeholder with dashed border
 - `Button` - action button with 4 tones: `primary`, `secondary`, `ghost`, `danger`
 - `IconButton` - icon-only action button
-- `ToggleSwitch` - on/off toggle control
-- `ModalPanel` - slide-in modal panel
-- `SettingRow` - settings layout row
+- `ToggleSwitch` - visual-only on/off toggle (controlled externally)
+- `ModalPanel` - modal content panel with header/body/footer and accent gradient overlay
+- `SettingRow` - settings layout row with icon, title, description, trailing slot
+- `Avatar` - user/partner avatar with initials fallback
 
 ### 8.2. Standalone Components
 
 Additional components outside `ui.tsx`:
 
-- `AIAssistant` - Gemini-powered assistant with voice input (experimental, behind env var)
-- `ConfirmDialog` - destructive action confirmation dialog
-- `CustomSelect` - keyboard-accessible select dropdown
-- `OnboardingTour` - guided onboarding using Joyride
-- `OverlayModal` - portal-based modal overlay
-- `Toaster` - event-based toast notification display
+- `AIAssistant` - Gemini-powered conversational assistant with voice input (behind `GEMINI_API_KEY`)
+- `BlockPickerDrawer` - drawer for adding blocks to the public profile composer
+- `Confetti` - listens for `efi-confetti` custom event, triggers canvas-confetti
+- `ConfirmDialog` - destructive action confirmation dialog built on `OverlayModal` + `ModalPanel`
+- `CustomSelect` - keyboard-accessible select dropdown (no native select)
+- `EfisystemWidget` - gamification level/XP/badge progress widget
+- `ErrorBoundary` - top-level React error boundary
+- `ImageUpload` - file upload with preview (multer backend)
+- `LegalModal` - terms/privacy modal triggered from MoreOptionsMenu
+- `MoreOptionsMenu` - context menu for legal links and misc options
+- `NotificationBell` - notification indicator with navigation callback
+- `OnboardingTour` - guided first-run tour using `react-joyride`
+- `OverlayModal` - portal-based full-screen overlay (`createPortal` to `document.body`)
+- `TemplatePickerDrawer` - drawer for loading saved message templates into the profile
+- `Toaster` - event-based toast display, listens for `efi-toast` custom events on `window`
+- `profile-blocks/` — one component per block type: `IdentityBlock`, `AboutBlock`, `MetricsBlock`, `PortfolioBlock`, `BrandsBlock`, `ServicesBlock`, `ClosingBlock`, `LinksBlock`
 
 ### 8.3. Views
 
-All 6 views are implemented:
-
-- `Dashboard` (493 lines) - summary metrics and overview with goal effort distribution widget
-- `Pipeline` (1373 lines) - task management pipeline with goal selector in task form
-- `Directory` - partner/contact directory
-- `StrategicView` - goal management with master-detail layout and aggregated metrics per goal
-- `Profile` - user profile with auto-save
-- `Settings` (516 lines) - app configuration and integrations
+- `Dashboard` - summary metrics and overview
+- `Pipeline` - task management (Kanban, List, Calendar views); drag-and-drop via `@dnd-kit`; Google Calendar sync
+- `Directory` - partner/contact directory with financial tracking
+- `StrategicView` - goal tracking and performance metrics
+- `Profile` - public profile block composer; modular blocks (identity, about, metrics, portfolio, brands, services, closing, links and more); uses `BlockPickerDrawer`, `TemplatePickerDrawer`, and `profile-blocks/` components
+- `Settings` - theme/accent picker, templates, notifications, integrations
+- `Landing` - unauthenticated entry point with login/register
+- `WelcomeColorPicker` - new-user accent selection screen
+- `WelcomeOnboarding` - new-user welcome/intro screen
 
 ### 8.4. State and Utilities
 
-- `AppContext.tsx` (516 lines) - central state provider with optimistic updates, push notifications, error tracking
-- `api.ts` - REST client
-- `accent.ts` - accent color derivation with WCAG contrast utilities
+- `AppContext.tsx` - central state provider; optimistic mutations, gamification (`EfisystemSnapshot`), push notifications, error tracking
+- `api.ts` - REST client for all backend endpoints
+- `accent.ts` - multi-modal accent derivation; WCAG contrast utilities; surface theme overrides
+- `blockTemplates.ts` - default block templates for the profile composer
 - `date.ts` - timezone-safe date utilities
-- `toast.ts` - event-based toast system
+- `professions.ts` - freelancer profession labels and catalogue
+- `supabase.ts` - Supabase client for Google OAuth redirect handling
+- `toast.ts` - dispatches `efi-toast` custom events; consumed by `Toaster`
 
 ### 8.5. Component Creation Policy
 
 Before creating a one-off pattern, check whether the need belongs in the shared component layer.
 
-For `Soft Studio Console`, reusable primitives should bias toward:
+For `Clean Creator Console`, reusable primitives should bias toward:
 
 - quiet surfaces
 - strong typography
@@ -204,9 +229,9 @@ For `Soft Studio Console`, reusable primitives should bias toward:
 
 `AppContext` performs optimistic updates on mutations. The UI reflects changes immediately while the API call happens in the background. On failure, the state rolls back and a toast notification reports the error.
 
-### 9.2. Auto-Save with Debounce
+### 9.2. Profile Save Flow
 
-The Profile view uses debounced auto-save to persist changes without requiring an explicit save action.
+The Profile block composer uses an explicit save action per block. Earlier versions used debounced auto-save; the current block composer model requires intentional saves to avoid partial-write conflicts between blocks.
 
 ### 9.3. Push Notifications
 
@@ -274,7 +299,8 @@ Every reusable component must account for:
 
 Implemented motion:
 
-- shimmer animation for loading/skeleton states (defined as `@keyframes shimmer` in index.css)
+- shimmer animation for loading/skeleton states (`@keyframes shimmer`, 3s infinite)
+- `check-pop` keyframe (`0.22s ease-out`) for checkbox/completion feedback
 - soft transitions on interactive elements (200ms to 500ms)
 - tactile micro-interactions using `scale`
 - `focus-visible` outlines for keyboard navigation

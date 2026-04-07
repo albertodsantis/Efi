@@ -4,19 +4,20 @@
 
 # Efi
 
-Efi is a micro SaaS CRM built for content creators, influencers, and creative freelancers. It provides a compact operational workspace to manage partnerships, track deliverables, and maintain a professional profile — all from a single responsive web app.
+Efi is a compact CRM for independent professionals — content creators, podcasters, streamers, photographers, copywriters, DJs, speakers, coaches, and more. It provides a personal operational workspace to manage partnerships, track deliverables, and maintain a professional profile — all from a single responsive web app.
 
 The product UI is Spanish-first. All technical documentation and code comments are in English.
 
 ## Features
 
 - **Dashboard (Inicio)** — goals, key metrics, and activity stats at a glance
-- **Pipeline** — task management with Kanban, List, and Calendar views; drag-and-drop reordering; Google Calendar sync; status flow: Pendiente, En Progreso, En Revision, Completada, Cobrado
+- **Pipeline** — task management with Kanban, List, and Calendar views; drag-and-drop reordering; Google Calendar sync; status flow: Pendiente → En Progreso → En Revision → Completada → Cobrado
 - **Directory (Directorio)** — partner and contact management with financial tracking and messaging
-- **Profile (Perfil)** — media kit, linked social profiles, and personal goals
+- **Strategy (Estrategia)** — goal tracking, performance metrics, and progress overview
+- **Public Profile (Perfil Público)** — modular block composer for building a public profile link
 - **Settings (Ajustes)** — theme customization, integrations, and templates
 - **AI Assistant** — experimental conversational assistant powered by Google Gemini
-- **Onboarding Tour** — guided walkthrough for new users
+- **Onboarding** — guided welcome flow with color picker and tour for new users
 
 Desktop uses a sidebar layout; mobile uses bottom navigation.
 
@@ -26,11 +27,14 @@ Desktop uses a sidebar layout; mobile uses bottom navigation.
 |-------|------------|
 | Frontend | React 19, TypeScript, Vite |
 | Styling | Tailwind CSS 4 |
-| Backend | Express |
+| Backend | Express, Helmet |
+| Database | PostgreSQL (Supabase) |
+| Auth | bcryptjs, express-session, connect-pg-simple |
+| File Uploads | multer |
 | Drag and Drop | @dnd-kit |
-| Animation | motion |
+| Animation | motion, canvas-confetti |
+| Icons | @phosphor-icons/react |
 | Color Picker | react-colorful |
-| Icons | lucide-react |
 | Onboarding | react-joyride |
 | Google APIs | googleapis, @google/genai |
 
@@ -51,21 +55,36 @@ efi/
 ├── apps/
 │   ├── api/src/                # Express backend
 │   │   ├── server.ts
-│   │   ├── routes/             # auth.ts, calendar.ts, v1.ts
-│   │   └── store/appStore.ts
+│   │   ├── app.ts
+│   │   ├── config/             # env.ts — environment config
+│   │   ├── db/                 # connection.ts, repository.ts, migrate.ts, migrations/
+│   │   ├── lib/                # storage.ts
+│   │   ├── routes/             # auth.ts, calendar.ts, mediakit.ts, v1.ts
+│   │   ├── services/           # gamification.ts
+│   │   └── store/              # appStore.ts
 │   └── web/src/                # React SPA
 │       ├── App.tsx, main.tsx, index.css
-│       ├── components/         # ui.tsx, AIAssistant, ConfirmDialog,
-│       │                       # CustomSelect, OnboardingTour,
-│       │                       # OverlayModal, Toaster
+│       ├── components/         # ui.tsx, AIAssistant, BlockPickerDrawer,
+│       │                       # Confetti, ConfirmDialog, CustomSelect,
+│       │                       # EfisystemWidget, ErrorBoundary,
+│       │                       # ImageUpload, LegalModal, MoreOptionsMenu,
+│       │                       # NotificationBell, OnboardingTour,
+│       │                       # OverlayModal, TemplatePickerDrawer,
+│       │                       # Toaster, profile-blocks/
 │       ├── context/AppContext.tsx
-│       ├── lib/                # api.ts, accent.ts, date.ts, toast.ts
-│       └── views/              # Dashboard, Pipeline, Directory,
-│                               # Profile, Settings
+│       ├── lib/                # api.ts, accent.ts, blockTemplates.ts,
+│       │                       # date.ts, professions.ts, supabase.ts, toast.ts
+│       └── views/              # Dashboard, Directory, Landing, Pipeline,
+│                               # Profile, Settings, StrategicView,
+│                               # WelcomeColorPicker, WelcomeOnboarding
 ├── packages/shared/src/        # shared types and contracts
 │   ├── domain.ts
 │   ├── contracts/              # appData.ts, auth.ts, googleCalendar.ts
 │   └── index.ts
+├── api/
+│   └── index.js                # Vercel serverless entry point
+├── docker-compose.yml          # local PostgreSQL container
+├── vercel.json                 # Vercel deployment config
 ├── README.md
 ├── package.json
 └── tsconfig.json
@@ -74,7 +93,7 @@ efi/
 ### Responsibilities
 
 - **apps/web** — responsive React application for desktop and mobile browsers
-- **apps/api** — Express backend: auth flows, business rules, in-memory persistence, and external integrations
+- **apps/api** — Express backend: auth flows, business rules, PostgreSQL persistence, and external integrations
 - **packages/shared** — reusable domain types, API contracts, and pure helpers with no framework-specific assumptions
 
 ## Local Development
@@ -82,6 +101,7 @@ efi/
 ### Prerequisites
 
 - Node.js
+- A [Supabase](https://supabase.com) project (provides PostgreSQL + auth keys)
 
 ### Setup
 
@@ -89,8 +109,9 @@ efi/
 # 1. Install dependencies
 npm install
 
-# 2. (Optional) Create a local .env from the example for Google integrations
+# 2. Create a local .env from the example
 cp .env.example .env
+# Fill in the required variables (see Environment Variables below)
 
 # 3. Start the development server
 npm run dev
@@ -98,7 +119,7 @@ npm run dev
 
 The app will be available at **http://127.0.0.1:3000**.
 
-`npm run dev` starts the Express server and mounts Vite in middleware mode. The base UI works without a `.env` file; Google OAuth and Calendar integration require the environment variables below.
+`npm run dev` starts the Express server and mounts Vite in middleware mode.
 
 ### Health Check
 
@@ -112,22 +133,30 @@ The app will be available at **http://127.0.0.1:3000**.
 | `npm run build` | Build the web app (Vite) and backend bundle (esbuild) |
 | `npm run lint` | Run TypeScript type checking (`tsc --noEmit`) |
 | `npm run preview` | Preview the production build |
+| `npm run clean` | Delete `apps/api/dist` and `apps/web/dist` |
 
 ## Environment Variables
 
 | Variable | Required | Description |
 |----------|----------|-------------|
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
+| `SESSION_SECRET` | Yes | Long random string used to sign session cookies |
+| `GOOGLE_CLIENT_ID` | Yes (for Google features) | Required for Google OAuth login and Calendar sync |
+| `GOOGLE_CLIENT_SECRET` | Yes (for Google features) | Required for Google OAuth login and Calendar sync |
+| `APP_URL` | Yes | Base URL for OAuth callbacks (e.g. `http://localhost:3000`) |
+| `SUPABASE_URL` | Yes | Supabase project URL |
+| `SUPABASE_ANON_KEY` | Yes | Supabase public anon key |
+| `SUPABASE_SERVICE_KEY` | Yes | Supabase service role key (server-side only) |
 | `GEMINI_API_KEY` | No | API key for the experimental Gemini-based AI assistant |
-| `GOOGLE_CLIENT_ID` | Yes (for OAuth) | Google OAuth client ID |
-| `GOOGLE_CLIENT_SECRET` | Yes (for OAuth) | Google OAuth client secret |
-| `APP_URL` | Yes (for OAuth) | Base URL for OAuth callbacks (e.g. `http://localhost:3000`) |
+| `PORT` | No | Server port (defaults to 3000) |
+| `NODE_ENV` | No | Runtime environment (defaults to `development`) |
 
 ## Current State
 
-All core features are implemented with in-memory storage. Pending work:
+Core features are implemented with PostgreSQL persistence and multi-tenant data isolation (all tables scoped by `user_id`). Authentication supports email/password and Google OAuth.
 
-- PostgreSQL persistence
-- Real authentication
+Pending work:
+
 - CI/CD pipeline
 - Production deployment
 
