@@ -5,10 +5,10 @@ import type {
   BadgeKey,
   ChecklistItem,
   Contact,
+  EfiProfile,
   EfisystemAward,
   EfisystemSnapshot,
   Goal,
-  MediaKitProfile,
   Partner,
   PartnerStatus,
   PartnerStatusTransition,
@@ -91,9 +91,9 @@ export interface CreateContactRequest {
 
 export type UpdateContactRequest = Partial<CreateContactRequest>;
 
-export interface UpdateProfileRequest extends Partial<Omit<UserProfile, 'socialProfiles' | 'mediaKit'>> {
+export interface UpdateProfileRequest extends Partial<Omit<UserProfile, 'socialProfiles' | 'efiProfile'>> {
   socialProfiles?: Partial<SocialProfiles>;
-  mediaKit?: Partial<MediaKitProfile>;
+  efiProfile?: Partial<EfiProfile>;
 }
 
 export interface UpdateSettingsRequest {

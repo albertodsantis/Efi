@@ -110,144 +110,16 @@ export interface SocialProfiles {
   youtube: string;
 }
 
-export type BlockType =
-  | 'identity'
-  | 'about'
-  | 'metrics'
-  | 'portfolio'
-  | 'brands'
-  | 'services'
-  | 'closing'
-  | 'testimonials'
-  | 'press'
-  | 'speaking_topics'
-  | 'video_reel'
-  | 'equipment'
-  | 'awards'
-  | 'faq'
-  | 'episodes'
-  | 'releases'
-  | 'links';
-
-export interface MediaKitMetric {
-  label: string;
-  value: string;
-}
-
-export interface MediaKitOffer {
-  title: string;
-  price: string;
-  description: string;
-}
-
-export interface MediaKitTestimonial {
-  quote: string;
-  author: string;
-  company: string;
-  role: string;
-}
-
-export interface MediaKitPressItem {
-  publication: string;
-  headline: string;
-  url: string;
-  year: string;
-}
-
-export interface MediaKitSpeakingTopic {
-  title: string;
-  description: string;
-}
-
-export interface MediaKitVideoReel {
-  url: string;
-  label: string;
-}
-
-export interface MediaKitEquipmentItem {
-  item: string;
-  description: string;
-}
-
-export interface MediaKitAward {
-  name: string;
-  issuer: string;
-  year: string;
-}
-
-export interface MediaKitFaqItem {
-  question: string;
-  answer: string;
-}
-
-export interface MediaKitEpisode {
-  title: string;
-  description: string;
-  listenUrl: string;
-}
-
-export interface MediaKitRelease {
-  name: string;
-  platforms: { label: string; url: string }[];
-}
-
-export interface MediaKitLink {
+export interface ProfileLink {
+  id: string;
   label: string;
   url: string;
 }
 
-export interface MediaKitProfile {
-  // Block system control
-  enabledBlocks: BlockType[];
-  blockOrder: BlockType[];
-  blockComponents: Record<string, string[]>; // sparse: only blocks with explicit config appear here; absent = all components enabled
-
-  // Identity block fields
-  periodLabel: string;
-  updatedLabel: string;
-  tagline: string;
-  contactEmail: string;
-
-  // About block fields
-  featuredImage: string;
-  aboutTitle: string;
-  aboutParagraphs: string[];
-  topicTags: string[];
-
-  // Metrics block fields
-  insightStats: MediaKitMetric[];
-  audienceGender: MediaKitMetric[];
-  ageDistribution: MediaKitMetric[];
-  topCountries: MediaKitMetric[];
-
-  // Portfolio block fields
-  portfolioImages: string[];
-
-  // Services block fields
-  servicesTitle: string;
-  servicesDescription: string;
-  offerings: MediaKitOffer[];
-
-  // Brands block fields
-  brandsTitle: string;
-  trustedBrands: string[];
-
-  // Closing block fields
-  closingTitle: string;
-  closingDescription: string;
-  footerNote: string;
-
-  // New block data fields
-  testimonials: MediaKitTestimonial[];
-  press: MediaKitPressItem[];
-  speakingTopics: MediaKitSpeakingTopic[];
-  videoReels: MediaKitVideoReel[];
-  equipment: MediaKitEquipmentItem[];
-  awards: MediaKitAward[];
-  faq: MediaKitFaqItem[];
-  episodes: MediaKitEpisode[];
-  releases: MediaKitRelease[];
-  links: MediaKitLink[];
+export interface EfiProfile {
+  links: ProfileLink[];
+  pdf_url: string | null;
+  pdf_label: string;
 }
 
 export type GoalStatus = 'Pendiente' | 'En Curso' | 'Alcanzado' | 'Cancelado';
@@ -276,42 +148,11 @@ export function createEmptySocialProfiles(): SocialProfiles {
   };
 }
 
-export function createDefaultMediaKitProfile(): MediaKitProfile {
+export function createDefaultEfiProfile(): EfiProfile {
   return {
-    enabledBlocks: [],
-    blockOrder: [],
-    blockComponents: {},
-    periodLabel: '',
-    updatedLabel: '',
-    tagline: '',
-    contactEmail: '',
-    featuredImage: '',
-    aboutTitle: '',
-    aboutParagraphs: [],
-    topicTags: [],
-    insightStats: [],
-    audienceGender: [],
-    ageDistribution: [],
-    topCountries: [],
-    portfolioImages: [],
-    servicesTitle: '',
-    servicesDescription: '',
-    offerings: [],
-    brandsTitle: '',
-    trustedBrands: [],
-    closingTitle: '',
-    closingDescription: '',
-    footerNote: '',
-    testimonials: [],
-    press: [],
-    speakingTopics: [],
-    videoReels: [],
-    equipment: [],
-    awards: [],
-    faq: [],
-    episodes: [],
-    releases: [],
     links: [],
+    pdf_url: null,
+    pdf_label: 'Ver mi media kit',
   };
 }
 
@@ -319,8 +160,9 @@ export interface UserProfile {
   name: string;
   avatar: string;
   handle: string;
+  tagline: string;
   socialProfiles: SocialProfiles;
-  mediaKit: MediaKitProfile;
+  efiProfile: EfiProfile;
   goals: Goal[];
   notificationsEnabled: boolean;
   primaryProfession?: FreelancerType;

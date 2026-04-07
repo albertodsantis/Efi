@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
-  createDefaultMediaKitProfile,
+  createDefaultEfiProfile,
   createEmptySocialProfiles,
   getPartnerLookupKey,
 } from '@shared';
@@ -80,8 +80,9 @@ const emptyState: AppState = {
     name: '',
     avatar: '',
     handle: '',
+    tagline: '',
     socialProfiles: createEmptySocialProfiles(),
-    mediaKit: createDefaultMediaKitProfile(),
+    efiProfile: createDefaultEfiProfile(),
     goals: [],
     notificationsEnabled: false,
   },
@@ -93,13 +94,14 @@ const emptyState: AppState = {
 function normalizeProfile(profile: UserProfile): UserProfile {
   return {
     ...profile,
+    tagline: profile.tagline ?? '',
     socialProfiles: {
       ...createEmptySocialProfiles(),
       ...(profile.socialProfiles ?? {}),
     },
-    mediaKit: {
-      ...createDefaultMediaKitProfile(),
-      ...(profile.mediaKit ?? {}),
+    efiProfile: {
+      ...createDefaultEfiProfile(),
+      ...(profile.efiProfile ?? {}),
     },
   };
 }

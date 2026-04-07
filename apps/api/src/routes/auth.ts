@@ -29,12 +29,11 @@ async function ensureUserData(
   email: string,
   avatar = '',
 ) {
-  const mediaKit = JSON.stringify({ contactEmail: email });
   await pool.query(
-    `INSERT INTO user_profile (user_id, name, avatar, media_kit)
-     VALUES ($1, $2, $3, $4)
+    `INSERT INTO user_profile (user_id, name, avatar)
+     VALUES ($1, $2, $3)
      ON CONFLICT (user_id) DO UPDATE SET name = $2, avatar = $3`,
-    [userId, name, avatar, mediaKit],
+    [userId, name, avatar],
   );
   await pool.query(
     `INSERT INTO user_settings (user_id)

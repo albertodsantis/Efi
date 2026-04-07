@@ -31,7 +31,7 @@ function computeLevel(totalPoints: number): number {
 // ────────────────────────────────────────────────────────────
 
 export function checkProfileComplete(profile: UserProfile): boolean {
-  return profile.mediaKit.enabledBlocks.length >= 1;
+  return !!(profile.name && (profile.efiProfile.links.length >= 1 || profile.tagline));
 }
 
 // ────────────────────────────────────────────────────────────

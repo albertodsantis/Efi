@@ -1,7 +1,7 @@
 import { randomUUID } from 'crypto';
 import type pg from 'pg';
 import {
-  createDefaultMediaKitProfile,
+  createDefaultEfiProfile,
   createEmptySocialProfiles,
   getPartnerLookupKey,
 } from '@shared';
@@ -15,15 +15,15 @@ import type {
   CreateTemplateRequest,
   DashboardSummaryResponse,
   DeleteEntityResponse,
+  EfiProfile,
   EfisystemSnapshot,
   Goal,
   GoalAggregation,
   GoalPriority,
   GoalStatus,
-  MediaKitMetric,
-  MediaKitOffer,
   Partner,
   PartnerStatusTransition,
+  ProfileLink,
   SettingsResponse,
   StrategicViewResponse,
   Task,
@@ -125,74 +125,20 @@ function normalizeAccentColor(color: string | undefined) {
   return normalized;
 }
 
-function normalizeMetricList(items: MediaKitMetric[] | undefined, fallback: MediaKitMetric[]) {
-  return (items ?? fallback).map((item, index) => ({
-    label: normalizeText(item?.label) || fallback[index]?.label || '',
-    value: normalizeText(item?.value),
-  }));
-}
-
-function normalizeOfferList(items: MediaKitOffer[] | undefined, fallback: MediaKitOffer[]) {
-  return (items ?? fallback).map((item, index) => ({
-    title: normalizeText(item?.title) || fallback[index]?.title || '',
-    price: normalizeText(item?.price),
-    description: normalizeText(item?.description),
-  }));
-}
-
-function normalizeStringList(values: string[] | undefined, fallback: string[]) {
-  return (values ?? fallback).map((value, index) => normalizeText(value) || fallback[index] || '');
-}
-
-function normalizeMediaKitProfile(
-  mediaKit: Partial<AppState['profile']['mediaKit']> | undefined,
-  currentMediaKit = createDefaultMediaKitProfile(),
-) {
-  const fallback = currentMediaKit;
+function normalizeEfiProfile(
+  incoming: Partial<EfiProfile> | undefined,
+  current: EfiProfile = createDefaultEfiProfile(),
+): EfiProfile {
   return {
-    // Block system control — preserve as-is (undefined is valid for migration)
-    enabledBlocks: mediaKit?.enabledBlocks ?? fallback.enabledBlocks,
-    blockOrder: mediaKit?.blockOrder ?? fallback.blockOrder,
-    blockComponents: (mediaKit?.blockComponents && typeof mediaKit.blockComponents === 'object' && !Array.isArray(mediaKit.blockComponents)) ? mediaKit.blockComponents : fallback.blockComponents,
-    // Identity block
-    periodLabel: normalizeText(mediaKit?.periodLabel) || fallback.periodLabel,
-    updatedLabel: normalizeText(mediaKit?.updatedLabel) || fallback.updatedLabel,
-    tagline: normalizeText(mediaKit?.tagline),
-    contactEmail: normalizeText(mediaKit?.contactEmail),
-    // About block
-    featuredImage: normalizeText(mediaKit?.featuredImage),
-    aboutTitle: normalizeText(mediaKit?.aboutTitle) || fallback.aboutTitle,
-    aboutParagraphs: normalizeStringList(mediaKit?.aboutParagraphs, fallback.aboutParagraphs),
-    topicTags: normalizeStringList(mediaKit?.topicTags, fallback.topicTags),
-    // Metrics block
-    insightStats: normalizeMetricList(mediaKit?.insightStats, fallback.insightStats),
-    audienceGender: normalizeMetricList(mediaKit?.audienceGender, fallback.audienceGender),
-    ageDistribution: normalizeMetricList(mediaKit?.ageDistribution, fallback.ageDistribution),
-    topCountries: normalizeMetricList(mediaKit?.topCountries, fallback.topCountries),
-    // Portfolio block
-    portfolioImages: normalizeStringList(mediaKit?.portfolioImages, fallback.portfolioImages),
-    // Services block
-    servicesTitle: normalizeText(mediaKit?.servicesTitle) || fallback.servicesTitle,
-    servicesDescription: normalizeText(mediaKit?.servicesDescription),
-    offerings: normalizeOfferList(mediaKit?.offerings, fallback.offerings),
-    // Brands block
-    brandsTitle: normalizeText(mediaKit?.brandsTitle) || fallback.brandsTitle,
-    trustedBrands: normalizeStringList(mediaKit?.trustedBrands, fallback.trustedBrands),
-    // Closing block
-    closingTitle: normalizeText(mediaKit?.closingTitle) || fallback.closingTitle,
-    closingDescription: normalizeText(mediaKit?.closingDescription),
-    footerNote: normalizeText(mediaKit?.footerNote) || fallback.footerNote,
-    // New block data (pass through arrays as-is, fall back to empty)
-    testimonials: Array.isArray(mediaKit?.testimonials) ? mediaKit.testimonials : fallback.testimonials,
-    press: Array.isArray(mediaKit?.press) ? mediaKit.press : fallback.press,
-    speakingTopics: Array.isArray(mediaKit?.speakingTopics) ? mediaKit.speakingTopics : fallback.speakingTopics,
-    videoReels: Array.isArray(mediaKit?.videoReels) ? mediaKit.videoReels : fallback.videoReels,
-    equipment: Array.isArray(mediaKit?.equipment) ? mediaKit.equipment : fallback.equipment,
-    awards: Array.isArray(mediaKit?.awards) ? mediaKit.awards : fallback.awards,
-    faq: Array.isArray(mediaKit?.faq) ? mediaKit.faq : fallback.faq,
-    episodes: Array.isArray(mediaKit?.episodes) ? mediaKit.episodes : fallback.episodes,
-    releases: Array.isArray(mediaKit?.releases) ? mediaKit.releases : fallback.releases,
-    links: Array.isArray(mediaKit?.links) ? mediaKit.links : fallback.links,
+    links: Array.isArray(incoming?.links)
+      ? incoming.links.map((l: any) => ({
+          id: normalizeText(l?.id) || randomUUID(),
+          label: normalizeText(l?.label),
+          url: normalizeText(l?.url),
+        } as ProfileLink))
+      : current.links,
+    pdf_url: incoming?.pdf_url !== undefined ? (normalizeText(incoming.pdf_url) || null) : current.pdf_url,
+    pdf_label: normalizeText(incoming?.pdf_label) || current.pdf_label || 'Ver mi media kit',
   };
 }
 
@@ -854,8 +800,9 @@ export class PostgresAppStore {
         name: '',
         avatar: '',
         handle: '',
+        tagline: '',
         socialProfiles: createEmptySocialProfiles(),
-        mediaKit: createDefaultMediaKitProfile(),
+        efiProfile: createDefaultEfiProfile(),
         goals: [],
         notificationsEnabled: false,
       };
@@ -866,17 +813,15 @@ export class PostgresAppStore {
       ...(row.social_profiles || {}),
     };
 
-    const mediaKit = {
-      ...createDefaultMediaKitProfile(),
-      ...(row.media_kit || {}),
-    };
+    const efiProfile = normalizeEfiProfile(row.efi_profile || {});
 
     return {
       name: row.name,
       avatar: row.avatar,
       handle: row.handle,
+      tagline: row.tagline || '',
       socialProfiles,
-      mediaKit,
+      efiProfile,
       goals: goalsResult.rows.map(mapRowToGoal),
       notificationsEnabled: row.notifications_enabled,
       primaryProfession: row.primary_profession ?? undefined,
@@ -899,10 +844,7 @@ export class PostgresAppStore {
         ...createEmptySocialProfiles(),
         ...(currentRow?.social_profiles || {}),
       };
-      const currentMediaKit = normalizeMediaKitProfile(
-        currentRow?.media_kit || {},
-        createDefaultMediaKitProfile(),
-      );
+      const currentEfiProfile = normalizeEfiProfile(currentRow?.efi_profile || {});
 
       // Build profile update
       const setClauses: string[] = [];
@@ -921,6 +863,10 @@ export class PostgresAppStore {
         const handle = normalizeRequiredText(updates.handle, 'El handle');
         setClauses.push(`handle = $${idx++}`);
         values.push(handle.startsWith('@') ? handle : `@${handle}`);
+      }
+      if (updates.tagline !== undefined) {
+        setClauses.push(`tagline = $${idx++}`);
+        values.push(normalizeText(updates.tagline));
       }
       if (updates.notificationsEnabled !== undefined) {
         setClauses.push(`notifications_enabled = $${idx++}`);
@@ -951,25 +897,13 @@ export class PostgresAppStore {
         values.push(JSON.stringify(merged));
       }
 
-      if (updates.mediaKit !== undefined) {
-        const mergedMediaKit = normalizeMediaKitProfile(
-          {
-            ...currentMediaKit,
-            ...updates.mediaKit,
-            aboutParagraphs: updates.mediaKit.aboutParagraphs ?? currentMediaKit.aboutParagraphs,
-            topicTags: updates.mediaKit.topicTags ?? currentMediaKit.topicTags,
-            insightStats: updates.mediaKit.insightStats ?? currentMediaKit.insightStats,
-            audienceGender: updates.mediaKit.audienceGender ?? currentMediaKit.audienceGender,
-            ageDistribution: updates.mediaKit.ageDistribution ?? currentMediaKit.ageDistribution,
-            topCountries: updates.mediaKit.topCountries ?? currentMediaKit.topCountries,
-            portfolioImages: updates.mediaKit.portfolioImages ?? currentMediaKit.portfolioImages,
-            offerings: updates.mediaKit.offerings ?? currentMediaKit.offerings,
-            trustedBrands: updates.mediaKit.trustedBrands ?? currentMediaKit.trustedBrands,
-          },
-          currentMediaKit,
+      if (updates.efiProfile !== undefined) {
+        const merged = normalizeEfiProfile(
+          { ...currentEfiProfile, ...updates.efiProfile },
+          currentEfiProfile,
         );
-        setClauses.push(`media_kit = $${idx++}`);
-        values.push(JSON.stringify(mergedMediaKit));
+        setClauses.push(`efi_profile = $${idx++}`);
+        values.push(JSON.stringify(merged));
       }
 
       if (setClauses.length > 0) {
