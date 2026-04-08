@@ -108,6 +108,7 @@ export interface SocialProfiles {
   x: string;
   threads: string;
   youtube: string;
+  linkedin: string;
 }
 
 export interface ProfileLink {
@@ -145,6 +146,7 @@ export function createEmptySocialProfiles(): SocialProfiles {
     x: '',
     threads: '',
     youtube: '',
+    linkedin: '',
   };
 }
 

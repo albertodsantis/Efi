@@ -48,6 +48,12 @@ const SOCIAL_PLATFORMS: Array<{
     base: 'https://www.threads.net/@',
     icon: '<path d="M19 7.5c-1.333-3-3.667-4.5-7-4.5-5 0-8 3.582-8 9s3.5 9 8 9c3 0 5.5-1 7-4"/><path d="M15 11c-.667-2-2-3-4-3-2.667 0-4 1.667-4 5s1.333 5 4 5c1.5 0 2.833-.5 4-1.5"/>',
   },
+  {
+    key: 'linkedin',
+    label: 'LinkedIn',
+    base: 'https://linkedin.com/in/',
+    icon: '<path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/>',
+  },
 ];
 
 function buildSocialHref(platform: keyof SocialProfiles, value: string): string {

@@ -16,6 +16,7 @@ import {
   XLogo,
   YoutubeLogo,
   ThreadsLogo,
+  LinkedinLogoIcon,
 } from '@phosphor-icons/react';
 import type { EfiProfile, ProfileLink, SocialProfiles } from '@shared';
 import { useAppContext } from '../context/AppContext';
@@ -48,6 +49,7 @@ const SOCIAL_PLATFORMS: {
   { key: 'x',         label: 'X (Twitter)', Icon: XLogo,         placeholder: '' },
   { key: 'youtube',   label: 'YouTube',     Icon: YoutubeLogo,   placeholder: '' },
   { key: 'threads',   label: 'Threads',     Icon: ThreadsLogo,   placeholder: '' },
+  { key: 'linkedin',  label: 'LinkedIn',    Icon: LinkedinLogoIcon,  placeholder: '' },
 ];
 
 type SaveStatus = 'idle' | 'saving' | 'saved';
