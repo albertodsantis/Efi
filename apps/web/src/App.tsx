@@ -556,7 +556,10 @@ const MainLayout = () => {
               className={cx(
                 'relative min-w-0 outline-none transition-colors duration-300',
                 isDesktop
-                  ? 'hide-scrollbar flex min-h-[100dvh] flex-col border-l bg-transparent lg:h-full lg:min-h-0 lg:overflow-y-auto [border-color:var(--line-soft)]'
+                  ? cx(
+                      'hide-scrollbar flex min-h-[100dvh] flex-col border-l bg-transparent lg:h-full lg:min-h-0 [border-color:var(--line-soft)]',
+                      activeTab === 'profile' ? 'lg:overflow-hidden' : 'lg:overflow-y-auto',
+                    )
                   : 'flex min-h-[100dvh] flex-col bg-[var(--surface-card)]',
               )}
             >
@@ -584,6 +587,7 @@ const MainLayout = () => {
                   className={cx(
                     'min-w-0 flex flex-wrap items-center gap-4',
                     isDesktop ? 'px-8 py-5' : 'px-4 pb-3 pt-4',
+                    isDesktop && activeTab === 'profile' && 'hidden',
                   )}
                   style={
                     isDesktop
@@ -606,18 +610,19 @@ const MainLayout = () => {
                 </div>
 
                 <div
-                  className="hide-scrollbar flex-1 min-h-0"
+                  className={cx('flex-1 min-h-0', activeTab !== 'profile' && 'hide-scrollbar')}
                   style={
-                    isDesktop
-                      ? {
-                          paddingBottom: '4rem',
-                        }
-                      : {
-                          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8.5rem)',
-                        }
+                    activeTab === 'profile'
+                      ? { overflow: 'hidden' }
+                      : isDesktop
+                      ? { paddingBottom: '4rem' }
+                      : { paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 8.5rem)' }
                   }
                 >
-                  <div className={cx('min-w-0', isDesktop ? 'w-full' : 'px-0')}>
+                  <div className={cx(
+                    'min-w-0',
+                    activeTab === 'profile' ? 'h-full' : isDesktop ? 'w-full' : 'px-0',
+                  )}>
                     {renderActiveView(activeTab)}
                   </div>
                 </div>

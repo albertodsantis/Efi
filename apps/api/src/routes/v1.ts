@@ -23,6 +23,8 @@ import type {
 } from '@shared';
 import type { PostgresAppStore } from '../db/repository';
 import { GamificationService, checkProfileComplete } from '../services/gamification';
+import { generateEfiLinkHtml } from '../lib/profileRenderer';
+import { createEmptySocialProfiles, createDefaultEfiProfile } from '@shared';
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'Bad request';
@@ -67,6 +69,29 @@ export function createV1Router(appStore: PostgresAppStore, pool: pg.Pool, gamifi
     } catch (error) {
       console.error('Bootstrap error:', error);
       res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+  // ── Profile preview (no DB read — renders from POST body for live editor) ──
+  router.post('/preview-profile', (req, res) => {
+    try {
+      const body = req.body ?? {};
+      const socialProfiles = { ...createEmptySocialProfiles(), ...(body.socialProfiles ?? {}) };
+      const efiProfile = { ...createDefaultEfiProfile(), ...(body.efiProfile ?? {}) };
+      const html = generateEfiLinkHtml({
+        name: String(body.name ?? ''),
+        handle: String(body.handle ?? ''),
+        tagline: String(body.tagline ?? ''),
+        avatar: String(body.avatar ?? ''),
+        socialProfiles,
+        efiProfile,
+        accentColor: String(body.accentColor ?? '#C96F5B'),
+      });
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      res.send(html);
+    } catch (error) {
+      console.error('Preview profile error:', error);
+      res.status(500).send('<h1>Error al generar vista previa</h1>');
     }
   });
 
