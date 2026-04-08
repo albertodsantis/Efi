@@ -124,13 +124,14 @@ function ProfilePreview({
         'transition-all duration-300 mx-auto',
         isMobile ? 'w-[375px]' : 'w-full',
       )}
-      style={{ height: '100%' }}
+      style={{ height: isMobile ? '667px' : '100%' }}
     >
       <iframe
         ref={iframeRef}
         title="Vista previa del perfil público"
         className={cx(
-          'w-full h-full border-0 bg-transparent rounded-2xl overflow-hidden',
+          'w-full border-0 bg-transparent rounded-2xl overflow-hidden',
+          isMobile ? 'h-[667px]' : 'h-full',
           isMobile && 'shadow-2xl ring-1 ring-white/10',
         )}
         sandbox="allow-same-origin"
@@ -693,7 +694,7 @@ export default function Profile() {
       </div>
 
       {/* iframe */}
-      <div className="flex-1 overflow-hidden p-4 flex items-start justify-center min-h-[680px] lg:min-h-0">
+      <div className="flex-1 overflow-hidden p-4 flex items-start justify-center">
         <div className={cx(
           'transition-all duration-300 h-full',
           device === 'mobile' ? 'w-[375px]' : 'w-full',
