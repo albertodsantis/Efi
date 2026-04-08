@@ -3,12 +3,13 @@ import path from 'path';
 import crypto from 'crypto';
 
 const BUCKET = 'efiimages';
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
+const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20 MB
 const ALLOWED_MIME_TYPES = [
   'image/jpeg',
   'image/png',
   'image/webp',
   'image/gif',
+  'application/pdf',
 ];
 
 let supabase: SupabaseClient | null = null;
@@ -50,7 +51,7 @@ export async function uploadFile(
   if (!ALLOWED_MIME_TYPES.includes(file.mimetype)) {
     throw new Error(
       `Tipo de archivo no permitido: ${file.mimetype}. ` +
-      `Formatos aceptados: JPG, PNG, WebP, GIF.`,
+      `Formatos aceptados: JPG, PNG, WebP, GIF, PDF.`,
     );
   }
 
