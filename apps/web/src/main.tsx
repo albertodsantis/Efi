@@ -4,6 +4,14 @@ import { IconContext } from '@phosphor-icons/react';
 import App from './App.tsx';
 import './index.css';
 
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {
+      // SW registration failed — app still works normally
+    });
+  });
+}
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <IconContext.Provider value={{ weight: 'duotone' }}>
