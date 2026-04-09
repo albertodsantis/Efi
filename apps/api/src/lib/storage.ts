@@ -90,7 +90,9 @@ export async function uploadFile(
  * Only deletes files that belong to the specified user.
  */
 export async function deleteFile(userId: string, storagePath: string): Promise<void> {
-  if (!storagePath.startsWith(`${userId}/`)) {
+  // Normalize to remove any .. segments before ownership check
+  const normalized = path.posix.normalize(storagePath);
+  if (!normalized.startsWith(`${userId}/`) || normalized !== storagePath) {
     throw new Error('No autorizado para eliminar este archivo.');
   }
 

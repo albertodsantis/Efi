@@ -30,6 +30,18 @@ function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : 'Bad request';
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isUUID(value: string): boolean {
+  return UUID_RE.test(value);
+}
+function rejectInvalidUUID(res: Response, value: string): boolean {
+  if (!isUUID(value)) {
+    res.status(400).json({ error: 'ID inválido.' });
+    return true;
+  }
+  return false;
+}
+
 /** Require authenticated session — attaches userId to req. Also verifies the user still exists in DB. */
 function requireAuth(pool: pg.Pool) {
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -148,6 +160,7 @@ export function createV1Router(appStore: PostgresAppStore, pool: pg.Pool, gamifi
   });
 
   router.delete('/tasks/:taskId', async (req, res) => {
+    if (rejectInvalidUUID(res, req.params.taskId)) return;
     try {
       const result = await appStore.deleteTask(getUserId(req), req.params.taskId);
       if (!result.success) {
@@ -161,6 +174,7 @@ export function createV1Router(appStore: PostgresAppStore, pool: pg.Pool, gamifi
   });
 
   router.patch('/tasks/:taskId', async (req, res) => {
+    if (rejectInvalidUUID(res, req.params.taskId)) return;
     try {
       const userId = getUserId(req);
       const body = req.body as UpdateTaskRequest;
@@ -215,6 +229,7 @@ export function createV1Router(appStore: PostgresAppStore, pool: pg.Pool, gamifi
   });
 
   router.patch('/partners/:partnerId', async (req, res) => {
+    if (rejectInvalidUUID(res, req.params.partnerId)) return;
     try {
       const partner = await appStore.updatePartner(
         getUserId(req),
@@ -231,6 +246,7 @@ export function createV1Router(appStore: PostgresAppStore, pool: pg.Pool, gamifi
   });
 
   router.post('/partners/:partnerId/contacts', async (req, res) => {
+    if (rejectInvalidUUID(res, req.params.partnerId)) return;
     try {
       const userId = getUserId(req);
       const contact = await appStore.addContact(
@@ -256,6 +272,7 @@ export function createV1Router(appStore: PostgresAppStore, pool: pg.Pool, gamifi
   });
 
   router.patch('/contacts/:contactId', async (req, res) => {
+    if (rejectInvalidUUID(res, req.params.contactId)) return;
     try {
       const contact = await appStore.updateContact(
         getUserId(req),
@@ -272,6 +289,7 @@ export function createV1Router(appStore: PostgresAppStore, pool: pg.Pool, gamifi
   });
 
   router.delete('/contacts/:contactId', async (req, res) => {
+    if (rejectInvalidUUID(res, req.params.contactId)) return;
     try {
       const result = await appStore.deleteContact(getUserId(req), req.params.contactId);
       if (!result.success) {
@@ -399,6 +417,7 @@ export function createV1Router(appStore: PostgresAppStore, pool: pg.Pool, gamifi
   });
 
   router.delete('/templates/:templateId', async (req, res) => {
+    if (rejectInvalidUUID(res, req.params.templateId)) return;
     try {
       const result = await appStore.deleteTemplate(getUserId(req), req.params.templateId);
       if (!result.success) {
@@ -412,6 +431,7 @@ export function createV1Router(appStore: PostgresAppStore, pool: pg.Pool, gamifi
   });
 
   router.get('/tasks/:taskId/status-history', async (req, res) => {
+    if (rejectInvalidUUID(res, req.params.taskId)) return;
     try {
       const history = await appStore.getTaskStatusHistory(getUserId(req), req.params.taskId);
       res.json(history);
@@ -422,6 +442,7 @@ export function createV1Router(appStore: PostgresAppStore, pool: pg.Pool, gamifi
   });
 
   router.get('/partners/:partnerId/status-history', async (req, res) => {
+    if (rejectInvalidUUID(res, req.params.partnerId)) return;
     try {
       const history = await appStore.getPartnerStatusHistory(getUserId(req), req.params.partnerId);
       res.json(history);

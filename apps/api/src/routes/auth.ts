@@ -209,13 +209,18 @@ export function createAuthRouter(
   router.delete('/account', async (req, res) => {
     const sessionUser = getSessionUser(req);
 
-    if (sessionUser?.id) {
-      try {
-        // CASCADE deletes profile, settings, tasks, partners, etc.
-        await pool.query('DELETE FROM users WHERE id = $1', [sessionUser.id]);
-      } catch (err) {
-        console.error('Error deleting user row:', err);
-      }
+    if (!sessionUser?.id) {
+      const response: DeleteAccountResponse = { success: false };
+      return res.status(401).json(response);
+    }
+
+    try {
+      // CASCADE deletes profile, settings, tasks, partners, etc.
+      await pool.query('DELETE FROM users WHERE id = $1', [sessionUser.id]);
+    } catch (err) {
+      console.error('Error deleting user row:', err);
+      const response: DeleteAccountResponse = { success: false };
+      return res.status(500).json(response);
     }
 
     req.session.destroy((err) => {

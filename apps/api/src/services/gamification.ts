@@ -145,26 +145,18 @@ export class GamificationService {
     }
 
     if (eventType.startsWith('pipeline_')) {
+      const [completedCount, paidCount] = await Promise.all([
+        this.appStore.countCompletedTasks(userId),
+        this.appStore.countPaidTasks(userId),
+      ]);
       await tryUnlock('motor_de_ideas', async () => {
         const c = await this.appStore.countTasksCreated(userId);
         return c >= 5;
       });
-      await tryUnlock('promesa_cumplida', async () => {
-        const c = await this.appStore.countCompletedTasks(userId);
-        return c >= 10;
-      });
-      await tryUnlock('creador_imparable', async () => {
-        const c = await this.appStore.countCompletedTasks(userId);
-        return c >= 25;
-      });
-      await tryUnlock('negocio_en_marcha', async () => {
-        const c = await this.appStore.countPaidTasks(userId);
-        return c >= 5;
-      });
-      await tryUnlock('lluvia_de_billetes', async () => {
-        const c = await this.appStore.countPaidTasks(userId);
-        return c >= 20;
-      });
+      await tryUnlock('promesa_cumplida', async () => completedCount >= 10);
+      await tryUnlock('creador_imparable', async () => completedCount >= 25);
+      await tryUnlock('negocio_en_marcha', async () => paidCount >= 5);
+      await tryUnlock('lluvia_de_billetes', async () => paidCount >= 20);
     }
 
     return unlocked;

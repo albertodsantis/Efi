@@ -480,7 +480,10 @@ export class PostgresAppStore {
 
   async listPartners(userId: string): Promise<Partner[]> {
     const { rows: partnerRows } = await this.pool.query(
-      'SELECT * FROM partners WHERE user_id = $1 ORDER BY created_at ASC',
+      `SELECT id, name, status, logo, goal_id, partnership_type, key_terms,
+              start_date, end_date, monthly_revenue, annual_revenue, main_channel,
+              created_at, last_contacted_at, source
+       FROM partners WHERE user_id = $1 ORDER BY created_at ASC`,
       [userId],
     );
 
@@ -488,7 +491,7 @@ export class PostgresAppStore {
 
     const partnerIds = partnerRows.map(r => r.id);
     const { rows: contactRows } = await this.pool.query(
-      'SELECT * FROM contacts WHERE partner_id = ANY($1) AND user_id = $2 ORDER BY created_at ASC',
+      'SELECT id, partner_id, name, role, email, ig, phone FROM contacts WHERE partner_id = ANY($1) AND user_id = $2 ORDER BY created_at ASC',
       [partnerIds, userId],
     );
 
@@ -511,14 +514,14 @@ export class PostgresAppStore {
 
     // Dedup check scoped to user
     const { rows: existing } = await this.pool.query(
-      'SELECT * FROM partners WHERE name_lookup = $1 AND user_id = $2',
+      'SELECT 1 FROM partners WHERE name_lookup = $1 AND user_id = $2',
       [lookupKey, userId],
     );
 
     if (existing.length > 0) {
       const partner = mapRowToPartner(existing[0]);
       const { rows: contactRows } = await this.pool.query(
-        'SELECT * FROM contacts WHERE partner_id = $1 ORDER BY created_at ASC',
+        'SELECT id, partner_id, name, role, email, ig, phone FROM contacts WHERE partner_id = $1 ORDER BY created_at ASC',
         [partner.id],
       );
       partner.contacts = contactRows.map(mapRowToContact);
@@ -586,7 +589,7 @@ export class PostgresAppStore {
 
   async updatePartner(userId: string, partnerId: string, updates: UpdatePartnerRequest): Promise<Partner | null> {
     const { rows: existing } = await this.pool.query(
-      'SELECT * FROM partners WHERE id = $1 AND user_id = $2',
+      'SELECT id, status FROM partners WHERE id = $1 AND user_id = $2',
       [partnerId, userId],
     );
     if (existing.length === 0) return null;
@@ -689,13 +692,16 @@ export class PostgresAppStore {
 
     // Re-fetch full partner with contacts
     const { rows: partnerRows } = await this.pool.query(
-      'SELECT * FROM partners WHERE id = $1 AND user_id = $2',
+      `SELECT id, name, status, logo, goal_id, partnership_type, key_terms,
+              start_date, end_date, monthly_revenue, annual_revenue, main_channel,
+              created_at, last_contacted_at, source
+       FROM partners WHERE id = $1 AND user_id = $2`,
       [partnerId, userId],
     );
     const partner = mapRowToPartner(partnerRows[0]);
 
     const { rows: contactRows } = await this.pool.query(
-      'SELECT * FROM contacts WHERE partner_id = $1 ORDER BY created_at ASC',
+      'SELECT id, partner_id, name, role, email, ig, phone FROM contacts WHERE partner_id = $1 ORDER BY created_at ASC',
       [partnerId],
     );
     partner.contacts = contactRows.map(mapRowToContact);
@@ -731,7 +737,7 @@ export class PostgresAppStore {
 
   async updateContact(userId: string, contactId: string, updates: UpdateContactRequest): Promise<Contact | null> {
     const { rows: existing } = await this.pool.query(
-      'SELECT * FROM contacts WHERE id = $1 AND user_id = $2',
+      'SELECT id, name, role, email, ig, phone FROM contacts WHERE id = $1 AND user_id = $2',
       [contactId, userId],
     );
     if (existing.length === 0) return null;
@@ -791,8 +797,18 @@ export class PostgresAppStore {
 
   async getProfile(userId: string): Promise<UserProfile> {
     const [profileResult, goalsResult] = await Promise.all([
-      this.pool.query('SELECT * FROM user_profile WHERE user_id = $1', [userId]),
-      this.pool.query('SELECT * FROM goals WHERE user_id = $1 ORDER BY sort_order ASC', [userId]),
+      this.pool.query(
+        `SELECT name, avatar, handle, tagline, social_profiles, efi_profile,
+                notifications_enabled, primary_profession, secondary_professions
+         FROM user_profile WHERE user_id = $1`,
+        [userId],
+      ),
+      this.pool.query(
+        `SELECT id, area, general_goal, success_metric, timeframe, target_date,
+                created_at, status, priority, revenue_estimation
+         FROM goals WHERE user_id = $1 ORDER BY sort_order ASC`,
+        [userId],
+      ),
     ]);
 
     const row = profileResult.rows[0];
@@ -838,7 +854,7 @@ export class PostgresAppStore {
 
       // Fetch current state for merge logic
       const { rows: profileRows } = await client.query(
-        'SELECT * FROM user_profile WHERE user_id = $1',
+        `SELECT social_profiles, efi_profile FROM user_profile WHERE user_id = $1`,
         [userId],
       );
       const currentRow = profileRows[0];
@@ -1015,7 +1031,7 @@ export class PostgresAppStore {
 
   async getSettings(userId: string): Promise<SettingsResponse> {
     const { rows } = await this.pool.query(
-      'SELECT * FROM user_settings WHERE user_id = $1',
+      'SELECT accent_color, theme, profile_accent_color, profile_force_dark FROM user_settings WHERE user_id = $1',
       [userId],
     );
     if (rows.length === 0) {
@@ -1070,7 +1086,7 @@ export class PostgresAppStore {
 
   async listTemplates(userId: string): Promise<Template[]> {
     const { rows } = await this.pool.query(
-      'SELECT * FROM templates WHERE user_id = $1 ORDER BY created_at ASC',
+      'SELECT id, name, body FROM templates WHERE user_id = $1 ORDER BY created_at ASC',
       [userId],
     );
     return rows.map(r => ({ id: r.id, name: r.name, body: r.body }));
@@ -1121,7 +1137,12 @@ export class PostgresAppStore {
 
   async getStrategicView(userId: string): Promise<StrategicViewResponse> {
     const [goalsResult, taskAggResult, partnerAggResult, unassignedTasksResult, unassignedPartnersResult] = await Promise.all([
-      this.pool.query('SELECT * FROM goals WHERE user_id = $1 ORDER BY sort_order ASC', [userId]),
+      this.pool.query(
+        `SELECT id, area, general_goal, success_metric, timeframe, target_date,
+                created_at, status, priority, revenue_estimation
+         FROM goals WHERE user_id = $1 ORDER BY sort_order ASC`,
+        [userId],
+      ),
       this.pool.query(
         `SELECT goal_id,
                 COUNT(*)::int AS task_count,
