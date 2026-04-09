@@ -7,6 +7,9 @@
 - `npm run preview` — preview the production build
 - `npm run clean` — delete `apps/api/dist` and `apps/web/dist`
 - `npm run lint` — type-check with `tsc --noEmit`
+- `npm run cap:sync` — build frontend and sync into Android + iOS native projects
+- `npm run cap:android` — sync + open Android Studio
+- `npm run cap:ios` — sync + open Xcode (requires Mac)
 - `GET /api/health` — health check endpoint
 
 ## Project
@@ -46,6 +49,8 @@ Monorepo structure:
 - Email/password + Google OAuth authentication (bcrypt, express-session, connect-pg-simple)
 - File uploads via multer; drag-and-drop via @dnd-kit
 - Deployed on Railway (production); `vercel.json` and `api/index.js` are legacy artifacts, unused
+- PWA enabled: `manifest.json`, service worker (`sw.js`), installable from browser on Android and iOS
+- Capacitor scaffold in place: `android/` and `ios/` native project folders; see `RELEASE_CHECKLIST.md` for store submission steps
 - No CI/CD pipeline
 
 ## Key Conventions

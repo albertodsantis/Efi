@@ -85,7 +85,7 @@ Rules:
 - `apps/web` owns browser delivery for desktop and mobile web
 - `apps/api` owns auth, business rules, PostgreSQL persistence, and integrations
 - `packages/shared` owns shared types, contracts, and pure utilities
-- `apps/mobile` is not approved yet as an active runtime
+- `apps/mobile` is not an active runtime — mobile delivery is via Capacitor wrapping the `apps/web` build
 
 ## 5. Frontend
 
@@ -194,6 +194,14 @@ The shared layer must not depend on:
 - Database: Supabase-managed PostgreSQL
 - `vercel.json` + `api/index.js` are legacy artifacts, unused
 
+### 8.3 Mobile Distribution
+
+- **PWA** — `apps/web/public/manifest.json` + `sw.js` enable browser-based installation on Android and iOS
+- **Capacitor** `^8.3.0` — wraps the Vite build (`apps/web/dist`) into native Android (`android/`) and iOS (`ios/`) projects
+  - App ID: `app.efi.crm`
+  - Config: `capacitor.config.ts` at repo root
+  - Store submission steps: `RELEASE_CHECKLIST.md`
+
 ### 8.3 CI/CD
 
 - No CI/CD pipeline
@@ -273,3 +281,7 @@ Versions from `package.json`:
 | `tsx` | `^4.21.0` |
 | `typescript` | `~5.8.2` |
 | `vite` | `^6.2.0` |
+| `@capacitor/core` | `^8.3.0` |
+| `@capacitor/cli` | `^8.3.0` |
+| `@capacitor/android` | `^8.3.0` |
+| `@capacitor/ios` | `^8.3.0` |
