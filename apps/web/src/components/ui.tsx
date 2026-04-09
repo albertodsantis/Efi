@@ -314,13 +314,14 @@ export function ToggleSwitch({
 }) {
   return (
     <div
+      role="switch"
+      aria-checked={checked}
       className={cx(
         'relative h-7 w-14 rounded-full shadow-inner transition-colors',
         checked ? '' : 'bg-[var(--surface-muted)]',
         disabled ? 'opacity-55' : '',
       )}
       style={checked ? { background: accentColor || 'var(--accent-gradient, var(--accent-color))' } : undefined}
-      aria-hidden="true"
     >
       <div
         className={cx(

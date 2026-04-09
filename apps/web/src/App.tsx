@@ -292,6 +292,7 @@ const DesktopSidebar = React.memo(({
               id={`nav-${tab.id}`}
               type="button"
               onClick={() => onTabChange(tab.id)}
+              aria-current={isActive ? 'page' : undefined}
               className={cx(
                 'w-full rounded-[1.1rem] px-3 py-3 text-left transition-all',
                 isActive
@@ -356,6 +357,7 @@ const MobileBottomNav = React.memo(({
           id={`nav-${tab.id}`}
           type="button"
           onClick={() => onTabChange(tab.id)}
+          aria-current={isActive ? 'page' : undefined}
           className="flex min-w-0 flex-1 justify-center"
         >
           <div

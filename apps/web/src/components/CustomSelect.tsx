@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useId } from 'react';
 import ReactDOM from 'react-dom';
 import { CaretDown, X } from '@phosphor-icons/react';
 import { cx } from './ui';
@@ -34,8 +34,14 @@ export default function CustomSelect({
   useBottomSheet = false,
 }: CustomSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState<number>(-1);
   const containerRef = useRef<HTMLDivElement>(null);
+  const listboxId = useId();
 
+  const selectedIndex = options.findIndex((opt) => String(opt.value) === String(value));
+  const selectedOption = selectedIndex >= 0 ? options[selectedIndex] : undefined;
+
+  // Click-outside to close (desktop dropdown only)
   useEffect(() => {
     if (useBottomSheet) return;
     const handleClickOutside = (event: MouseEvent) => {
@@ -58,7 +64,62 @@ export default function CustomSelect({
     return () => { document.body.style.overflow = ''; };
   }, [isOpen, useBottomSheet]);
 
-  const selectedOption = options.find((opt) => String(opt.value) === String(value));
+  // Reset active index when dropdown opens/closes
+  useEffect(() => {
+    if (isOpen) {
+      setActiveIndex(selectedIndex >= 0 ? selectedIndex : 0);
+    } else {
+      setActiveIndex(-1);
+    }
+  }, [isOpen, selectedIndex]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (useBottomSheet || disabled) return;
+
+    switch (e.key) {
+      case 'Enter':
+      case ' ':
+        e.preventDefault();
+        if (isOpen && activeIndex >= 0) {
+          onChange(options[activeIndex].value);
+          setIsOpen(false);
+        } else {
+          setIsOpen(true);
+        }
+        break;
+      case 'Escape':
+        e.preventDefault();
+        setIsOpen(false);
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        if (!isOpen) {
+          setIsOpen(true);
+        } else {
+          setActiveIndex((prev) => Math.min(prev + 1, options.length - 1));
+        }
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        if (!isOpen) {
+          setIsOpen(true);
+        } else {
+          setActiveIndex((prev) => Math.max(prev - 1, 0));
+        }
+        break;
+      case 'Home':
+        e.preventDefault();
+        if (isOpen) setActiveIndex(0);
+        break;
+      case 'End':
+        e.preventDefault();
+        if (isOpen) setActiveIndex(options.length - 1);
+        break;
+    }
+  };
+
+  const activeDescendant =
+    isOpen && activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined;
 
   const bottomSheet = isOpen && useBottomSheet && !disabled
     ? ReactDOM.createPortal(
@@ -133,7 +194,12 @@ export default function CustomSelect({
         type="button"
         disabled={disabled}
         onClick={() => setIsOpen(!isOpen)}
+        onKeyDown={handleKeyDown}
         aria-label={ariaLabel}
+        aria-haspopup="listbox"
+        aria-expanded={!useBottomSheet ? isOpen : undefined}
+        aria-controls={!useBottomSheet ? listboxId : undefined}
+        aria-activedescendant={activeDescendant}
         className={cx(
           'flex w-full items-center justify-between appearance-none rounded-[1rem] border bg-[var(--surface-card-strong)] px-4 py-3 text-base sm:text-sm font-bold text-[var(--text-primary)] transition-all focus:outline-none focus:ring-2 disabled:opacity-50 [border-color:var(--line-soft)]',
           buttonClassName,
@@ -154,29 +220,40 @@ export default function CustomSelect({
 
       {/* Inline dropdown (non-mobile) */}
       {isOpen && !disabled && !useBottomSheet && (
-        <div className="absolute z-100 mt-2 max-h-60 w-full overflow-auto rounded-2xl border bg-(--surface-card-strong) p-1.5 shadow-(--shadow-medium) animate-in fade-in zoom-in-95 duration-100 border-(--line-soft)">
-          {options.map((option) => {
+        <ul
+          id={listboxId}
+          role="listbox"
+          aria-label={ariaLabel}
+          className="absolute z-100 mt-2 max-h-60 w-full overflow-auto rounded-2xl border bg-(--surface-card-strong) p-1.5 shadow-(--shadow-medium) animate-in fade-in zoom-in-95 duration-100 border-(--line-soft)"
+        >
+          {options.map((option, idx) => {
             const isSelected = String(option.value) === String(value);
+            const isHighlighted = idx === activeIndex;
             return (
-              <button
+              <li
                 key={option.value}
-                type="button"
+                id={`${listboxId}-option-${idx}`}
+                role="option"
+                aria-selected={isSelected}
+                onMouseEnter={() => setActiveIndex(idx)}
                 onClick={() => {
                   onChange(option.value);
                   setIsOpen(false);
                 }}
                 className={cx(
-                  'flex w-full items-center rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors',
+                  'flex w-full cursor-pointer items-center rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors',
                   isSelected
                     ? 'bg-(--surface-muted) text-(--text-primary)'
-                    : 'text-(--text-secondary) hover:bg-(--surface-muted)/60 hover:text-(--text-primary)',
+                    : isHighlighted
+                      ? 'bg-(--surface-muted)/60 text-(--text-primary)'
+                      : 'text-(--text-secondary) hover:bg-(--surface-muted)/60 hover:text-(--text-primary)',
                 )}
               >
                 {option.label}
-              </button>
+              </li>
             );
           })}
-        </div>
+        </ul>
       )}
 
       {bottomSheet}

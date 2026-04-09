@@ -924,6 +924,7 @@ export default function Dashboard() {
                     <button
                       type="button"
                       onClick={() => navigatePeriod(-1)}
+                      aria-label="Período anterior"
                       className="rounded-lg p-1 text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]"
                     >
                       <CaretLeft size={16} />
@@ -936,6 +937,7 @@ export default function Dashboard() {
                     <button
                       type="button"
                       onClick={() => navigatePeriod(1)}
+                      aria-label="Período siguiente"
                       className="rounded-lg p-1 text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]"
                     >
                       <CaretRight size={16} />

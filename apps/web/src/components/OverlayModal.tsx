@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 
 export default function OverlayModal({
@@ -10,6 +10,60 @@ export default function OverlayModal({
   tone?: 'black' | 'slate';
   onClose?: () => void;
 }) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  // Restore focus to the element that was focused before the modal opened
+  useEffect(() => {
+    const previouslyFocused = document.activeElement as HTMLElement | null;
+    return () => {
+      previouslyFocused?.focus();
+    };
+  }, []);
+
+  // Focus trap: constrain Tab/Shift+Tab to focusable elements inside the modal
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    const focusableSelectors =
+      'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+    // Move initial focus into the modal
+    const firstFocusable = dialog.querySelector<HTMLElement>(focusableSelectors);
+    firstFocusable?.focus();
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose?.();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+
+      const focusable = Array.from(dialog.querySelectorAll<HTMLElement>(focusableSelectors)).filter(
+        (el) => !el.closest('[inert]'),
+      );
+      if (focusable.length === 0) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (e.shiftKey) {
+        if (document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        }
+      } else {
+        if (document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   if (typeof document === 'undefined') {
     return null;
   }
@@ -28,6 +82,9 @@ export default function OverlayModal({
         <div className="absolute bottom-[-10rem] left-[-7rem] h-72 w-72 rounded-full bg-[radial-gradient(circle,rgba(93,141,123,0.12),transparent_68%)]" />
       </div>
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
         className="pointer-events-auto relative flex w-full justify-center pb-[env(safe-area-inset-bottom,0px)] sm:w-auto sm:max-w-[min(960px,100%)] sm:pb-0"
         onClick={(event) => event.stopPropagation()}
       >

@@ -400,6 +400,7 @@ export default function Profile() {
               <button
                 onClick={copyPublicUrl}
                 title="Copiar enlace"
+                aria-label="Copiar enlace"
                 className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors shrink-0"
               >
                 <Copy size={13} />
@@ -556,6 +557,7 @@ export default function Profile() {
                     <button
                       onClick={() => moveLink(link.id, 'up')}
                       disabled={idx === 0}
+                      aria-label="Mover arriba"
                       className="p-0.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] disabled:opacity-20 transition-colors"
                     >
                       <ArrowUp size={12} />
@@ -563,6 +565,7 @@ export default function Profile() {
                     <button
                       onClick={() => moveLink(link.id, 'down')}
                       disabled={idx === form.efiProfile.links.length - 1}
+                      aria-label="Mover abajo"
                       className="p-0.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] disabled:opacity-20 transition-colors"
                     >
                       <ArrowDown size={12} />
@@ -586,6 +589,7 @@ export default function Profile() {
                   </div>
                   <button
                     onClick={() => removeLink(link.id)}
+                    aria-label="Eliminar enlace"
                     className="shrink-0 p-1 text-[var(--text-secondary)] hover:text-red-500 transition-colors"
                   >
                     <Trash size={15} />
@@ -616,6 +620,7 @@ export default function Profile() {
                 </a>
                 <button
                   onClick={() => patchEfi({ pdf_url: null })}
+                  aria-label="Eliminar PDF"
                   className="text-[var(--text-secondary)] hover:text-red-500 transition-colors"
                 >
                   <Trash size={15} />
