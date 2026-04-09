@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Efi</string>
+    <string name="title_activity_main">Efi</string>
+    <string name="package_name">app.efi.crm</string>
+    <string name="custom_url_scheme">app.efi.crm</string>
+</resources>
