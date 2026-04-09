@@ -176,26 +176,26 @@ const LazyFallback = () => (
 
 function renderActiveView(activeTab: TabId) {
   if (activeTab === 'dashboard') {
-    return <Dashboard />;
+    return <ErrorBoundary key="dashboard"><Dashboard /></ErrorBoundary>;
   }
 
   if (activeTab === 'pipeline') {
-    return <Pipeline />;
+    return <ErrorBoundary key="pipeline"><Pipeline /></ErrorBoundary>;
   }
 
   if (activeTab === 'directory') {
-    return <Directory />;
+    return <ErrorBoundary key="directory"><Directory /></ErrorBoundary>;
   }
 
   if (activeTab === 'strategic') {
-    return <StrategicView />;
+    return <ErrorBoundary key="strategic"><StrategicView /></ErrorBoundary>;
   }
 
   if (activeTab === 'profile') {
-    return <Profile />;
+    return <ErrorBoundary key="profile"><Profile /></ErrorBoundary>;
   }
 
-  return <Settings />;
+  return <ErrorBoundary key="settings"><Settings /></ErrorBoundary>;
 }
 
 function canScrollElementInDirection(element: HTMLElement, deltaY: number) {
@@ -272,7 +272,7 @@ const DesktopSidebar = React.memo(({
         <button
           type="button"
           onClick={onLogout}
-          title="Cerrar sesion"
+          title="Cerrar sesión"
           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-card-strong)] hover:text-[var(--text-primary)]"
         >
           <SignOut size={16} weight="regular" />
@@ -734,8 +734,15 @@ export default function App() {
           setAuthPhase('authenticated');
           return;
         }
-      } catch {
-        // No existing session, continue
+      } catch (err: unknown) {
+        // TypeError = network failure (server unreachable, DNS, CORS).
+        // ApiError = server responded with an error (e.g. 401 = no session).
+        // In both cases we fall through to unauthenticated, but for network
+        // failures we surface a message on the landing so the user knows why.
+        if (err instanceof TypeError) {
+          // Store the flag so Landing can display a "server unreachable" notice.
+          sessionStorage.setItem('efi:auth_network_error', '1');
+        }
       }
 
       // 2. Check if Supabase OAuth just completed (redirect with tokens)

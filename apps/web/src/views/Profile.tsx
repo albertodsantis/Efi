@@ -65,6 +65,7 @@ const SOCIAL_PLATFORMS: {
 type SaveStatus = 'idle' | 'saving' | 'saved';
 type PreviewDevice = 'mobile' | 'desktop';
 type ActiveTab = 'editor' | 'preview';
+type PreviewState = 'loading' | 'ok' | 'error';
 
 function nanoid() {
   return Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 10);
@@ -91,6 +92,7 @@ function ProfilePreview({
 }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [previewState, setPreviewState] = useState<PreviewState>('loading');
 
   const refresh = useCallback(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -102,11 +104,15 @@ function ProfilePreview({
           credentials: 'include',
           body: JSON.stringify({ ...form, accentColor, forceDark }),
         });
-        if (!res.ok) return;
+        if (!res.ok) {
+          setPreviewState('error');
+          return;
+        }
         const html = await res.text();
         if (iframeRef.current) iframeRef.current.srcdoc = html;
+        setPreviewState('ok');
       } catch {
-        // silent — preview is best-effort
+        setPreviewState('error');
       }
     }, 400);
   }, [form, accentColor, forceDark]);
@@ -117,6 +123,28 @@ function ProfilePreview({
   }, [refresh]);
 
   const isMobile = device === 'mobile';
+
+  if (previewState === 'error') {
+    return (
+      <div
+        className={cx(
+          'transition-all duration-300 mx-auto flex items-center justify-center rounded-2xl border border-[color:var(--line-soft)] bg-[var(--surface-muted)]',
+          isMobile ? 'w-[375px] h-[667px]' : 'w-full h-full',
+        )}
+      >
+        <div className="text-center px-6">
+          <p className="text-sm font-medium text-[var(--text-secondary)]">No se pudo cargar la vista previa</p>
+          <button
+            type="button"
+            onClick={() => { setPreviewState('loading'); refresh(); }}
+            className="mt-3 text-xs font-semibold text-[var(--accent-color)] hover:underline"
+          >
+            Reintentar
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -200,7 +228,11 @@ export default function Profile() {
   }, [profile]);
 
   useEffect(() => {
-    appApi.getUploadStatus().then((s) => setUploadsEnabled(s.enabled)).catch(() => {});
+    appApi.getUploadStatus()
+      .then((s) => setUploadsEnabled(s.enabled))
+      .catch(() => {
+        toast.error('No se pudo verificar el almacenamiento. Las subidas están desactivadas.');
+      });
   }, []);
 
   // ── Debounced auto-save ───────────────────────────────────────────────────

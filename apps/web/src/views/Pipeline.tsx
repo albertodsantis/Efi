@@ -50,6 +50,7 @@ import CustomSelect from '../components/CustomSelect';
 import ConfirmDialog from '../components/ConfirmDialog';
 import { formatLocalDateISO, parseLocalDate, startOfLocalDay } from '../lib/date';
 import { toast } from '../lib/toast';
+import { calendarApi } from '../lib/api';
 
 const REVIEW_STATUS = 'En Revisión' as TaskStatus;
 const STATUSES: TaskStatus[] = ['Pendiente', 'En Progreso', REVIEW_STATUS, 'Completada', 'Cobrado'];
@@ -720,22 +721,14 @@ export default function Pipeline() {
 
     try {
       const partner = partners.find((item) => item.id === task.partnerId);
-      const response = await fetch('/api/calendar/sync', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task: { ...task, partnerName: partner?.name } }),
-      });
-
-      if (!response.ok) {
-        reportActionError('No pudimos sincronizar la tarea. Conecta Google Calendar desde Ajustes.');
-        return;
-      }
-
-      const data = await response.json();
+      const data = await calendarApi.syncTask({ task: { ...task, partnerName: partner?.name } });
       await updateTask(task.id, { gcalEventId: data.eventId });
     } catch (error) {
-      console.error(error);
-      reportActionError('Se perdió la conexión al sincronizar la tarea.');
+      if (error instanceof Error && error.message.toLowerCase().includes('unauthorized')) {
+        window.dispatchEvent(new CustomEvent('efi:unauthorized'));
+        return;
+      }
+      reportActionError('No pudimos sincronizar la tarea. Conecta Google Calendar desde Ajustes.');
     } finally {
       setSyncingTaskId(null);
     }
@@ -748,18 +741,7 @@ export default function Pipeline() {
       const eventIds = tasks.map((task) => task.gcalEventId).filter((id): id is string => Boolean(id));
       if (eventIds.length === 0) return;
 
-      const response = await fetch('/api/calendar/sync-down', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ eventIds }),
-      });
-
-      if (!response.ok) {
-        reportActionError('No pudimos traer cambios desde Google Calendar.');
-        return;
-      }
-
-      const data = await response.json();
+      const data = await calendarApi.syncDown({ eventIds });
       await Promise.all(
         (data.updatedEvents || []).map(async (updated: { eventId: string; dueDate: string }) => {
           const task = tasks.find((item) => item.gcalEventId === updated.eventId);
@@ -769,8 +751,11 @@ export default function Pipeline() {
         }),
       );
     } catch (error) {
-      console.error(error);
-      reportActionError('Se perdió la conexión al traer cambios desde Google Calendar.');
+      if (error instanceof Error && error.message.toLowerCase().includes('unauthorized')) {
+        window.dispatchEvent(new CustomEvent('efi:unauthorized'));
+        return;
+      }
+      reportActionError('No pudimos traer cambios desde Google Calendar.');
     } finally {
       setIsSyncingDown(false);
     }

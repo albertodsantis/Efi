@@ -83,7 +83,12 @@ export default function Settings() {
   const handleAccountNameBlur = async () => {
     const trimmed = accountName.trim();
     if (trimmed && trimmed !== profile.name) {
-      await updateProfile({ name: trimmed });
+      try {
+        await updateProfile({ name: trimmed });
+      } catch (err: unknown) {
+        toast.error(err instanceof Error ? err.message : 'No se pudo actualizar el nombre.');
+        setAccountName(profile.name);
+      }
     }
   };
 
@@ -187,7 +192,11 @@ export default function Settings() {
         setNewTemplate({ name: '', body: '' });
         toast.success('Plantilla guardada correctamente');
       }
-    } finally { setSavingTemplate(false); }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : 'No se pudo guardar la plantilla.');
+    } finally {
+      setSavingTemplate(false);
+    }
   };
 
   const handleResetTour = () => {
@@ -388,7 +397,7 @@ export default function Settings() {
             <SettingRow
               icon={theme === 'dark' ? Moon : Sun}
               title="Modo oscuro"
-              description="Cambia la iluminacion general del workspace."
+              description="Cambia la iluminación general del workspace."
               onClick={() => void setTheme(theme === 'dark' ? 'light' : 'dark')}
               trailing={<ToggleSwitch checked={theme === 'dark'} accentColor={accentGradient} />}
               className="px-0 py-3"
@@ -400,7 +409,7 @@ export default function Settings() {
       <SettingRow
         icon={ArrowCounterClockwise}
         title="Reiniciar onboarding"
-        description="Vuelve a mostrar el tour guiado la proxima vez que cargue la app."
+        description="Vuelve a mostrar el tour guiado la próxima vez que cargue la app."
         onClick={handleResetTour}
         trailing={
           <span className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
@@ -463,7 +472,7 @@ export default function Settings() {
             </div>
             <div>
               <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
-                Correo electronico
+                Correo electrónico
               </label>
               <p className="rounded-[1rem] border border-[color:var(--line-soft)] bg-[var(--surface-muted)]/60 px-4 py-3.5 text-base sm:text-sm font-medium text-[var(--text-secondary)]">
                 {email || '—'}
@@ -477,7 +486,7 @@ export default function Settings() {
               title={provider === 'google' ? 'Agregar contraseña' : 'Cambiar contraseña'}
               description={
                 provider === 'google'
-                  ? 'Agrega una contraseña para iniciar sesion tambien con tu email.'
+                  ? 'Agrega una contraseña para iniciar sesión también con tu email.'
                   : 'Actualiza la contraseña de tu cuenta.'
               }
               onClick={() => setIsPasswordModalOpen(true)}
@@ -490,8 +499,8 @@ export default function Settings() {
             />
             <SettingRow
               icon={(props: any) => <SignOut {...props} weight="regular" />}
-              title="Cerrar sesion"
-              description="Cierra tu sesion actual en este dispositivo."
+              title="Cerrar sesión"
+              description="Cierra tu sesión actual en este dispositivo."
               onClick={onLogout}
               trailing={
                 <span className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
@@ -503,10 +512,10 @@ export default function Settings() {
             {showDeleteConfirm ? (
               <div className="mt-2 rounded-[1rem] border border-rose-200 bg-rose-50 p-4 dark:border-rose-800/50 dark:bg-rose-950/30">
                 <p className="text-sm font-bold text-rose-700 dark:text-rose-400">
-                  Estas seguro?
+                  ¿Estás seguro?
                 </p>
                 <p className="mt-1 text-sm text-rose-600/80 dark:text-rose-400/70">
-                  Esta accion cerrara tu sesion y eliminara tus datos. No se puede deshacer.
+                  Esta acción cerrará tu sesión y eliminará tus datos. No se puede deshacer.
                 </p>
                 <div className="mt-4 flex gap-3">
                   <Button
@@ -651,7 +660,7 @@ export default function Settings() {
             title={provider === 'google' ? 'Agregar contraseña' : 'Cambiar contraseña'}
             description={
               provider === 'google'
-                ? 'Crea una contraseña para iniciar sesion con tu correo electronico.'
+                ? 'Crea una contraseña para iniciar sesión con tu correo electrónico.'
                 : 'Introduce tu contraseña actual y define la nueva.'
             }
             onClose={closePasswordModal}
@@ -676,7 +685,7 @@ export default function Settings() {
 
               {provider === 'google' ? (
                 <div className="rounded-[1rem] border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700 dark:border-sky-800/50 dark:bg-sky-950/30 dark:text-sky-400">
-                  Al agregar una contraseña podras iniciar sesion con tu correo y esta contraseña, ademas de seguir usando Google.
+                  Al agregar una contraseña podrás iniciar sesión con tu correo y esta contraseña, además de seguir usando Google.
                 </div>
               ) : (
                 <div>

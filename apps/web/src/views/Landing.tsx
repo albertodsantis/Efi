@@ -95,8 +95,16 @@ export default function Landing({
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [serverUnreachable, setServerUnreachable] = useState(false);
 
   const pillsContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (sessionStorage.getItem('efi:auth_network_error')) {
+      setServerUnreachable(true);
+      sessionStorage.removeItem('efi:auth_network_error');
+    }
+  }, []);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -379,6 +387,12 @@ export default function Landing({
                     : 'Crea tu workspace en segundos.'}
                 </p>
 
+                {serverUnreachable && (
+                  <div className="mt-4 rounded-[0.85rem] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-800/50 dark:bg-amber-950/30 dark:text-amber-400">
+                    No se pudo contactar el servidor. Verifica tu conexión e intenta de nuevo.
+                  </div>
+                )}
+
                 {/* Google login */}
                 <button
                   type="button"
@@ -457,9 +471,9 @@ export default function Landing({
                         type={showPassword ? 'text' : 'password'}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
-                        placeholder={isLogin ? 'Tu contraseña' : 'Minimo 6 caracteres'}
+                        placeholder={isLogin ? 'Tu contraseña' : 'Mínimo 8 caracteres'}
                         required
-                        minLength={isLogin ? undefined : 6}
+                        minLength={isLogin ? undefined : 8}
                         autoComplete={isLogin ? 'current-password' : 'new-password'}
                         className="w-full rounded-[0.85rem] border bg-[var(--surface-card)] px-4 py-3 pr-12 text-base sm:text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/40 transition-colors focus:bg-[var(--surface-card-strong)] [border-color:var(--line-soft)]"
                       />
