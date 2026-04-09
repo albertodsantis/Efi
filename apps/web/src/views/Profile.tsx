@@ -239,6 +239,10 @@ export default function Profile() {
 
   const triggerSave = (updated: ProfileForm) => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    if (updated.efiProfile.pdf_url && !updated.efiProfile.pdf_label.trim()) {
+      setSaveStatus('idle');
+      return;
+    }
     setSaveStatus('saving');
     saveTimerRef.current = setTimeout(async () => {
       try {
@@ -603,7 +607,7 @@ export default function Profile() {
         {/* ── Documento PDF ─────────────────────────────────────────── */}
         <Section title="Documento (PDF)">
           <p className="mb-4 text-xs text-[var(--text-secondary)]">
-            Sube tu dossier, media kit o portafolio. Aparecerá como botón en tu página.
+            Sube tu PDF. Aparecerá como botón en tu página.
           </p>
           {form.efiProfile.pdf_url ? (
             <div className="flex flex-col gap-3">
@@ -628,15 +632,20 @@ export default function Profile() {
               </div>
               <div>
                 <label className="block mb-1.5 text-xs font-medium text-[var(--text-secondary)]">
-                  Texto del botón
+                  Texto del botón <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={form.efiProfile.pdf_label}
                   onChange={(e) => patchEfi({ pdf_label: e.target.value })}
-                  placeholder="Ver mi media kit"
-                  className={inputClass}
+                  className={cx(
+                    inputClass,
+                    !form.efiProfile.pdf_label.trim() && 'border-red-400 focus:border-red-400',
+                  )}
                 />
+                {!form.efiProfile.pdf_label.trim() && (
+                  <p className="mt-1 text-xs text-red-500">Requerido para guardar.</p>
+                )}
               </div>
             </div>
           ) : (
@@ -826,7 +835,7 @@ export default function Profile() {
 
       {/* ── Save status pill ──────────────────────────────────────── */}
       {saveStatus !== 'idle' && (
-        <div className="fixed bottom-20 left-1/2 -translate-x-1/2 z-50 lg:bottom-6 lg:left-auto lg:right-6 lg:translate-x-0 pointer-events-none">
+        <div className="fixed bottom-28 left-1/2 -translate-x-1/2 z-50 lg:bottom-6 lg:left-auto lg:right-6 lg:translate-x-0 pointer-events-none">
           <div className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-[var(--surface-card)] border border-[color:var(--line-soft)] shadow-lg text-sm text-[var(--text-secondary)]">
             {saveStatus === 'saving' ? (
               <>
