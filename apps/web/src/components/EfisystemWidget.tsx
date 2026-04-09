@@ -1,19 +1,19 @@
 import { LightningIcon as Lightning, TrophyIcon as Trophy } from '@phosphor-icons/react';
-import type { EfisystemSnapshot } from '@shared';
+import type { BadgeKey, EfisystemSnapshot } from '@shared';
 
 // ── Level config ──────────────────────────────────────────────
 
 const LEVEL_THRESHOLDS: Record<number, number> = {
   1: 0,
-  2: 250,
-  3: 750,
-  4: 1500,
-  5: 3000,
-  6: 4167,
-  7: 5334,
-  8: 6501,
-  9: 7668,
-  10: 10000,
+  2: 200,
+  3: 600,
+  4: 1200,
+  5: 2500,
+  6: 4500,
+  7: 7000,
+  8: 10500,
+  9: 15000,
+  10: 20000,
 };
 
 const LEVEL_LABELS: Record<number, string> = {
@@ -36,6 +36,35 @@ function getThresholds(level: number): { current: number; next: number } {
   return { current, next };
 }
 
+// ── Badge preview config ──────────────────────────────────────
+// Ordered list of all badges — used to render the preview row in the same
+// canonical order regardless of unlock order.
+
+const BADGE_ORDER: BadgeKey[] = [
+  'perfil_estelar',
+  'vision_clara',
+  'motor_de_ideas',
+  'circulo_intimo',
+  'promesa_cumplida',
+  'negocio_en_marcha',
+  'directorio_dorado',
+  'creador_imparable',
+  'lluvia_de_billetes',
+];
+
+// A compact accent color per badge used for the preview dot glow.
+const BADGE_DOT_COLOR: Record<BadgeKey, string> = {
+  perfil_estelar:    '#d49840',
+  vision_clara:      '#c87848',
+  motor_de_ideas:    '#b8b8c8',
+  circulo_intimo:    '#f8d040',
+  promesa_cumplida:  '#f0c0b0',
+  negocio_en_marcha: '#e0e0f8',
+  directorio_dorado: '#687080',
+  creador_imparable: '#8b78ff',
+  lluvia_de_billetes:'#ff9548',
+};
+
 // ── Component ─────────────────────────────────────────────────
 
 interface Props {
@@ -45,7 +74,7 @@ interface Props {
 }
 
 export default function EfisystemWidget({ efisystem, accentHex, onOpenBadges }: Props) {
-  const { totalPoints, currentLevel } = efisystem;
+  const { totalPoints, currentLevel, unlockedBadges } = efisystem;
   const { current: currentThreshold, next: nextThreshold } = getThresholds(currentLevel);
   const isMaxLevel = currentLevel >= 10;
 
@@ -55,6 +84,9 @@ export default function EfisystemWidget({ efisystem, accentHex, onOpenBadges }: 
         100,
         ((totalPoints - currentThreshold) / (nextThreshold - currentThreshold)) * 100,
       );
+
+  const unlockedCount = unlockedBadges.length;
+  const totalBadges = BADGE_ORDER.length;
 
   return (
     <div>
@@ -90,20 +122,53 @@ export default function EfisystemWidget({ efisystem, accentHex, onOpenBadges }: 
         )}
       </div>
 
+      {/* Badge preview row */}
       {onOpenBadges && (
-        <div className="mt-3 flex justify-end">
+        <div className="mt-3">
           <button
             type="button"
             onClick={onOpenBadges}
-            className="flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-[11px] font-bold transition-all duration-200 hover:scale-105 active:scale-95"
+            className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 transition-all duration-200 hover:scale-[1.01] active:scale-[0.99]"
             style={{
-              background: `linear-gradient(135deg, ${accentHex}22 0%, ${accentHex}38 100%)`,
-              color: accentHex,
-              border: `1px solid ${accentHex}44`,
+              background: `linear-gradient(135deg, ${accentHex}18 0%, ${accentHex}2a 100%)`,
+              border: `1px solid ${accentHex}30`,
             }}
           >
-            <Trophy size={13} weight="fill" />
-            Placas
+            {/* Badge dots */}
+            <div className="flex items-center gap-1 flex-1 min-w-0">
+              {BADGE_ORDER.map((key) => {
+                const isUnlocked = unlockedBadges.includes(key);
+                const color = BADGE_DOT_COLOR[key];
+                return (
+                  <div
+                    key={key}
+                    className="h-3 w-3 rounded-full shrink-0 transition-all duration-300"
+                    style={
+                      isUnlocked
+                        ? {
+                            background: color,
+                            boxShadow: `0 0 5px ${color}cc`,
+                          }
+                        : {
+                            background: `${accentHex}20`,
+                            border: `1px solid ${accentHex}25`,
+                          }
+                    }
+                  />
+                );
+              })}
+            </div>
+
+            {/* Label + trophy */}
+            <div className="flex items-center gap-1 shrink-0">
+              <Trophy size={12} weight="fill" style={{ color: accentHex }} />
+              <span
+                className="text-[11px] font-bold"
+                style={{ color: accentHex }}
+              >
+                {unlockedCount}/{totalBadges}
+              </span>
+            </div>
           </button>
         </div>
       )}

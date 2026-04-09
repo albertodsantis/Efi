@@ -7,15 +7,15 @@ import type { PostgresAppStore } from '../db/repository';
 
 const LEVEL_THRESHOLDS: Record<number, number> = {
   1: 0,
-  2: 250,
-  3: 750,
-  4: 1500,
-  5: 3000,
-  6: 4167,
-  7: 5334,
-  8: 6501,
-  9: 7668,
-  10: 10000,
+  2: 200,
+  3: 600,
+  4: 1200,
+  5: 2500,
+  6: 4500,
+  7: 7000,
+  8: 10500,
+  9: 15000,
+  10: 20000,
 };
 
 function computeLevel(totalPoints: number): number {
