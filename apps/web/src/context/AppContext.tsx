@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import {
   createDefaultEfiProfile,
   createEmptySocialProfiles,
@@ -137,7 +137,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
   const [actionError, setActionError] = useState<string | null>(null);
 
   // ── Award processing ──────────────────────────────────────────
-  const applyAward = (award: EfisystemAward | undefined, toastMsg?: string) => {
+  const applyAward = useCallback((award: EfisystemAward | undefined, toastMsg?: string) => {
     if (!award || award.pointsEarned === 0) return;
 
     setEfisystem((current) => ({
@@ -161,9 +161,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     if (toastMsg) {
       toast.success(toastMsg, award.pointsEarned);
     }
-  };
+  }, []);
 
-  const refreshAppData = async () => {
+  const trackError = useCallback((error: unknown): never => {
+    const message = error instanceof Error ? error.message : 'Ha ocurrido un error inesperado.';
+    setActionError(message);
+    throw error;
+  }, []);
+
+  const refreshAppData = useCallback(async () => {
     setIsBootstrapping(true);
     setBootstrapError(null);
 
@@ -178,7 +184,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     } finally {
       setIsBootstrapping(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     void refreshAppData();
@@ -251,21 +257,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     }
   }, [state.profile.notificationsEnabled]);
 
-  const dismissActionError = () => {
+  const dismissActionError = useCallback(() => {
     setActionError(null);
-  };
+  }, []);
 
-  const reportActionError = (message: string) => {
+  const reportActionError = useCallback((message: string) => {
     setActionError(message);
-  };
+  }, []);
 
-  const trackError = (error: unknown): never => {
-    const message = error instanceof Error ? error.message : 'Ha ocurrido un error inesperado.';
-    setActionError(message);
-    throw error;
-  };
-
-  const findPartnerByName = (name: string) => {
+  const findPartnerByName = useCallback((name: string) => {
     const lookupKey = getPartnerLookupKey(name);
 
     if (!lookupKey) {
@@ -273,7 +273,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     }
 
     return state.partners.find((partner) => getPartnerLookupKey(partner.name) === lookupKey);
-  };
+  }, [state.partners]);
 
   const createOrReusePartner = async ({
     name,
@@ -328,7 +328,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     return res;
   };
 
-  const addTask = async (task: Omit<Task, 'id' | 'createdAt'>) => {
+  const addTask = useCallback(async (task: Omit<Task, 'id' | 'createdAt'>) => {
     setActionError(null);
 
     try {
@@ -344,9 +344,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     } catch (error) {
       return trackError(error);
     }
-  };
+  }, [applyAward, trackError]);
 
-  const updateTaskStatus = async (taskId: string, status: Task['status']) => {
+  const updateTaskStatus = useCallback(async (taskId: string, status: Task['status']) => {
     setActionError(null);
     const previousTask = state.tasks.find((task) => task.id === taskId);
 
@@ -379,9 +379,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     } catch (error) {
       trackError(error);
     }
-  };
+  }, [state.tasks, state.profile.notificationsEnabled, applyAward, trackError]);
 
-  const updateTask = async (taskId: string, updates: Partial<Task>) => {
+  const updateTask = useCallback(async (taskId: string, updates: Partial<Task>) => {
     setActionError(null);
 
     try {
@@ -397,9 +397,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     } catch (error) {
       return trackError(error);
     }
-  };
+  }, [applyAward, trackError]);
 
-  const deleteTask = async (taskId: string) => {
+  const deleteTask = useCallback(async (taskId: string) => {
     setActionError(null);
 
     try {
@@ -411,9 +411,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     } catch (error) {
       trackError(error);
     }
-  };
+  }, [trackError]);
 
-  const addPartner = async (partner: Omit<Partner, 'id' | 'createdAt'>) => {
+  const addPartner = useCallback(async (partner: Omit<Partner, 'id' | 'createdAt'>) => {
     setActionError(null);
 
     try {
@@ -434,9 +434,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     } catch (error) {
       return trackError(error);
     }
-  };
+  // createOrReusePartner closes over findPartnerByName which is memoized on state.partners
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [findPartnerByName, trackError]);
 
-  const ensurePartnerByName = async (name: string, status: Partner['status'] = 'Prospecto') => {
+  const ensurePartnerByName = useCallback(async (name: string, status: Partner['status'] = 'Prospecto') => {
     setActionError(null);
 
     try {
@@ -444,9 +446,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     } catch (error) {
       return trackError(error);
     }
-  };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [findPartnerByName, trackError]);
 
-  const updatePartner = async (partnerId: string, updates: Partial<Partner>) => {
+  const updatePartner = useCallback(async (partnerId: string, updates: Partial<Partner>) => {
     setActionError(null);
 
     try {
@@ -472,9 +475,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     } catch (error) {
       trackError(error);
     }
-  };
+  }, [trackError]);
 
-  const addContact = async (partnerId: string, contact: Omit<Contact, 'id'>) => {
+  const addContact = useCallback(async (partnerId: string, contact: Omit<Contact, 'id'>) => {
     setActionError(null);
 
     try {
@@ -492,9 +495,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     } catch (error) {
       trackError(error);
     }
-  };
+  }, [applyAward, trackError]);
 
-  const updateContact = async (
+  const updateContact = useCallback(async (
     partnerId: string,
     contactId: string,
     updates: Partial<Contact>,
@@ -519,9 +522,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     } catch (error) {
       trackError(error);
     }
-  };
+  }, [trackError]);
 
-  const deleteContact = async (partnerId: string, contactId: string) => {
+  const deleteContact = useCallback(async (partnerId: string, contactId: string) => {
     setActionError(null);
 
     try {
@@ -540,9 +543,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     } catch (error) {
       trackError(error);
     }
-  };
+  }, [trackError]);
 
-  const updateProfile = async (profile: UpdateProfileRequest): Promise<UserProfile> => {
+  const updateProfile = useCallback(async (profile: UpdateProfileRequest): Promise<UserProfile> => {
     setActionError(null);
 
     try {
@@ -557,9 +560,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     } catch (error) {
       return trackError(error);
     }
-  };
+  }, [applyAward, trackError]);
 
-  const setAccentColor = async (color: string) => {
+  const setAccentColor = useCallback(async (color: string) => {
     setActionError(null);
 
     try {
@@ -575,9 +578,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     } catch (error) {
       trackError(error);
     }
-  };
+  }, [applyAward, trackError]);
 
-  const setTheme = async (theme: AppTheme) => {
+  const setTheme = useCallback(async (theme: AppTheme) => {
     setActionError(null);
 
     try {
@@ -590,9 +593,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     } catch (error) {
       trackError(error);
     }
-  };
+  }, [trackError]);
 
-  const setProfileAccentColor = async (color: string) => {
+  const setProfileAccentColor = useCallback(async (color: string) => {
     setActionError(null);
     // Optimistic update so the preview iframe refreshes immediately
     setState((current) => ({ ...current, profileAccentColor: color }));
@@ -606,9 +609,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     } catch (error) {
       trackError(error);
     }
-  };
+  }, [trackError]);
 
-  const setProfileForceDark = async (force: boolean) => {
+  const setProfileForceDark = useCallback(async (force: boolean) => {
     setActionError(null);
     setState((current) => ({ ...current, profileForceDark: force }));
     try {
@@ -621,9 +624,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     } catch (error) {
       trackError(error);
     }
-  };
+  }, [trackError]);
 
-  const addTemplate = async (template: Omit<Template, 'id'>) => {
+  const addTemplate = useCallback(async (template: Omit<Template, 'id'>) => {
     setActionError(null);
 
     try {
@@ -635,9 +638,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     } catch (error) {
       trackError(error);
     }
-  };
+  }, [trackError]);
 
-  const deleteTemplate = async (templateId: string) => {
+  const deleteTemplate = useCallback(async (templateId: string) => {
     setActionError(null);
 
     try {
@@ -649,49 +652,84 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     } catch (error) {
       trackError(error);
     }
-  };
+  }, [trackError]);
 
   const accentHex = getRepresentativeHex(state.accentColor);
   const accentGradient = isGradientAccent(state.accentColor)
     ? (getGradientCss(state.accentColor) || accentHex)
     : accentHex;
 
+  const contextValue = useMemo(() => ({
+    ...state,
+    email,
+    provider,
+    onProviderChange,
+    accentHex,
+    accentGradient,
+    isBootstrapping,
+    bootstrapError,
+    actionError,
+    efisystem,
+    onLogout,
+    refreshAppData,
+    dismissActionError,
+    reportActionError,
+    addTask,
+    updateTaskStatus,
+    updateTask,
+    deleteTask,
+    addPartner,
+    findPartnerByName,
+    ensurePartnerByName,
+    updatePartner,
+    addContact,
+    updateContact,
+    deleteContact,
+    updateProfile,
+    setAccentColor,
+    setTheme,
+    setProfileAccentColor,
+    setProfileForceDark,
+    addTemplate,
+    deleteTemplate,
+  }), [
+    state,
+    email,
+    provider,
+    onProviderChange,
+    accentHex,
+    accentGradient,
+    isBootstrapping,
+    bootstrapError,
+    actionError,
+    efisystem,
+    onLogout,
+    refreshAppData,
+    dismissActionError,
+    reportActionError,
+    addTask,
+    updateTaskStatus,
+    updateTask,
+    deleteTask,
+    addPartner,
+    findPartnerByName,
+    ensurePartnerByName,
+    updatePartner,
+    addContact,
+    updateContact,
+    deleteContact,
+    updateProfile,
+    setAccentColor,
+    setTheme,
+    setProfileAccentColor,
+    setProfileForceDark,
+    addTemplate,
+    deleteTemplate,
+  ]);
+
   return (
     <AppContext.Provider
-      value={{
-        ...state,
-        email,
-        provider,
-        onProviderChange,
-        accentHex,
-        accentGradient,
-        isBootstrapping,
-        bootstrapError,
-        actionError,
-        efisystem,
-        onLogout,
-        refreshAppData,
-        dismissActionError,
-        reportActionError,
-        addTask,
-        updateTaskStatus,
-        updateTask,
-        deleteTask,
-        addPartner,
-        findPartnerByName,
-        ensurePartnerByName,
-        updatePartner,
-        addContact,
-        updateContact,
-        deleteContact,
-        updateProfile,
-        setAccentColor,
-        setTheme,
-        setProfileAccentColor,
-        setProfileForceDark,
-        addTemplate,
-        deleteTemplate,
-      }}
+      value={contextValue}
     >
       {children}
     </AppContext.Provider>

@@ -108,7 +108,7 @@ function GoalsMarquee({ goals, accentHex, accentGradient }: { goals: string[]; a
     isInteractingRef.current = false;
   };
 
-  const displayGoals = Array(30).fill(goals).flat();
+  const displayGoals = useMemo(() => Array(30).fill(goals).flat(), [goals]);
 
   return (
     <div className="relative flex items-center overflow-hidden py-2 [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]">

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import {
   HouseLine,
   CircleNotch,
@@ -17,17 +17,18 @@ import {
 import type { SessionUser } from '@shared';
 import { AppProvider, useAppContext } from './context/AppContext';
 import ErrorBoundary from './components/ErrorBoundary';
-import Dashboard from './views/Dashboard';
-import Pipeline from './views/Pipeline';
-import Directory from './views/Directory';
-import Profile from './views/Profile';
-import Settings from './views/Settings';
-import StrategicView from './views/StrategicView';
 import Landing from './views/Landing';
-import AIAssistant from './components/AIAssistant';
-import OnboardingTour from './components/OnboardingTour';
-import WelcomeColorPicker from './views/WelcomeColorPicker';
-import WelcomeOnboarding from './views/WelcomeOnboarding';
+
+const Dashboard = lazy(() => import('./views/Dashboard'));
+const Pipeline = lazy(() => import('./views/Pipeline'));
+const Directory = lazy(() => import('./views/Directory'));
+const Profile = lazy(() => import('./views/Profile'));
+const Settings = lazy(() => import('./views/Settings'));
+const StrategicView = lazy(() => import('./views/StrategicView'));
+const WelcomeOnboarding = lazy(() => import('./views/WelcomeOnboarding'));
+const WelcomeColorPicker = lazy(() => import('./views/WelcomeColorPicker'));
+const OnboardingTour = lazy(() => import('./components/OnboardingTour'));
+const AIAssistant = lazy(() => import('./components/AIAssistant'));
 import Toaster from './components/Toaster';
 import Confetti from './components/Confetti';
 import MoreOptionsMenu from './components/MoreOptionsMenu';
@@ -167,6 +168,12 @@ function usePullToRefresh(onRefresh: () => Promise<void>) {
   return { pullDistance, refreshing, handleTouchStart, handleTouchMove, handleTouchEnd };
 }
 
+const LazyFallback = () => (
+  <div className="flex flex-1 items-center justify-center py-16">
+    <CircleNotch size={24} className="animate-spin text-(--text-secondary)" />
+  </div>
+);
+
 function renderActiveView(activeTab: TabId) {
   if (activeTab === 'dashboard') {
     return <Dashboard />;
@@ -228,7 +235,7 @@ function hasScrollableAncestorThatCanConsume(target: HTMLElement | null, deltaY:
 // Desktop scroll safety:
 // the workspace `main` owns vertical scrolling, while the sidebar only forwards
 // wheel input into `main` when it cannot consume that movement itself.
-const DesktopSidebar = ({
+const DesktopSidebar = React.memo(({
   activeTab,
   onTabChange,
   onWheelCapture,
@@ -318,9 +325,9 @@ const DesktopSidebar = ({
       </nav>
     </div>
   </aside>
-);
+));
 
-const MobileBottomNav = ({
+const MobileBottomNav = React.memo(({
   activeTab,
   onTabChange,
   accentColor,
@@ -374,7 +381,7 @@ const MobileBottomNav = ({
       );
     })}
   </div>
-);
+));
 
 const MainLayout = () => {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
@@ -605,7 +612,9 @@ const MainLayout = () => {
                     'min-w-0',
                     activeTab === 'profile' ? 'h-full' : isDesktop ? 'w-full' : 'px-0',
                   )}>
-                    {renderActiveView(activeTab)}
+                    <Suspense fallback={<LazyFallback />}>
+                      {renderActiveView(activeTab)}
+                    </Suspense>
                   </div>
                 </div>
               </div>
@@ -623,7 +632,9 @@ const MainLayout = () => {
                 <LegalModal page={activeLegalPage} onClose={() => setActiveLegalPage(null)} />
               )}
 
-              <AIAssistant isDesktop={isDesktop} />
+              <Suspense fallback={null}>
+                <AIAssistant isDesktop={isDesktop} />
+              </Suspense>
             </main>
           </div>
         </div>
@@ -674,21 +685,31 @@ const AppShell = ({ isNewRegistration }: { isNewRegistration: boolean }) => {
   };
 
   if (needsOnboarding) {
-    return <WelcomeOnboarding onComplete={() => setOnboardingDone(true)} />;
+    return (
+      <Suspense fallback={<AppSplash />}>
+        <WelcomeOnboarding onComplete={() => setOnboardingDone(true)} />
+      </Suspense>
+    );
   }
 
   if (needsColorPicker) {
     return (
-      <WelcomeColorPicker
-        userName={profile.name}
-        onSelect={handleColorSelected}
-      />
+      <Suspense fallback={<AppSplash />}>
+        <WelcomeColorPicker
+          userName={profile.name}
+          onSelect={handleColorSelected}
+        />
+      </Suspense>
     );
   }
 
   return (
     <>
-      {!isBootstrapping && !bootstrapError ? <OnboardingTour forceRun={forceOnboarding} /> : null}
+      {!isBootstrapping && !bootstrapError ? (
+        <Suspense fallback={null}>
+          <OnboardingTour forceRun={forceOnboarding} />
+        </Suspense>
+      ) : null}
       <MainLayout />
       <Toaster />
       <Confetti />
