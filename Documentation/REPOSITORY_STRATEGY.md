@@ -58,7 +58,7 @@ efi/
 │           ├── views/      # Dashboard, Pipeline, Directory, Profile, Settings,
 │           │               # StrategicView, Landing, WelcomeColorPicker, WelcomeOnboarding
 │           ├── components/ # ui.tsx and all standalone components
-│           └── lib/        # api.ts, accent.ts, blockTemplates.ts, date.ts, ...
+│           └── lib/        # api.ts, accent.ts, date.ts, professions.ts, supabase.ts, toast.ts
 ├── packages/
 │   └── shared/             # shared domain types and contracts
 │       └── src/
@@ -95,11 +95,11 @@ The following structural and feature milestones have been completed:
 
 - Frontend and backend code organized into `apps/web` and `apps/api`
 - API and domain contracts extracted into `packages/shared`
-- PostgreSQL persistence: 14 migrations, full multi-tenant isolation via `user_id`
+- PostgreSQL persistence: 17 migrations (001–017), full multi-tenant isolation via `user_id`
 - Real authentication: email/password (bcryptjs) and Google OAuth (Supabase redirect); sessions persisted in PostgreSQL via `connect-pg-simple`
 - All core CRUD features: tasks, partners, contacts, templates, profile, settings, goals
-- Profile revamped as a modular block composer with 16+ block types
-- Public profile served at `/@:handle` (no authentication required)
+- Profile as EfiLink (`EfiProfile`: links + PDF + profileAccentColor + profileForceDark); block composer removed
+- Public EfiLink served at `/@:handle` (no authentication required); LinkedIn added to SocialProfiles
 - Google Calendar integration (sync up, sync down)
 - AI Assistant (Gemini) behind `GEMINI_API_KEY` feature flag
 - Gamification system (Efisystem): XP, levels, and 9 badges

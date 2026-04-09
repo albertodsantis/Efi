@@ -13,7 +13,6 @@ import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import { google } from 'googleapis';
 import { createAuthRouter } from './routes/auth';
 import { createCalendarRouter } from './routes/calendar';
 import { createV1Router } from './routes/v1';
@@ -82,11 +81,11 @@ export async function createApp(): Promise<{
     legacyHeaders: false,
   });
 
-  const oauth2Client = new google.auth.OAuth2(
-    env.GOOGLE_CLIENT_ID,
-    env.GOOGLE_CLIENT_SECRET,
-    `${env.APP_URL}/api/auth/google/callback`,
-  );
+  const googleCreds = {
+    clientId: env.GOOGLE_CLIENT_ID,
+    clientSecret: env.GOOGLE_CLIENT_SECRET,
+    redirectUri: `${env.APP_URL}/api/auth/google/callback`,
+  };
 
   app.get('/api/health', (_req, res) => {
     res.json({ ok: true });
@@ -97,8 +96,8 @@ export async function createApp(): Promise<{
 
   const gamification = new GamificationService(appStore);
   app.use('/api/v1', createV1Router(appStore, pool, gamification));
-  app.use('/api/auth', authLimiter, createAuthRouter(oauth2Client, env.APP_URL, pool));
-  app.use('/api/calendar', createCalendarRouter(oauth2Client, pool));
+  app.use('/api/auth', authLimiter, createAuthRouter(googleCreds, env.APP_URL, pool));
+  app.use('/api/calendar', createCalendarRouter(googleCreds, pool));
 
   return { app, env, pool, closePool };
 }

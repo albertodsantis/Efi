@@ -777,14 +777,19 @@ For the current repository, this means:
 - external output must not replace the current system with a generic dashboard aesthetic
 - the next redesign phase should prioritize shell, surface hierarchy, and component language before decorative brand flourishes
 
-### Active development: Public Profile block composer
+### Public Profile — EfiLink
 
-`views/Profile.tsx` is being rebuilt as a modular block composer. The profile is composed of typed blocks (identity, about, metrics, portfolio, brands, services, closing, links, and more). Each block has an editor and a set of optional sub-components that can be toggled on/off. Key building blocks:
+`views/Profile.tsx` implements the EfiLink editor. The public profile is no longer a block composer. It is a simple linktree-style page: an ordered list of custom links (`{ id, label, url }`) plus an optional PDF download button.
 
-- `components/profile-blocks/` — one file per block type (IdentityBlock, AboutBlock, MetricsBlock, PortfolioBlock, BrandsBlock, ServicesBlock, ClosingBlock, LinksBlock)
-- `components/profile-blocks/block-styles.ts` — shared field/label/textarea class strings and component catalog
-- `components/profile-blocks/BlockWrapper.tsx` — shared wrapper with header, toggle controls, and drag handle
-- `components/BlockPickerDrawer.tsx` — drawer for adding new blocks
-- `components/TemplatePickerDrawer.tsx` — drawer for loading saved templates
+The profile view manages:
 
-Block editor inputs use `fieldClass` and `labelClass` from `block-styles.ts` for visual consistency with the rest of the app. Profile freelancer types: `content_creator`, `podcaster`, `streamer`, `radio`, `photographer`, `copywriter`, `community_manager`, `host_mc`, `speaker`, `dj`, `recruiter`, `coach`.
+- Identity fields: name, handle, tagline, avatar (auto-save on blur)
+- Social profiles: Instagram, TikTok, X, Threads, YouTube, LinkedIn (auto-save on blur)
+- EfiLink links: add, reorder, edit, delete (PATCH /api/v1/profile)
+- PDF settings: pdf_url and pdf_label
+- Profile appearance: profileAccentColor (can differ from app accent), profileForceDark
+- Live preview via `POST /api/v1/preview-profile` (no DB write)
+
+The public page is served at `/@handle` by the backend (`routes/mediakit.ts` + `lib/profileRenderer.ts`). No authentication required for viewers.
+
+Profile freelancer types: `content_creator`, `podcaster`, `streamer`, `radio`, `photographer`, `copywriter`, `community_manager`, `host_mc`, `speaker`, `dj`, `recruiter`, `coach`.

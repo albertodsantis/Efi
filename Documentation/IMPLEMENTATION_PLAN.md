@@ -41,7 +41,7 @@ The following milestones have been fully completed.
 ### Milestone 3 — PostgreSQL Persistence [DONE]
 
 - `pg` pool initialized in `db/connection.ts`
-- 14 SQL migrations in `db/migrations/` (001–014), run automatically on startup
+- 17 SQL migrations in `db/migrations/` (001–017), run automatically on startup
 - `PostgresAppStore` class in `db/repository.ts` handles all queries
 - sessions persisted in PostgreSQL via `connect-pg-simple`
 - full multi-tenant isolation: all tables have `user_id` FK; all queries filter by `user_id`
@@ -67,10 +67,10 @@ All CRUD endpoints implemented against PostgreSQL:
 - partners API (with financial tracking, deletion)
 - contacts API (CRUD nested under partners)
 - templates API (name + body, PATCH added)
-- profile API (block composer model, profession fields)
+- profile API (EfiProfile model: links + PDF + social profiles, profession fields)
 - settings API
 - strategic view API (`GET /api/v1/strategic-view` with aggregated metrics)
-- notifications API (`GET /api/v1/notifications`, `POST /api/v1/notifications/mark-seen`)
+- notifications API (`GET /api/v1/notifications`, `PATCH /api/v1/notifications/seen`)
 - bootstrap API (`GET /api/v1/bootstrap` returns `AppState` + `EfisystemSnapshot`)
 
 ### Milestone 6 — Frontend Views [DONE]
@@ -81,7 +81,7 @@ All views implemented with full features:
 - **Pipeline** — Kanban/List/Calendar with CRUD, drag-and-drop, goal selector, checklist
 - **Directory** — partner/contact CRUD, message composer, outreach
 - **StrategicView** — master-detail goal management with aggregated metrics
-- **Profile** — modular block composer (16+ block types, BlockPickerDrawer, TemplatePickerDrawer)
+- **Profile** — EfiLink editor (links list + PDF + social profiles + accent/dark settings)
 - **Settings** — accent/theme, notifications, Calendar integration, templates, account management
 - **Landing** — email/password and Google OAuth login/register
 - **WelcomeColorPicker** — new-user accent selection
@@ -102,8 +102,7 @@ Frontend state management:
 ### Milestone 8 — Design System [DONE]
 
 - reusable component library in `ui.tsx`: `cx()`, `SurfaceCard`, `ScreenHeader`, `MetricCard`, `StatusBadge`, `EmptyState`, `Button`, `IconButton`, `ToggleSwitch`, `ModalPanel`, `SettingRow`, `Avatar`
-- standalone components: `AIAssistant`, `BlockPickerDrawer`, `Confetti`, `ConfirmDialog`, `CustomSelect`, `EfisystemWidget`, `ErrorBoundary`, `ImageUpload`, `LegalModal`, `MoreOptionsMenu`, `NotificationBell`, `OnboardingTour`, `OverlayModal`, `TemplatePickerDrawer`, `Toaster`
-- `profile-blocks/`: `IdentityBlock`, `AboutBlock`, `MetricsBlock`, `PortfolioBlock`, `BrandsBlock`, `ServicesBlock`, `ClosingBlock`, `LinksBlock` (+ more via BlockPickerDrawer)
+- standalone components: `AIAssistant`, `Confetti`, `ConfirmDialog`, `CustomSelect`, `EfisystemWidget`, `ErrorBoundary`, `ImageUpload`, `LegalModal`, `MoreOptionsMenu`, `NotificationBell`, `OnboardingTour`, `OverlayModal`, `Toaster`
 - CSS token system in `index.css`: surfaces, text, borders, shadows, accent system, dark mode, CRT overlay
 - accent color system (`accent.ts`): multi-modal (hex, gradient, conic, retro), WCAG contrast enforcement
 - responsive layout: desktop sidebar + mobile bottom nav
@@ -146,16 +145,15 @@ Frontend state management:
 - `EfisystemWidget` component on Dashboard
 - Bootstrap response includes `EfisystemSnapshot`
 
-### Milestone 12 — Profile Block Composer [DONE]
+### Milestone 12 — EfiLink Public Profile [DONE]
 
-- `MediaKitProfile` refactored to block-based model: `enabledBlocks`, `blockOrder`, `blockComponents`
-- 16+ block types defined in `BlockType` (`domain.ts`)
-- `BlockPickerDrawer` for adding blocks
-- `TemplatePickerDrawer` for loading template content
-- `profile-blocks/` component folder with per-type block components
-- `blockTemplates.ts` for default block content
-- Each block saved independently (no global auto-save on the composer)
-- Public profile served at `/mk/:handle` via `routes/mediakit.ts` (HTML, no auth)
+- `EfiProfile` type: `{ links: ProfileLink[], pdf_url, pdf_label }` (replaces `MediaKitProfile` block composer)
+- `profileAccentColor` and `profileForceDark` added to `AppState` / `user_settings`
+- `lib/profileRenderer.ts` — server-side EfiLink HTML renderer
+- `POST /api/v1/preview-profile` — live preview without DB write
+- Public EfiLink served at `/@:handle` via `routes/mediakit.ts` (HTML, no auth)
+- LinkedIn added as 6th platform in `SocialProfiles`
+- `tagline` field (required string) replaces legacy `bio` on `UserProfile`
 
 ### Milestone 13 — Profession and User Identity [DONE]
 

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import { google } from 'googleapis';
 import type pg from 'pg';
 import type {
@@ -7,9 +8,36 @@ import type {
   CalendarSyncDownResponse,
   CalendarSyncRequest,
   CalendarSyncResponse,
+  SessionUser,
 } from '@shared';
 
-type OAuthClient = InstanceType<typeof google.auth.OAuth2>;
+export interface GoogleCreds {
+  clientId: string;
+  clientSecret: string;
+  redirectUri: string;
+}
+
+/** Create a fresh OAuth2 client — safe to mutate per-request. */
+function makeOAuth2Client(creds: GoogleCreds) {
+  return new google.auth.OAuth2(creds.clientId, creds.clientSecret, creds.redirectUri);
+}
+
+/** Require authenticated session — verifies the user still exists in DB. */
+function requireAuth(pool: pg.Pool) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    const user: SessionUser | undefined = (req.session as any).user;
+    if (!user?.id) {
+      return res.status(401).json({ error: 'No autenticado.' });
+    }
+    const { rows } = await pool.query('SELECT id FROM users WHERE id = $1', [user.id]);
+    if (rows.length === 0) {
+      req.session.destroy(() => {});
+      return res.status(401).json({ error: 'Sesión inválida.' });
+    }
+    (req as any).userId = user.id;
+    next();
+  };
+}
 
 /**
  * Resolves Google Calendar tokens for the current user.
@@ -19,7 +47,7 @@ type OAuthClient = InstanceType<typeof google.auth.OAuth2>;
 async function resolveTokens(
   req: Express.Request,
   pool: pg.Pool,
-  oauth2Client: OAuthClient,
+  creds: GoogleCreds,
 ): Promise<Record<string, unknown> | null> {
   const sessionTokens = (req.session as any).tokens;
   if (sessionTokens) return sessionTokens;
@@ -43,8 +71,9 @@ async function resolveTokens(
   const isExpired = !row.gcal_access_token || expiryMs < Date.now() + 60_000;
 
   if (isExpired) {
-    oauth2Client.setCredentials({ refresh_token: row.gcal_refresh_token });
-    const { credentials } = await oauth2Client.refreshAccessToken();
+    const client = makeOAuth2Client(creds);
+    client.setCredentials({ refresh_token: row.gcal_refresh_token });
+    const { credentials } = await client.refreshAccessToken();
 
     await pool.query(
       `UPDATE users
@@ -57,8 +86,9 @@ async function resolveTokens(
       ],
     );
 
-    (req.session as any).tokens = credentials;
-    return credentials;
+    const refreshedTokens: Record<string, unknown> = { ...credentials };
+    (req.session as any).tokens = refreshedTokens;
+    return refreshedTokens;
   }
 
   const tokens = {
@@ -70,69 +100,84 @@ async function resolveTokens(
   return tokens;
 }
 
-export function createCalendarRouter(oauth2Client: OAuthClient, pool: pg.Pool) {
+export function createCalendarRouter(creds: GoogleCreds, pool: pg.Pool) {
   const router = Router();
+
+  // All calendar routes require authentication
+  router.use(requireAuth(pool));
 
   // ── GET /status ───────────────────────────────────────────────
 
   router.get('/status', async (req, res) => {
-    const userId = (req.session as any).user?.id;
-    if (!userId) {
-      const response: CalendarStatusResponse = { connected: false };
-      return res.json(response);
+    try {
+      const userId = (req.session as any).user?.id;
+      if (!userId) {
+        const response: CalendarStatusResponse = { connected: false };
+        return res.json(response);
+      }
+
+      const { rows } = await pool.query<{ gcal_refresh_token: string | null }>(
+        'SELECT gcal_refresh_token FROM users WHERE id = $1',
+        [userId],
+      );
+
+      const response: CalendarStatusResponse = {
+        connected: Boolean(rows[0]?.gcal_refresh_token),
+      };
+      res.json(response);
+    } catch (error) {
+      console.error('Calendar status error:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
-
-    const { rows } = await pool.query<{ gcal_refresh_token: string | null }>(
-      'SELECT gcal_refresh_token FROM users WHERE id = $1',
-      [userId],
-    );
-
-    const response: CalendarStatusResponse = {
-      connected: Boolean(rows[0]?.gcal_refresh_token),
-    };
-    res.json(response);
   });
 
   // ── DELETE /disconnect ────────────────────────────────────────
 
   router.delete('/disconnect', async (req, res) => {
-    const userId = (req.session as any).user?.id;
-    if (!userId) return res.status(401).json({ error: 'Not authenticated' });
+    try {
+      const userId = (req.session as any).user?.id;
+      if (!userId) return res.status(401).json({ error: 'Not authenticated' });
 
-    const { rows } = await pool.query<{ gcal_access_token: string | null }>(
-      'SELECT gcal_access_token FROM users WHERE id = $1',
-      [userId],
-    );
+      const { rows } = await pool.query<{ gcal_access_token: string | null }>(
+        'SELECT gcal_access_token FROM users WHERE id = $1',
+        [userId],
+      );
 
-    const accessToken = rows[0]?.gcal_access_token;
-    if (accessToken) {
-      try {
-        await oauth2Client.revokeToken(accessToken);
-      } catch {
-        // Best-effort revocation; proceed regardless
+      const accessToken = rows[0]?.gcal_access_token;
+      if (accessToken) {
+        try {
+          const client = makeOAuth2Client(creds);
+          await client.revokeToken(accessToken);
+        } catch {
+          // Best-effort revocation; proceed regardless
+        }
       }
+
+      await pool.query(
+        `UPDATE users
+         SET gcal_access_token = NULL, gcal_refresh_token = NULL, gcal_token_expiry = NULL
+         WHERE id = $1`,
+        [userId],
+      );
+
+      (req.session as any).tokens = null;
+
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Calendar disconnect error:', error);
+      res.status(500).json({ error: 'Internal server error' });
     }
-
-    await pool.query(
-      `UPDATE users
-       SET gcal_access_token = NULL, gcal_refresh_token = NULL, gcal_token_expiry = NULL
-       WHERE id = $1`,
-      [userId],
-    );
-
-    (req.session as any).tokens = null;
-
-    res.json({ success: true });
   });
 
   // ── POST /sync ────────────────────────────────────────────────
 
   router.post('/sync', async (req, res) => {
-    const tokens = await resolveTokens(req, pool, oauth2Client);
+    const tokens = await resolveTokens(req, pool, creds);
     if (!tokens) return res.status(401).json({ error: 'Google Calendar not connected' });
 
-    oauth2Client.setCredentials(tokens);
-    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+    const client = makeOAuth2Client(creds);
+    client.setCredentials(tokens);
+    const calendar = google.calendar({ version: 'v3', auth: client });
     const { task } = req.body as CalendarSyncRequest;
 
     try {
@@ -171,11 +216,12 @@ export function createCalendarRouter(oauth2Client: OAuthClient, pool: pg.Pool) {
   // ── POST /sync-down ───────────────────────────────────────────
 
   router.post('/sync-down', async (req, res) => {
-    const tokens = await resolveTokens(req, pool, oauth2Client);
+    const tokens = await resolveTokens(req, pool, creds);
     if (!tokens) return res.status(401).json({ error: 'Google Calendar not connected' });
 
-    oauth2Client.setCredentials(tokens);
-    const calendar = google.calendar({ version: 'v3', auth: oauth2Client });
+    const client = makeOAuth2Client(creds);
+    client.setCredentials(tokens);
+    const calendar = google.calendar({ version: 'v3', auth: client });
     const { eventIds } = req.body as CalendarSyncDownRequest;
 
     if (!eventIds || !Array.isArray(eventIds)) {

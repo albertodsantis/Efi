@@ -44,9 +44,10 @@ apps/
         connection.ts  PostgreSQL pool initialization
         migrate.ts     Migration runner
         repository.ts  PostgresAppStore — all data access
-        migrations/    001–014 SQL migration files
+        migrations/    001–017 SQL migration files
       lib/
         storage.ts     Supabase Storage upload/delete helpers
+        profileRenderer.ts  Server-side EfiLink HTML renderer
       services/
         gamification.ts GamificationService — XP, levels, badges (Efisystem)
     build.ts           esbuild bundling
@@ -60,19 +61,18 @@ apps/
         AppContext.tsx  Central state, API calls, optimistic mutations, gamification
       views/           Dashboard, Pipeline, Directory, Profile, Settings, StrategicView,
                        Landing, WelcomeColorPicker, WelcomeOnboarding
-      components/      ui.tsx, AIAssistant, BlockPickerDrawer, Confetti, ConfirmDialog,
-                       CustomSelect, EfisystemWidget, ErrorBoundary, ImageUpload,
-                       LegalModal, MoreOptionsMenu, NotificationBell, OnboardingTour,
-                       OverlayModal, TemplatePickerDrawer, Toaster, profile-blocks/
-      lib/             api.ts, accent.ts, blockTemplates.ts, date.ts, professions.ts,
-                       supabase.ts, toast.ts
+      components/      ui.tsx, AIAssistant, Confetti, ConfirmDialog, CustomSelect,
+                       EfisystemWidget, ErrorBoundary, ImageUpload, LegalModal,
+                       MoreOptionsMenu, NotificationBell, OnboardingTour,
+                       OverlayModal, Toaster
+      lib/             api.ts, accent.ts, date.ts, professions.ts, supabase.ts, toast.ts
     vite.config.ts
 
 packages/
   shared/            Shared TypeScript layer
     src/
       domain.ts        Core types (Task, Partner, Contact, Template,
-                       UserProfile, MediaKitProfile, Goal, BlockType, Efisystem, etc.)
+                       UserProfile, EfiProfile, ProfileLink, Goal, Efisystem, etc.)
       contracts/
         appData.ts     CRUD request/response contracts
         auth.ts        Auth contracts (Register, Login, Me, Session, ChangePassword, etc.)
@@ -165,9 +165,9 @@ In development, the Express server runs Vite in middleware mode to serve the SPA
 
 The shared layer contains:
 
-- domain types (`Task`, `Partner`, `Contact`, `Template`, `UserProfile`, `MediaKitProfile`, `Goal`, `BlockType`, `ChecklistItem`, `EfisystemSnapshot`, `BadgeKey`, `FreelancerType`, `AppState`, etc.)
+- domain types (`Task`, `Partner`, `Contact`, `Template`, `UserProfile`, `EfiProfile`, `ProfileLink`, `Goal`, `ChecklistItem`, `EfisystemSnapshot`, `BadgeKey`, `FreelancerType`, `AppState`, etc.)
 - request and response contracts for all API endpoints
-- pure utilities (`getPartnerLookupKey`, `createEmptySocialProfiles`, `createDefaultMediaKitProfile`)
+- pure utilities (`getPartnerLookupKey`, `createEmptySocialProfiles`, `createDefaultEfiProfile`)
 
 The shared layer must not depend on:
 
@@ -182,7 +182,7 @@ The shared layer must not depend on:
 
 - PostgreSQL via Supabase (hosted)
 - `pg` `^8.20.0` — Node.js PostgreSQL client
-- 14 migrations in `apps/api/src/db/migrations/`
+- 17 migrations in `apps/api/src/db/migrations/` (001–017)
 - Full multi-tenant data isolation: all tables scoped by `user_id`
 - Row-level security enabled (`006_enable_rls.sql`)
 - Sessions persisted in `session` table via `connect-pg-simple`
@@ -223,10 +223,10 @@ Modules:
 - partners (CRUD, duplicate-name detection, status and financial tracking)
 - contacts (CRUD nested under partners)
 - templates (email/WhatsApp template CRUD)
-- profile (user profile, social profiles, modular block composer, profession)
-- settings (accent color, theme, notification preferences)
-- integrations/google-calendar (sync up, sync down)
-- public-mediakit (server-rendered HTML profile at `/mk/:handle`)
+- profile (user profile, social profiles, EfiLink `{ links, pdf_url, pdf_label }`, profession)
+- settings (accent color, theme, notification preferences, profileAccentColor, profileForceDark)
+- integrations/google-calendar (sync up, sync down; status and disconnect endpoints)
+- public-efilink (server-rendered HTML at `/@:handle` via `lib/profileRenderer.ts`)
 - gamification/efisystem (XP points, levels, badges via `GamificationService`)
 
 Microservices are not approved for MVP v1.

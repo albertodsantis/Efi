@@ -172,7 +172,6 @@ The shared component layer in `apps/web/src/components/ui.tsx` provides:
 Additional components outside `ui.tsx`:
 
 - `AIAssistant` - Gemini-powered conversational assistant with voice input (behind `GEMINI_API_KEY`)
-- `BlockPickerDrawer` - drawer for adding blocks to the public profile composer
 - `Confetti` - listens for `efi-confetti` custom event, triggers canvas-confetti
 - `ConfirmDialog` - destructive action confirmation dialog built on `OverlayModal` + `ModalPanel`
 - `CustomSelect` - keyboard-accessible select dropdown (no native select)
@@ -184,9 +183,9 @@ Additional components outside `ui.tsx`:
 - `NotificationBell` - notification indicator with navigation callback
 - `OnboardingTour` - guided first-run tour using `react-joyride`
 - `OverlayModal` - portal-based full-screen overlay (`createPortal` to `document.body`)
-- `TemplatePickerDrawer` - drawer for loading saved message templates into the profile
 - `Toaster` - event-based toast display, listens for `efi-toast` custom events on `window`
-- `profile-blocks/` — one component per block type: `IdentityBlock`, `AboutBlock`, `MetricsBlock`, `PortfolioBlock`, `BrandsBlock`, `ServicesBlock`, `ClosingBlock`, `LinksBlock`
+
+Note: `BlockPickerDrawer`, `TemplatePickerDrawer`, and `profile-blocks/` no longer exist. The public profile (EfiLink) is now a simple link list + optional PDF (`EfiProfile`), not a block composer.
 
 ### 8.3. Views
 
@@ -194,7 +193,7 @@ Additional components outside `ui.tsx`:
 - `Pipeline` - task management (Kanban, List, Calendar views); drag-and-drop via `@dnd-kit`; Google Calendar sync
 - `Directory` - partner/contact directory with financial tracking
 - `StrategicView` - goal tracking and performance metrics
-- `Profile` - public profile block composer; modular blocks (identity, about, metrics, portfolio, brands, services, closing, links and more); uses `BlockPickerDrawer`, `TemplatePickerDrawer`, and `profile-blocks/` components
+- `Profile` - EfiLink profile editor; manages `{ links, pdf_url, pdf_label }` and social profiles; profile accent color and force-dark settings; live preview via `POST /api/v1/preview-profile`
 - `Settings` - theme/accent picker, templates, notifications, integrations
 - `Landing` - unauthenticated entry point with login/register
 - `WelcomeColorPicker` - new-user accent selection screen
@@ -205,7 +204,6 @@ Additional components outside `ui.tsx`:
 - `AppContext.tsx` - central state provider; optimistic mutations, gamification (`EfisystemSnapshot`), push notifications, error tracking
 - `api.ts` - REST client for all backend endpoints
 - `accent.ts` - multi-modal accent derivation; WCAG contrast utilities; surface theme overrides
-- `blockTemplates.ts` - default block templates for the profile composer
 - `date.ts` - timezone-safe date utilities
 - `professions.ts` - freelancer profession labels and catalogue
 - `supabase.ts` - Supabase client for Google OAuth redirect handling
@@ -231,7 +229,7 @@ For `Clean Creator Console`, reusable primitives should bias toward:
 
 ### 9.2. Profile Save Flow
 
-The Profile block composer uses an explicit save action per block. Earlier versions used debounced auto-save; the current block composer model requires intentional saves to avoid partial-write conflicts between blocks.
+The EfiLink profile editor (links list + PDF settings + social profiles) uses debounced auto-save or explicit save actions. The old block composer with per-block saves has been replaced.
 
 ### 9.3. Push Notifications
 

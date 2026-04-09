@@ -18,16 +18,16 @@ Features: Dashboard (Inicio), Pipeline (Kanban/List/Calendar + Google Calendar s
 Monorepo structure:
 
 - `apps/web/src/` — React 19 SPA (Vite, Tailwind CSS 4, TypeScript)
-  - `components/` — ui.tsx, AIAssistant, Confetti, ConfirmDialog, CustomSelect, EfisystemWidget, ErrorBoundary, ImageUpload, LegalModal, MoreOptionsMenu, NotificationBell, OnboardingTour, OverlayModal, Toaster
+  - `components/` — ui.tsx, AIAssistant, Confetti, ConfirmDialog, CustomSelect, EfisystemWidget, ErrorBoundary, ImageUpload, LegalModal, MoreOptionsMenu, NotificationBell, OnboardingTour, OverlayModal, Toaster (BlockPickerDrawer, TemplatePickerDrawer, and profile-blocks/ no longer exist)
   - `views/` — Dashboard, Directory, Landing, Pipeline, Profile, Settings, StrategicView, WelcomeColorPicker, WelcomeOnboarding
   - `context/AppContext.tsx` — global app state
   - `lib/` — api.ts, accent.ts, date.ts, professions.ts, supabase.ts, toast.ts
 - `apps/api/src/` — Express backend (auth, business logic, integrations)
   - `server.ts`, `app.ts` — entry points
   - `config/` — env.ts (environment config)
-  - `routes/` — auth.ts, calendar.ts, mediakit.ts, v1.ts
+  - `routes/` — auth.ts, calendar.ts, mediakit.ts, v1.ts (mediakit.ts serves public EfiLink pages at `/@handle`)
   - `db/` — connection.ts, repository.ts, migrate.ts, migrations/
-  - `lib/` — storage.ts
+  - `lib/` — storage.ts, profileRenderer.ts
   - `services/` — gamification.ts
 - `packages/shared/src/` — domain types and API contracts (no framework deps)
   - `domain.ts`, `contracts/` (appData.ts, auth.ts, googleCalendar.ts)

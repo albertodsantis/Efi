@@ -23,8 +23,8 @@ Layers:
 1. `HTTP Layer` — Express routes (`server.ts`, `app.ts`, `routes/v1.ts`, `routes/auth.ts`, `routes/calendar.ts`, `routes/mediakit.ts`)
 2. `Auth Middleware` — `requireAuth()` in `v1.ts`; session backed by `connect-pg-simple`
 3. `Repository` — `PostgresAppStore` in `db/repository.ts`; all queries scoped by `user_id`
-4. `Database` — PostgreSQL via Supabase; 14 migrations in `db/migrations/`
-5. `Services` — `GamificationService` (`services/gamification.ts`)
+4. `Database` — PostgreSQL via Supabase; 17 migrations in `db/migrations/`
+5. `Services` — `GamificationService` (`services/gamification.ts`); `generateEfiLinkHtml` (`lib/profileRenderer.ts`)
 6. `Shared Contracts` — TypeScript types and interfaces (`packages/shared`)
 7. `External Integrations` — Google OAuth 2.0, Google Calendar API, Supabase Storage
 
@@ -36,10 +36,10 @@ Canonical modules:
 - partners (CRUD, status tracking, financial tracking)
 - contacts (CRUD nested under partners)
 - templates (message template CRUD)
-- profile (user profile, social profiles, modular block composer, profession)
-- settings (accent color, theme, notification preferences)
+- profile (user profile, social profiles, EfiLink profile `{ links, pdf_url, pdf_label }`, profession)
+- settings (accent color, theme, notification preferences, profileAccentColor, profileForceDark)
 - integrations/google-calendar (sync up, sync down)
-- public-mediakit (server-rendered HTML at `/mk/:handle`, no auth)
+- public-efilink (server-rendered HTML at `/@:handle`, no auth)
 - gamification/efisystem (XP points, levels, badges)
 
 Client rule:
@@ -51,7 +51,7 @@ Client rule:
 All application state is persisted in PostgreSQL hosted on Supabase. The `PostgresAppStore` class in `apps/api/src/db/repository.ts` handles all queries.
 
 - `pg` pool initialized in `db/connection.ts`
-- 14 SQL migrations in `db/migrations/`, run automatically on startup via `db/migrate.ts`
+- 17 SQL migrations in `db/migrations/` (001–017), run automatically on startup via `db/migrate.ts`
 - Sessions persisted in the `session` table via `connect-pg-simple`
 - File storage (avatars, portfolio images) handled via Supabase Storage through `lib/storage.ts`
 - Full multi-tenant isolation: every table has a `user_id` foreign key; all queries filter by `user_id`
@@ -142,10 +142,6 @@ All domain types are defined in `packages/shared/src/domain.ts`.
 
 - `content_creator`, `podcaster`, `streamer`, `radio`, `photographer`, `copywriter`, `community_manager`, `host_mc`, `speaker`, `dj`, `recruiter`, `coach`
 
-`BlockType` (profile block composer)
-
-- `identity`, `about`, `metrics`, `portfolio`, `brands`, `services`, `closing`, `testimonials`, `press`, `speaking_topics`, `video_reel`, `equipment`, `awards`, `faq`, `episodes`, `releases`, `links`
-
 ### 6.2 Core Entities
 
 #### Task
@@ -224,8 +220,9 @@ Note: templates do not have a `subject` field (removed in migration 005).
 | name | string | required, trimmed |
 | avatar | string | required, trimmed |
 | handle | string | required, auto-prefixed with `@` |
-| socialProfiles | SocialProfiles | 5-platform object |
-| mediaKit | MediaKitProfile | block-based profile document |
+| tagline | string | required |
+| socialProfiles | SocialProfiles | 6-platform object |
+| efiProfile | EfiProfile | linktree-style link list + optional PDF |
 | goals | Goal[] | array of career goals |
 | notificationsEnabled | boolean | default false |
 | primaryProfession | FreelancerType? | optional, selected during onboarding |
@@ -240,38 +237,17 @@ Note: templates do not have a `subject` field (removed in migration 005).
 | x | string |
 | threads | string |
 | youtube | string |
+| linkedin | string |
 
-#### MediaKitProfile
+#### EfiProfile
 
-The media kit profile is a block-based document. The block system controls which blocks are visible and in what order. Each block type has its own data fields.
-
-Block system controls:
+A simple linktree-style structure replacing the old block composer.
 
 | field | type | description |
 | --- | --- | --- |
-| enabledBlocks | BlockType[] | which blocks are active/visible |
-| blockOrder | BlockType[] | display order of blocks |
-| blockComponents | Record\<string, string[]\> | per-block component visibility config |
-
-Core block data fields (abbreviated — see `domain.ts` for full spec):
-
-- **Identity block**: `periodLabel`, `updatedLabel`, `tagline`, `contactEmail`
-- **About block**: `featuredImage`, `aboutTitle`, `aboutParagraphs[]`, `topicTags[]`
-- **Metrics block**: `insightStats[]`, `audienceGender[]`, `ageDistribution[]`, `topCountries[]`
-- **Portfolio block**: `portfolioImages[]`
-- **Services block**: `servicesTitle`, `servicesDescription`, `offerings[]`
-- **Brands block**: `brandsTitle`, `trustedBrands[]`
-- **Closing block**: `closingTitle`, `closingDescription`, `footerNote`
-- **Testimonials block**: `testimonials[]` (`{ quote, author, company, role }`)
-- **Press block**: `press[]` (`{ publication, headline, url, year }`)
-- **Speaking topics block**: `speakingTopics[]` (`{ title, description }`)
-- **Video reel block**: `videoReels[]` (`{ url, label }`)
-- **Equipment block**: `equipment[]` (`{ item, description }`)
-- **Awards block**: `awards[]` (`{ name, issuer, year }`)
-- **FAQ block**: `faq[]` (`{ question, answer }`)
-- **Episodes block**: `episodes[]` (`{ title, description, listenUrl }`)
-- **Releases block**: `releases[]` (`{ name, platforms[] }`)
-- **Links block**: `links[]` (`{ label, url }`)
+| links | ProfileLink[] | ordered list of custom links (`{ id, label, url }`) |
+| pdf_url | string \| null | optional PDF download URL |
+| pdf_label | string | label for the PDF button (default: "Ver mi media kit") |
 
 #### Goal
 
@@ -300,6 +276,8 @@ Note: `specificTarget` field was removed in migration 009.
 | accentColor | string |
 | templates | Template[] |
 | theme | AppTheme |
+| profileAccentColor | string |
+| profileForceDark | boolean |
 
 #### EfisystemSnapshot
 
@@ -339,7 +317,7 @@ Routes are mounted in `apps/api/src/app.ts`:
 
 ```text
 /api/health        health check (inline)
-/mk/*              public media kit renderer (mediakit.ts, no auth)
+/@:handle          public EfiLink page renderer (mediakit.ts, no auth)
 /api/v1/*          authenticated CRUD endpoints (routes/v1.ts)
 /api/auth/*        auth endpoints (routes/auth.ts, rate-limited)
 /api/calendar/*    calendar endpoints (routes/calendar.ts)
@@ -444,7 +422,7 @@ Returns the full application state plus the Efisystem gamification snapshot in a
 
 #### `PATCH /api/v1/profile`
 - request: `UpdateProfileRequest` (any subset of profile fields)
-- behavior: `socialProfiles` and `mediaKit` are partial-merged; `goals` replaces the entire array; `handle` auto-prefixed with `@`
+- behavior: `socialProfiles` and `efiProfile` are partial-merged; `goals` replaces the entire array; `handle` auto-prefixed with `@`
 - response 200: `UserProfile`; may include `EfisystemAward`
 
 ### 7.10 Strategic View
@@ -503,6 +481,7 @@ Returns aggregated metrics per goal plus unassigned totals.
 - response 200: `NotificationsResponse` — list of pending app notifications (task reminders, gamification)
 
 #### `PATCH /api/v1/notifications/seen`
+- marks all notifications as seen; updates `last_seen_notifications_at` on `user_settings`
 - response 200: `{ "success": true }`
 
 ### 7.14 Auth (`/api/auth`)
@@ -560,6 +539,18 @@ Returns Google Calendar connection status.
 
 ### 7.15 Calendar (`/api/calendar`)
 
+All calendar routes require a valid session.
+
+#### `GET /api/calendar/status`
+Returns whether Google Calendar is connected (has a stored refresh token).
+- auth: session required
+- response 200: `CalendarStatusResponse` (`{ connected: boolean }`)
+
+#### `DELETE /api/calendar/disconnect`
+Revokes the Google Calendar token and clears stored credentials.
+- auth: session required
+- response 200: `{ success: true }`
+
 #### `POST /api/calendar/sync`
 Syncs a task to Google Calendar (create or update).
 - auth: Google Calendar tokens required
@@ -600,12 +591,21 @@ Returns the status transition history for a task.
 Returns the status transition history for a partner.
 - response 200: `PartnerStatusTransition[]`
 
-### 7.18 Public Media Kit (`/mk`)
+### 7.18 Profile Preview
 
-Server-rendered HTML — no authentication required.
+#### `POST /api/v1/preview-profile`
+Renders a preview EfiLink HTML page from the request body without reading from the database. Used by the live editor in the Profile view.
+- auth: session required
+- request: `{ name, handle, tagline, avatar, socialProfiles, efiProfile, accentColor, forceDark }`
+- response: `text/html` — full EfiLink page
 
-#### `GET /mk/:handle`
-Returns a full HTML page for the public profile matching the given handle.
+### 7.19 Public EfiLink (`/@:handle`)
+
+Server-rendered HTML — no authentication required. Handled by `routes/mediakit.ts`.
+
+#### `GET /@:handle`
+Returns a full HTML page for the public EfiLink profile matching the given handle.
+Reads `user_profile` (name, avatar, handle, tagline, social_profiles, efi_profile) and `user_settings` (accent_color, profile_accent_color, profile_force_dark) from the database.
 
 ## 8. Gamification — Efisystem
 
@@ -685,7 +685,7 @@ HTTP status codes:
 - `express-rate-limit` on `/api/auth/*`: 20 requests / 15 min
 - session cookies: `httpOnly`, `sameSite: 'lax'`, `secure` in production
 - all SQL queries use parameterized statements via `pg`
-- Google Calendar OAuth tokens stored in server session, never exposed to the client
+- Google Calendar OAuth tokens stored in server session and in `users` table columns (`gcal_access_token`, `gcal_refresh_token`, `gcal_token_expiry`), never exposed to the client
 - `bcryptjs` with 10 rounds for password hashing
 - file uploads validated via `multer`; stored in Supabase Storage (not local disk)
 

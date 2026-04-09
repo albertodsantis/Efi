@@ -167,51 +167,36 @@ Partner statuses:
 - direct email integration: opens the user's email client with the resolved template
 - direct WhatsApp integration: opens WhatsApp with the resolved message from contact cards
 
-### 7.6 Public Profile (Perfil Público)
+### 7.6 Public Profile — EfiLink (Perfil Público)
 
-The profile is a modular block composer. Users select, arrange, and fill blocks to build a shareable public profile page served at `/mk/:handle` as an HTML page (no login required for viewers).
+The public profile is a linktree-style hub (EfiLink). Users manage a list of custom links and an optional PDF download button. The page is served at `/@handle` as a server-rendered HTML page (no login required for viewers).
 
 #### 7.6.1 Identity and Social Profiles
 
-- edit display name, handle, avatar, and bio
-- manage social profile links: Instagram, TikTok, X (Twitter), Threads, YouTube
+- edit display name, handle, avatar, and tagline
+- manage social profile links: Instagram, TikTok, X (Twitter), Threads, YouTube, LinkedIn
 - profession selection: primary profession and optional secondary professions
 
-#### 7.6.2 Block Composer
+#### 7.6.2 EfiLink Editor
 
-Users build their profile from a library of 16+ block types:
+Users manage their EfiLink profile (`EfiProfile`):
 
-| Block | Content |
-|-------|---------|
-| `identity` | tagline, contact email, period label |
-| `about` | bio paragraphs, featured image, topic tags |
-| `metrics` | insight stats, audience gender/age/country distribution |
-| `portfolio` | uploaded portfolio images |
-| `brands` | trusted brand names |
-| `services` | service offerings with title, price, description |
-| `closing` | CTA heading and description, footer note |
-| `testimonials` | quotes with author, company, role |
-| `press` | media mentions with publication, headline, URL, year |
-| `speaking_topics` | talk titles and descriptions |
-| `video_reel` | video links with labels |
-| `equipment` | gear list with descriptions |
-| `awards` | award name, issuer, year |
-| `faq` | question and answer pairs |
-| `episodes` | podcast episode title, description, listen URL |
-| `releases` | release name with streaming platform links |
-| `links` | custom link label and URL |
+| Field | Description |
+|-------|-------------|
+| `links` | ordered list of custom links (`{ id, label, url }`) |
+| `pdf_url` | optional PDF download URL |
+| `pdf_label` | label for the PDF button |
 
-Block management:
+Additional per-profile settings (stored in `user_settings`):
 
-- add blocks from the `BlockPickerDrawer`
-- reorder blocks via drag-and-drop
-- each block is saved independently with an explicit save button (no debounced auto-save)
-- enable/disable individual components within a block via `blockComponents` config
-- load block content from saved templates via `TemplatePickerDrawer`
+- `profileAccentColor` — accent color for the public page (can differ from the app accent)
+- `profileForceDark` — forces dark mode on the public page
+
+A live preview is rendered via `POST /api/v1/preview-profile` without saving to the database.
 
 #### 7.6.3 Public Profile URL
 
-The public profile is served at `/mk/:handle`. No authentication required for viewers. The server renders HTML using the saved profile data.
+The public profile is served at `/@handle`. No authentication required for viewers. The server renders HTML using the saved profile data and renders it via `lib/profileRenderer.ts`.
 
 ### 7.7 Settings (Ajustes)
 
@@ -317,11 +302,11 @@ The public profile is served at `/mk/:handle`. No authentication required for vi
 - As a creator, I want to save reusable templates with variable placeholders.
 - As a creator, I want to open a composed message in my email client or WhatsApp.
 
-### 8.6 Public Profile
+### 8.6 Public Profile — EfiLink
 
-- As a creator, I want to build a modular profile with the blocks relevant to my profession.
-- As a creator, I want my profile to be available at a public URL so I can share it with partners.
-- As a creator, I want to add, remove, and reorder profile blocks to control my presentation.
+- As a creator, I want to build an EfiLink page with custom links and an optional PDF.
+- As a creator, I want my profile to be available at a public URL (`/@handle`) so I can share it with partners.
+- As a creator, I want to customize the accent color and dark mode of my public page independently from the app.
 - As a creator, I want to select my profession so the profile is tailored to my work.
 
 ### 8.7 Goals and Strategic View
@@ -361,7 +346,7 @@ The public profile is served at `/mk/:handle`. No authentication required for vi
 
 **Contact** — id, name, role, email, ig, phone?
 
-**UserProfile** — name, avatar, handle, bio?, socialProfiles, mediaKit (block-based), goals[], notificationsEnabled, primaryProfession?, secondaryProfessions[]
+**UserProfile** — name, avatar, handle, tagline, socialProfiles (6 platforms incl. LinkedIn), efiProfile (`{ links, pdf_url, pdf_label }`), goals[], notificationsEnabled, primaryProfession?, secondaryProfessions[]
 
 **Template** — id, name, body
 
@@ -428,7 +413,7 @@ Primary metrics for the first 90 days:
 - real usage: ≥70% of active users create or update 3+ tasks per week
 - captured value: ≥50% of users with 5+ tasks record monetary value in ≥80% of tasks
 - integration: ≥30% of active users connect Google Calendar
-- profile: ≥40% of active users build a profile with 3+ active blocks
+- profile: ≥40% of active users build an EfiLink profile with 3+ links
 - goals: ≥30% of active users create at least one professional goal
 - mobile web: core workflows remain usable on a standard mobile browser
 
@@ -449,7 +434,7 @@ The product is ready when:
 - Google Calendar works through a secure OAuth flow
 - the user can operate Dashboard, Pipeline, Directory, Strategic View, Profile, and Settings against real data
 - desktop web and mobile web are both viable for normal daily usage
-- public profile is accessible at `/mk/:handle` without authentication
+- public EfiLink profile is accessible at `/@handle` without authentication
 - goals can be created, edited, and tracked through their lifecycle
 - financial tracking per partner is functional
 - drag-and-drop pipeline management works in Kanban view

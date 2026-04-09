@@ -43,17 +43,16 @@ Rules:
 5. `Directory > Compose Message Modal`
 6. `Strategic View > Goal Detail`
 7. `Strategic View > Add/Edit Goal Modal`
-8. `Profile > Block Editor` (per-block inline editing)
-9. `Profile > BlockPickerDrawer` (add blocks)
-10. `Profile > TemplatePickerDrawer` (load a template into blocks)
-11. `Settings > Add/Edit Template Modal`
-12. `Settings > Change Password Modal`
-13. `Settings > Delete Account Confirmation`
-14. `Google OAuth Popup / Callback`
-15. `AI Assistant > Chat Interface`
-16. `Onboarding Tour Overlay`
-17. `Global Error Toast / Inline Error`
-18. `EfisystemWidget Popover` (level/XP/badges)
+8. `Profile > EfiLink Editor` (links list, PDF settings, social profiles)
+9. `Profile > Live Preview` (rendered via `POST /api/v1/preview-profile`)
+10. `Settings > Add/Edit Template Modal`
+11. `Settings > Change Password Modal`
+12. `Settings > Delete Account Confirmation`
+13. `Google OAuth Popup / Callback`
+14. `AI Assistant > Chat Interface`
+15. `Onboarding Tour Overlay`
+16. `Global Error Toast / Inline Error`
+17. `EfisystemWidget Popover` (level/XP/badges)
 
 ## 4. Primary Navigation Flow
 
@@ -374,62 +373,49 @@ Expanded partner
 
 ### 10.1 Goal
 
-Let the user build a modular public-facing profile composed from content blocks, then share it as a URL.
+Let the user build a linktree-style EfiLink page with custom links and an optional PDF, then share it as a public URL.
 
 ### 10.2 Profile Header
 
 ```text
 Profile
-  -> Edit display name, handle, avatar
+  -> Edit display name, handle, tagline, avatar
   -> Set primary profession and secondary professions
   -> Changes auto-save on blur/debounce
 ```
 
-### 10.3 Block Composer Flow
+### 10.3 EfiLink Editor Flow
 
 ```text
 Profile
-  -> View active blocks in order
-  -> Tap "+" or "Agregar bloque" → BlockPickerDrawer opens
-  -> Select a block type from the library
-  -> Block is added to the profile
-  -> Fill block fields and tap Save on that block
-  -> Reorder blocks via drag-and-drop
-  -> Remove a block via block header action
-
-BlockPickerDrawer
-  -> Lists all 16+ available block types
-  -> Shows which blocks are already added
-  -> Tap a block type to add it
-
-TemplatePickerDrawer
-  -> Lists saved message templates
-  -> Selecting a template loads its content into a compatible block
+  -> Manage ordered list of custom links (label + URL)
+  -> Add / edit / remove links
+  -> Set optional PDF download URL and label
+  -> Adjust profileAccentColor and profileForceDark for the public page
+  -> Save → PATCH /api/v1/profile with updated efiProfile data
 ```
 
-### 10.4 Block Save Flow
+### 10.4 Live Preview Flow
 
 ```text
-Block (e.g. About, Services, Metrics)
-  -> Edit content fields
-  -> Tap block Save button
-  -> PATCH /api/v1/profile with updated mediaKit data
-  -> Block shows saved state
+Profile
+  -> Tap "Preview" or open preview panel
+  -> POST /api/v1/preview-profile with current form data
+  -> Server renders full EfiLink HTML from the request body (no DB write)
+  -> Preview displayed in an iframe or new tab
 ```
-
-Note: each block is saved individually with an explicit save action — there is no global auto-save or debounced save on the block composer.
 
 ### 10.5 Social Profiles Flow
 
 ```text
 Profile > Social Profiles section
-  -> Edit Instagram, TikTok, X, Threads, YouTube links
+  -> Edit Instagram, TikTok, X, Threads, YouTube, LinkedIn links
   -> Auto-save on blur
 ```
 
-### 10.6 Public Profile URL
+### 10.6 Public EfiLink URL
 
-The public profile is accessible at `/mk/:handle` with no authentication required. The server renders an HTML page from the saved profile data. Viewers see only enabled blocks in the defined order.
+The public profile is accessible at `/@handle` with no authentication required. The server renders an HTML page from the saved profile data via `lib/profileRenderer.ts`.
 
 ## 11. Settings (Ajustes)
 
@@ -500,7 +486,7 @@ Settings > Templates
 Settings > Account (email provider only)
   -> Tap "Change Password"
   -> Modal: current password + new password
-  -> POST /api/auth/change-password
+  -> POST /api/auth/password
   -> Success confirmation
 ```
 
@@ -608,7 +594,7 @@ Canonical rules:
 - no view may depend on demo data once the production app is active
 - every optimistic update must reconcile with the server response
 - auto-save provides visual feedback so the user knows data was persisted
-- explicit saves (block composer) require a visible save button and state indicator
+- explicit saves (EfiLink profile changes) require a visible save button and state indicator
 
 ## 16. Primary State Transitions
 
@@ -637,9 +623,8 @@ Canonical rules:
 ### 16.4 Profile
 
 - `idle → editing_header → debounce_waiting → auto_saved`
-- `idle → editing_block → block_saved`
-- `idle → adding_block → block_added`
-- `idle → reordering_blocks → order_saved`
+- `idle → editing_efilink → saved`
+- `idle → previewing → preview_rendered`
 
 ### 16.5 Goals
 
@@ -686,7 +671,7 @@ Canonical rules:
 - responsive design is required: desktop sidebar and mobile bottom nav are both first-class experiences
 - the user must always understand whether data was saved, failed, or is still syncing
 - auto-save for profile header fields must be visually indicated
-- explicit save for block composer blocks must be clearly actionable
+- explicit save for EfiLink profile changes must be clearly actionable
 - the AI assistant must not block or interfere with core app functionality
 - drag-and-drop in Pipeline must provide clear visual feedback during drag
 - accent color and theme changes must apply immediately without page reload

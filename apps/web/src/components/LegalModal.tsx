@@ -27,7 +27,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 function PrivacyContent() {
   return (
     <>
-      <p className="mb-5 text-xs text-[var(--text-secondary)]">Última actualización: enero de 2025</p>
+      <p className="mb-5 text-xs text-[var(--text-secondary)]">Última actualización: abril de 2026</p>
 
       <Section title="Información que recopilamos">
         <p>
@@ -85,7 +85,7 @@ function PrivacyContent() {
 function TermsContent() {
   return (
     <>
-      <p className="mb-5 text-xs text-[var(--text-secondary)]">Última actualización: enero de 2025</p>
+      <p className="mb-5 text-xs text-[var(--text-secondary)]">Última actualización: abril de 2026</p>
 
       <Section title="Aceptación de los términos">
         <p>
@@ -149,7 +149,7 @@ function TermsContent() {
 function CookiesContent() {
   return (
     <>
-      <p className="mb-5 text-xs text-[var(--text-secondary)]">Última actualización: enero de 2025</p>
+      <p className="mb-5 text-xs text-[var(--text-secondary)]">Última actualización: abril de 2026</p>
 
       <Section title="¿Qué son las cookies?">
         <p>

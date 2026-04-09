@@ -923,16 +923,11 @@ export class PostgresAppStore {
           throw new Error('Los objetivos deben ser un array.');
         }
 
-        console.log('[DEBUG] Processing goals update. Count:', updates.goals.length);
-        console.log('[DEBUG] Goals payload:', JSON.stringify(updates.goals, null, 2));
-
-        await client.query('DELETE FROM goals WHERE user_id = $1', [userId]);
-
         const normalizedGoals = updates.goals.map((goal: any, index: number) => {
           const rawId = normalizeText(goal.id);
           // If id is not a valid UUID, generate a new one
           const id = (rawId && isValidUUID(rawId)) ? rawId : randomUUID();
-          
+
           const timeframeMonths = Math.min(36, Math.max(1, Number(goal.timeframe) || 12));
           const createdAt = goal.createdAt ? new Date(goal.createdAt).toISOString() : new Date().toISOString();
           const targetDate = goal.targetDate
@@ -956,7 +951,7 @@ export class PostgresAppStore {
             revenueEstimation: Number(goal.revenueEstimation) || 0,
             sortOrder: index,
           };
-          
+
           // Validate required fields
           if (!normalized.id) throw new Error('Goal id es requerido.');
           if (typeof normalized.status !== 'string' || !['Pendiente', 'En Curso', 'Alcanzado', 'Cancelado'].includes(normalized.status)) {
@@ -968,26 +963,40 @@ export class PostgresAppStore {
           if (isNaN(normalized.revenueEstimation)) {
             throw new Error('Revenue estimation debe ser un número.');
           }
-          
-          console.log(`[DEBUG] Normalized goal #${index} (ID from ${rawId} converted to ${normalized.id}):`, JSON.stringify(normalized, null, 2));
+
           return normalized;
         });
 
+        // Delete goals that are no longer in the payload (preserves FKs on kept goals)
+        const incomingIds = normalizedGoals.map((g: { id: string }) => g.id);
+        if (incomingIds.length > 0) {
+          await client.query(
+            `DELETE FROM goals WHERE user_id = $1 AND id != ALL($2::uuid[])`,
+            [userId, incomingIds],
+          );
+        } else {
+          await client.query('DELETE FROM goals WHERE user_id = $1', [userId]);
+        }
+
+        // Upsert each goal — existing rows keep their PK so FK references survive
         for (const g of normalizedGoals) {
-          console.log(`[DEBUG] Inserting goal ${g.id}...`);
-          try {
-            await client.query(
-              `INSERT INTO goals (id, user_id, area, general_goal, success_metric,
-                 timeframe, target_date, created_at, status, priority, revenue_estimation, sort_order)
-               VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)`,
-              [g.id, userId, g.area, g.generalGoal, g.successMetric,
-               g.timeframe, g.targetDate, g.createdAt, g.status, g.priority, g.revenueEstimation, g.sortOrder],
-            );
-            console.log(`[DEBUG] Successfully inserted goal ${g.id}`);
-          } catch (insertErr) {
-            console.error(`[DEBUG] Failed to insert goal ${g.id}:`, insertErr);
-            throw insertErr;
-          }
+          await client.query(
+            `INSERT INTO goals (id, user_id, area, general_goal, success_metric,
+               timeframe, target_date, created_at, status, priority, revenue_estimation, sort_order)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+             ON CONFLICT (id) DO UPDATE SET
+               area = EXCLUDED.area,
+               general_goal = EXCLUDED.general_goal,
+               success_metric = EXCLUDED.success_metric,
+               timeframe = EXCLUDED.timeframe,
+               target_date = EXCLUDED.target_date,
+               status = EXCLUDED.status,
+               priority = EXCLUDED.priority,
+               revenue_estimation = EXCLUDED.revenue_estimation,
+               sort_order = EXCLUDED.sort_order`,
+            [g.id, userId, g.area, g.generalGoal, g.successMetric,
+             g.timeframe, g.targetDate, g.createdAt, g.status, g.priority, g.revenueEstimation, g.sortOrder],
+          );
         }
       }
 

@@ -16,8 +16,12 @@ import type {
   RegisterRequest,
   SessionUser,
 } from '@shared';
+import type { GoogleCreds } from './calendar';
 
-type OAuthClient = InstanceType<typeof google.auth.OAuth2>;
+/** Create a fresh OAuth2 client — safe to mutate per-request. */
+function makeOAuth2Client(creds: GoogleCreds) {
+  return new google.auth.OAuth2(creds.clientId, creds.clientSecret, creds.redirectUri);
+}
 
 const BCRYPT_ROUNDS = 10;
 
@@ -44,7 +48,7 @@ async function ensureUserData(
 }
 
 export function createAuthRouter(
-  oauth2Client: OAuthClient,
+  googleCreds: GoogleCreds,
   appUrl: string,
   pool: pg.Pool,
 ) {
@@ -62,19 +66,24 @@ export function createAuthRouter(
   // ── GET /me ───────────────────────────────────────────────────
 
   router.get('/me', async (req, res) => {
-    const sessionUser = getSessionUser(req);
+    try {
+      const sessionUser = getSessionUser(req);
 
-    if (sessionUser?.id) {
-      const { rows } = await pool.query('SELECT id FROM users WHERE id = $1', [sessionUser.id]);
-      if (rows.length === 0) {
-        req.session.destroy(() => {});
-        const response: MeResponse = { user: null };
-        return res.json(response);
+      if (sessionUser?.id) {
+        const { rows } = await pool.query('SELECT id FROM users WHERE id = $1', [sessionUser.id]);
+        if (rows.length === 0) {
+          req.session.destroy(() => {});
+          const response: MeResponse = { user: null };
+          return res.json(response);
+        }
       }
-    }
 
-    const response: MeResponse = { user: sessionUser };
-    res.json(response);
+      const response: MeResponse = { user: sessionUser };
+      res.json(response);
+    } catch (error) {
+      console.error('Auth /me error:', error);
+      res.status(500).json({ error: 'Internal server error' });
+    }
   });
 
   // ── POST /register ────────────────────────────────────────────
@@ -186,10 +195,13 @@ export function createAuthRouter(
   // ── POST /logout ──────────────────────────────────────────────
 
   router.post('/logout', (req, res) => {
-    (req.session as any).user = null;
-    (req.session as any).tokens = null;
-    const response: LogoutResponse = { success: true };
-    res.json(response);
+    req.session.destroy((err) => {
+      if (err) {
+        console.error('Error destroying session on logout:', err);
+      }
+      const response: LogoutResponse = { success: true };
+      res.json(response);
+    });
   });
 
   // ── DELETE /account ─────────────────────────────────────────
@@ -223,7 +235,8 @@ export function createAuthRouter(
     (req.session as any).oauthState = state;
     (req.session as any).oauthIntent = 'login';
 
-    const url = oauth2Client.generateAuthUrl({
+    const client = makeOAuth2Client(googleCreds);
+    const url = client.generateAuthUrl({
       access_type: 'offline',
       scope: [
         'openid',
@@ -245,7 +258,8 @@ export function createAuthRouter(
     (req.session as any).oauthState = state;
     (req.session as any).oauthIntent = 'calendar';
 
-    const url = oauth2Client.generateAuthUrl({
+    const client = makeOAuth2Client(googleCreds);
+    const url = client.generateAuthUrl({
       access_type: 'offline',
       scope: [
         'https://www.googleapis.com/auth/calendar.events',
@@ -271,13 +285,14 @@ export function createAuthRouter(
     const intent: string = (req.session as any).oauthIntent ?? 'calendar';
 
     try {
-      const { tokens } = await oauth2Client.getToken(code as string);
+      const client = makeOAuth2Client(googleCreds);
+      const { tokens } = await client.getToken(code as string);
       delete (req.session as any).oauthState;
       delete (req.session as any).oauthIntent;
 
       if (intent === 'login') {
-        oauth2Client.setCredentials(tokens);
-        const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
+        client.setCredentials(tokens);
+        const oauth2 = google.oauth2({ version: 'v2', auth: client });
         const { data } = await oauth2.userinfo.get();
 
         const googleEmail = (data.email ?? '').toLowerCase();
