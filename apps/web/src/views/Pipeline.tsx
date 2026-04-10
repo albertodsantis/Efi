@@ -633,6 +633,7 @@ export default function Pipeline() {
   };
 
   const startEditingItem = (item: ChecklistItem) => {
+    if (editingItemId === item.id) return;
     setEditingItemId(item.id);
     setEditingItemText(item.text);
   };
@@ -1662,7 +1663,10 @@ export default function Pipeline() {
               </div>
 
               <div className="overflow-hidden rounded-[1.2rem] border [border-color:var(--line-soft)]">
-                {[...checklistItems.filter((i) => !i.done), ...checklistItems.filter((i) => i.done)].map((item) => (
+                {(editingItemId
+                  ? checklistItems
+                  : [...checklistItems.filter((i) => !i.done), ...checklistItems.filter((i) => i.done)]
+                ).map((item) => (
                   <div
                     key={item.id}
                     className="group flex items-center gap-3 border-b px-4 py-3 transition-colors last:border-b-0 [border-color:var(--line-soft)]"
@@ -1682,11 +1686,15 @@ export default function Pipeline() {
                       </span>
                     </button>
 
-                    {editingItemId === item.id ? (
+                    {item.done ? (
+                      <span className="flex-1 text-sm leading-5 text-[var(--text-secondary)]/40 line-through">
+                        {item.text}
+                      </span>
+                    ) : (
                       <input
-                        autoFocus
                         type="text"
-                        value={editingItemText}
+                        value={editingItemId === item.id ? editingItemText : item.text}
+                        onFocus={() => startEditingItem(item)}
                         onChange={(e) => setEditingItemText(e.target.value)}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') { e.preventDefault(); commitEditingItem(); }
@@ -1695,27 +1703,12 @@ export default function Pipeline() {
                         onBlur={commitEditingItem}
                         className="flex-1 bg-transparent text-sm text-[var(--text-primary)] outline-none"
                       />
-                    ) : (
-                      <span
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => !item.done && startEditingItem(item)}
-                        onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && !item.done) startEditingItem(item); }}
-                        className={cx(
-                          'flex-1 text-sm leading-5 transition-all duration-200',
-                          item.done
-                            ? 'text-[var(--text-secondary)]/40 line-through cursor-default'
-                            : 'text-[var(--text-primary)] cursor-text',
-                        )}
-                      >
-                        {item.text}
-                      </span>
                     )}
 
                     <button
                       type="button"
                       onClick={() => deleteChecklistItem(item.id)}
-                      className="shrink-0 text-[var(--text-secondary)]/40 opacity-0 transition-opacity hover:text-[var(--text-secondary)] group-hover:opacity-100"
+                      className="shrink-0 text-[var(--text-secondary)]/40 transition-opacity hover:text-[var(--text-secondary)] opacity-40 group-hover:opacity-100"
                       aria-label="Eliminar elemento"
                     >
                       <X size={14} />
