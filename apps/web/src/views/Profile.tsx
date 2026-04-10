@@ -377,11 +377,18 @@ export default function Profile() {
                   <input
                     type="text"
                     value={form.handle.replace(/^@/, '')}
-                    onChange={(e) => patch({ handle: e.target.value.replace(/^@/, '') })}
+                    onChange={(e) => {
+                      const raw = e.target.value;
+                      const filtered = raw.replace(/[^a-zA-Z0-9_.]/g, '');
+                      patch({ handle: filtered });
+                    }}
                     placeholder="tuhandle"
                     className="flex-1 bg-transparent px-1 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/60 focus:outline-none"
                   />
                 </div>
+                {form.handle.replace(/^@/, '').length > 0 && !/^[a-zA-Z0-9_.]+$/.test(form.handle) && (
+                  <p className="mt-1 text-xs text-red-500">Solo se permiten letras, números, guiones bajos y puntos.</p>
+                )}
               </div>
               <div>
                 <label className="block mb-1.5 text-xs font-medium text-[var(--text-secondary)]">Bio corta</label>
