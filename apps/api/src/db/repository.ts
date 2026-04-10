@@ -879,8 +879,19 @@ export class PostgresAppStore {
       }
       if (updates.handle !== undefined) {
         const handle = normalizeRequiredText(updates.handle, 'El handle');
+        const normalizedHandle = handle.startsWith('@') ? handle : `@${handle}`;
+
+        // Check uniqueness (case-insensitive, exclude current user)
+        const { rows: existing } = await client.query(
+          `SELECT 1 FROM user_profile WHERE LOWER(handle) = LOWER($1) AND user_id <> $2 LIMIT 1`,
+          [normalizedHandle, userId],
+        );
+        if (existing.length > 0) {
+          throw new Error('Ese handle ya está en uso.');
+        }
+
         setClauses.push(`handle = $${idx++}`);
-        values.push(handle.startsWith('@') ? handle : `@${handle}`);
+        values.push(normalizedHandle);
       }
       if (updates.tagline !== undefined) {
         setClauses.push(`tagline = $${idx++}`);
