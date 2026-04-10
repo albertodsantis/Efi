@@ -685,7 +685,7 @@ function BadgesDrawer({ unlockedBadges, onClose, accentHex }: { unlockedBadges: 
 
         {/* Header */}
         <div
-          className="relative z-10 flex items-center justify-between px-5 py-4"
+          className="relative z-10 flex items-center justify-between px-5 py-4 pt-[max(1rem,env(safe-area-inset-top))]"
           style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}
         >
           <div>
