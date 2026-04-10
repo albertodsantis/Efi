@@ -239,20 +239,21 @@ export default function Profile() {
 
   const triggerSave = (updated: ProfileForm) => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    if (updated.efiProfile.pdf_url && !updated.efiProfile.pdf_label.trim()) {
-      setSaveStatus('idle');
-      return;
-    }
     setSaveStatus('saving');
     saveTimerRef.current = setTimeout(async () => {
       try {
+        // If PDF is uploaded but label is empty, save everything else with pdf cleared
+        const efiProfileToSave =
+          updated.efiProfile.pdf_url && !updated.efiProfile.pdf_label.trim()
+            ? { ...updated.efiProfile, pdf_url: null }
+            : updated.efiProfile;
         await updateProfile({
           name: updated.name,
           handle: updated.handle,
           tagline: updated.tagline,
           avatar: updated.avatar,
           socialProfiles: updated.socialProfiles,
-          efiProfile: updated.efiProfile,
+          efiProfile: efiProfileToSave,
         });
         setSaveStatus('saved');
         setTimeout(() => setSaveStatus('idle'), 2000);

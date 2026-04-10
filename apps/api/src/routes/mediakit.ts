@@ -32,7 +32,73 @@ export function createMediaKitRouter(pool: pg.Pool, isDev = false): Router {
       );
 
       if (rows.length === 0) {
-        return res.status(404).send('<h1>Perfil no encontrado</h1>');
+        const notFoundHtml = `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Perfil no encontrado — Efi</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0d0d0d;
+      color: #f2f2f2;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      text-align: center;
+      max-width: 460px;
+    }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 12px;
+      letter-spacing: -0.03em;
+    }
+    p {
+      font-size: 0.9rem;
+      color: rgba(242, 242, 242, 0.6);
+      line-height: 1.55;
+      margin-bottom: 28px;
+    }
+    a {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #c96f5b, #d47f6b);
+      color: white;
+      text-decoration: none;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      transition: filter 0.15s, transform 0.15s;
+    }
+    a:hover {
+      filter: brightness(1.08);
+      transform: translateY(-2px);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Perfil no encontrado</h1>
+    <p>Este enlace no existe o ha sido eliminado.</p>
+    <a href="/">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+      Crea tu página con Efi
+    </a>
+  </div>
+</body>
+</html>`;
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.setHeader('Cache-Control', 'public, max-age=300');
+        return res.status(404).send(notFoundHtml);
       }
 
       const row = rows[0];
@@ -49,6 +115,7 @@ export function createMediaKitRouter(pool: pg.Pool, isDev = false): Router {
       };
 
       const profileAccent = settingsRow?.profile_accent_color ?? settingsRow?.accent_color ?? '#C96F5B';
+      const publicUrl = `${req.protocol}://${req.get('host')}/@${row.handle.replace(/^@/, '')}`;
       const html = generateEfiLinkHtml({
         name: row.name || '',
         handle: row.handle || handle,
@@ -58,6 +125,7 @@ export function createMediaKitRouter(pool: pg.Pool, isDev = false): Router {
         efiProfile,
         accentColor: profileAccent,
         forceDark: settingsRow?.profile_force_dark ?? false,
+        publicUrl,
       });
 
       res.setHeader('Content-Type', 'text/html; charset=utf-8');

@@ -3,7 +3,7 @@ import type { EfiProfile, SocialProfiles } from '@shared';
 // ─── HTML escape ──────────────────────────────────────────────────────────────
 
 export function escapeHtml(value: string) {
-  return value
+  return (value ?? '')
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -146,8 +146,9 @@ export function generateEfiLinkHtml(params: {
   efiProfile: EfiProfile;
   accentColor: string;
   forceDark?: boolean;
+  publicUrl?: string;
 }): string {
-  const { name, handle, tagline, avatar, socialProfiles, efiProfile, accentColor, forceDark = false } = params;
+  const { name, handle, tagline, avatar, socialProfiles, efiProfile, accentColor, forceDark = false, publicUrl = '' } = params;
   const accent = resolveAccent(accentColor);
   const isDark = accent.forceDark || forceDark;
 
@@ -216,40 +217,36 @@ export function generateEfiLinkHtml(params: {
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${escapeHtml(name)} — Efi</title>
   <meta name="description" content="${escapeHtml(tagline || name)}" />
+  <meta property="og:type" content="profile" />
   <meta property="og:title" content="${escapeHtml(name)}" />
   <meta property="og:description" content="${escapeHtml(tagline || name)}" />
+  ${publicUrl ? `<meta property="og:url" content="${escapeHtml(publicUrl)}" />` : ''}
   ${avatar ? `<meta property="og:image" content="${escapeHtml(avatar)}" />` : ''}
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="${escapeHtml(name)}" />
+  <meta name="twitter:description" content="${escapeHtml(tagline || name)}" />
+  ${avatar ? `<meta name="twitter:image" content="${escapeHtml(avatar)}" />` : ''}
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* ── Dark theme (default, or forced) ─────────────── */
     :root {
       --accent: ${escapeHtml(accent.hex)};
       --accent-gradient: ${escapeHtml(accent.gradient)};
-      --bg: #0d0d0d;
-      --surface: rgba(255,255,255,0.05);
-      --surface-hover: rgba(255,255,255,0.08);
-      --border: rgba(255,255,255,0.09);
-      --border-hover: rgba(255,255,255,0.18);
-      --text: #f2f2f2;
-      --text-secondary: rgba(242,242,242,0.48);
+      --bg: ${accent.isRetro ? '#0a0700' : '#0d0d0d'};
+      --surface: ${accent.isRetro ? 'rgba(255,176,0,0.05)' : 'rgba(255,255,255,0.05)'};
+      --surface-hover: ${accent.isRetro ? 'rgba(255,176,0,0.09)' : 'rgba(255,255,255,0.08)'};
+      --border: ${accent.isRetro ? 'rgba(255,176,0,0.12)' : 'rgba(255,255,255,0.09)'};
+      --border-hover: ${accent.isRetro ? 'rgba(255,176,0,0.28)' : 'rgba(255,255,255,0.18)'};
+      --text: ${accent.isRetro ? '#ffd077' : '#f2f2f2'};
+      --text-secondary: ${accent.isRetro ? 'rgba(255,176,0,0.45)' : 'rgba(242,242,242,0.48)'};
       --radius: 16px;
       --shadow: 0 2px 16px rgba(0,0,0,0.35);
     }
 
-    ${accent.isRetro ? `
-    :root {
-      --bg: #0a0700;
-      --surface: rgba(255,176,0,0.05);
-      --surface-hover: rgba(255,176,0,0.09);
-      --border: rgba(255,176,0,0.12);
-      --border-hover: rgba(255,176,0,0.28);
-      --text: #ffd077;
-      --text-secondary: rgba(255,176,0,0.45);
-    }
-    ` : ''}
-
+    ${isDark ? '' : `
+    /* ── Light theme (OS preference, not forced dark) ─ */
     @media (prefers-color-scheme: light) {
-      ${isDark ? '' : `
       :root {
         --bg: #f7f7f7;
         --surface: rgba(0,0,0,0.04);
@@ -260,8 +257,8 @@ export function generateEfiLinkHtml(params: {
         --text-secondary: rgba(15,15,15,0.45);
         --shadow: 0 2px 16px rgba(0,0,0,0.08);
       }
-      `}
     }
+    `}
 
     body {
       background: var(--bg);
