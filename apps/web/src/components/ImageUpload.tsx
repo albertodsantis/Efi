@@ -1,5 +1,7 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { ImageSquare, Trash, CircleNotch } from '@phosphor-icons/react';
+import { ImageSquare, Trash, CircleNotch, Camera, Image } from '@phosphor-icons/react';
+import { Capacitor } from '@capacitor/core';
+import { Camera as CapCamera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { appApi } from '../lib/api';
 import { cx } from './ui';
 
@@ -25,6 +27,18 @@ interface ImageUploadProps {
   uploadsEnabled?: boolean;
 }
 
+/** Converts a base64 data URL to a File object for upload. */
+function dataUrlToFile(dataUrl: string, filename: string): File {
+  const [header, data] = dataUrl.split(',');
+  const mime = header.match(/:(.*?);/)?.[1] ?? 'image/jpeg';
+  const binary = atob(data);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return new File([bytes], filename, { type: mime });
+}
+
 export default function ImageUpload({
   value,
   onChange,
@@ -39,6 +53,9 @@ export default function ImageUpload({
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showNativeSheet, setShowNativeSheet] = useState(false);
+
+  const isNative = Capacitor.isNativePlatform();
 
   const handleFile = useCallback(
     async (file: File) => {
@@ -84,6 +101,35 @@ export default function ImageUpload({
     setError(null);
   };
 
+  const handleNativeCapture = async (source: CameraSource) => {
+    setShowNativeSheet(false);
+    try {
+      const photo = await CapCamera.getPhoto({
+        resultType: CameraResultType.DataUrl,
+        source,
+        quality: 80,
+        allowEditing: false,
+        width: 1200,
+      });
+
+      if (!photo.dataUrl) return;
+
+      const ext = photo.format ?? 'jpeg';
+      const file = dataUrlToFile(photo.dataUrl, `photo_${Date.now()}.${ext}`);
+      void handleFile(file);
+    } catch {
+      // User cancelled or permission denied — no error shown
+    }
+  };
+
+  const handleTriggerUpload = () => {
+    if (isNative) {
+      setShowNativeSheet(true);
+    } else {
+      inputRef.current?.click();
+    }
+  };
+
   // When uploads are not enabled, render a simple URL text input
   if (!uploadsEnabled) {
     return (
@@ -114,7 +160,7 @@ export default function ImageUpload({
           <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
             <button
               type="button"
-              onClick={() => inputRef.current?.click()}
+              onClick={handleTriggerUpload}
               className="rounded-full bg-white/90 p-2 text-slate-700 shadow transition-transform hover:scale-110"
               title="Cambiar imagen"
             >
@@ -134,7 +180,7 @@ export default function ImageUpload({
         /* ── Drop zone ─────────────────────────────────────── */
         <button
           type="button"
-          onClick={() => inputRef.current?.click()}
+          onClick={handleTriggerUpload}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleDrop}
@@ -164,16 +210,74 @@ export default function ImageUpload({
         </button>
       )}
 
-      <input
-        ref={inputRef}
-        type="file"
-        accept={ACCEPTED}
-        onChange={handleInputChange}
-        className="hidden"
-      />
+      {/* Web file input (hidden, unused on native) */}
+      {!isNative && (
+        <input
+          ref={inputRef}
+          type="file"
+          accept={ACCEPTED}
+          onChange={handleInputChange}
+          className="hidden"
+        />
+      )}
 
       {error && (
         <p className="mt-1.5 text-[11px] font-medium text-red-500">{error}</p>
+      )}
+
+      {/* ── Native bottom sheet ────────────────────────────────── */}
+      {showNativeSheet && (
+        <div
+          className="fixed inset-0 z-50 flex items-end"
+          onClick={() => setShowNativeSheet(false)}
+        >
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/60" />
+
+          {/* Sheet */}
+          <div
+            className="relative w-full rounded-t-2xl bg-zinc-900 pb-safe"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="mx-auto mb-3 mt-3 h-1 w-10 rounded-full bg-zinc-700" />
+
+            <p className="mb-2 px-5 text-xs font-semibold uppercase tracking-wider text-zinc-500">
+              Seleccionar imagen
+            </p>
+
+            <button
+              type="button"
+              onClick={() => void handleNativeCapture(CameraSource.Camera)}
+              className="flex w-full items-center gap-3 px-5 py-4 text-left text-sm font-medium text-white transition-colors active:bg-zinc-800"
+            >
+              <Camera size={20} className="text-zinc-400" />
+              Tomar foto
+            </button>
+
+            <div className="mx-5 h-px bg-zinc-800" />
+
+            <button
+              type="button"
+              onClick={() => void handleNativeCapture(CameraSource.Photos)}
+              className="flex w-full items-center gap-3 px-5 py-4 text-left text-sm font-medium text-white transition-colors active:bg-zinc-800"
+            >
+              <Image size={20} className="text-zinc-400" />
+              Elegir de galería
+            </button>
+
+            <div className="mx-5 h-px bg-zinc-800" />
+
+            <button
+              type="button"
+              onClick={() => setShowNativeSheet(false)}
+              className="w-full px-5 py-4 text-sm font-semibold text-zinc-400 transition-colors active:bg-zinc-800"
+            >
+              Cancelar
+            </button>
+
+            <div className="h-4" />
+          </div>
+        </div>
       )}
     </div>
   );

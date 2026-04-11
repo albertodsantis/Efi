@@ -24,6 +24,7 @@ import { toast } from '../lib/toast';
 import type { BadgeKey, Task, TaskStatus } from '@shared/domain';
 import { formatLocalDateISO, parseLocalDate, startOfLocalDay } from '../lib/date';
 import EfisystemWidget from '../components/EfisystemWidget';
+import { hapticSuccess } from '../lib/haptics';
 
 /* ── constants ──────────────────────────────────────────────── */
 
@@ -769,6 +770,7 @@ export default function Dashboard() {
 
   const handleCompleteTask = async (taskId: string) => {
     try {
+      await hapticSuccess();
       await updateTaskStatus(taskId, 'Completada');
       toast.success('¡Tarea completada!');
     } catch {

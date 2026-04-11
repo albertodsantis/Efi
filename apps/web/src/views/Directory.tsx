@@ -38,6 +38,7 @@ import CustomSelect from '../components/CustomSelect';
 import { parseLocalDate } from '../lib/date';
 import { toast } from '../lib/toast';
 import { copyToClipboard } from '../lib/share';
+import { hapticLight, hapticWarning } from '../lib/haptics';
 
 const PARTNER_STATUSES = [
   'Prospecto',
@@ -344,6 +345,7 @@ export default function Directory() {
   const handleDeleteContact = async () => {
     if (!contactPendingDeletion) return;
 
+    await hapticWarning();
     await deleteContact(contactPendingDeletion.partnerId, contactPendingDeletion.contact.id);
     setContactPendingDeletion(null);
     toast.info('Contacto eliminado');

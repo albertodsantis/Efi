@@ -51,6 +51,7 @@ import ConfirmDialog from '../components/ConfirmDialog';
 import { formatLocalDateISO, parseLocalDate, startOfLocalDay } from '../lib/date';
 import { toast } from '../lib/toast';
 import { calendarApi } from '../lib/api';
+import { hapticLight, hapticMedium, hapticWarning } from '../lib/haptics';
 
 const REVIEW_STATUS = 'En Revisión' as TaskStatus;
 const STATUSES: TaskStatus[] = ['Pendiente', 'En Progreso', REVIEW_STATUS, 'Completada', 'Cobrado'];
@@ -683,6 +684,7 @@ export default function Pipeline() {
     setUpdatingTaskId(taskId);
 
     try {
+      await hapticLight();
       await updateTaskStatus(taskId, status);
     } finally {
       setUpdatingTaskId(null);
@@ -718,6 +720,7 @@ export default function Pipeline() {
     setActiveDragTask(null);
 
     if (over && over.id !== active.data.current?.status) {
+      await hapticMedium();
       await moveTaskToStatus(active.id as string, over.id as TaskStatus);
     }
   };
@@ -729,6 +732,7 @@ export default function Pipeline() {
     setDeletingTaskId(task.id);
 
     try {
+      await hapticWarning();
       await deleteTask(task.id);
       if (editingTaskId === task.id) resetModal();
       if (

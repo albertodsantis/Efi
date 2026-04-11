@@ -1,6 +1,7 @@
 import React from 'react';
 import OverlayModal from './OverlayModal';
 import { Button, ModalPanel } from './ui';
+import { hapticWarning } from '../lib/haptics';
 
 export default function ConfirmDialog({
   title,
@@ -38,7 +39,10 @@ export default function ConfirmDialog({
             <Button
               tone={tone}
               accentColor={tone === 'primary' ? accentColor : undefined}
-              onClick={onConfirm}
+              onClick={async () => {
+                await hapticWarning();
+                onConfirm();
+              }}
               disabled={isConfirming}
               className="sm:min-w-[9rem]"
             >

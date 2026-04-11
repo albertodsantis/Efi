@@ -22,6 +22,7 @@ import { getAccentCssVariables, getGradientCss, getRepresentativeHex, getSurface
 import { addLocalDays, formatLocalDateISO } from '../lib/date';
 import { toast } from '../lib/toast';
 import { updateStatusBarColor } from '../lib/statusBar';
+import { hideSplashScreen } from '../lib/splashScreen';
 
 // ── Badge display labels ──────────────────────────────────────
 const BADGE_LABELS: Record<BadgeKey, string> = {
@@ -136,6 +137,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [bootstrapError, setBootstrapError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const splashHiddenRef = React.useRef(false);
 
   // ── Award processing ──────────────────────────────────────────
   const applyAward = useCallback((award: EfisystemAward | undefined, toastMsg?: string) => {
@@ -178,9 +180,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
       const { appState, efisystem: efisystemData } = await appApi.getBootstrap();
       setState(normalizeAppState(appState));
       setEfisystem(efisystemData ?? emptyEfisystem);
+
+      // Hide the native splash screen once app data is ready, on first load only.
+      if (!splashHiddenRef.current) {
+        splashHiddenRef.current = true;
+        void hideSplashScreen();
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'No se pudo cargar la app.';
       setBootstrapError(message);
+
+      // Hide splash on error too so the user is not stuck on the splash screen.
+      if (!splashHiddenRef.current) {
+        splashHiddenRef.current = true;
+        void hideSplashScreen();
+      }
+
       throw error;
     } finally {
       setIsBootstrapping(false);
