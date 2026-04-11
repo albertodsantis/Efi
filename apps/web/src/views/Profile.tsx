@@ -124,16 +124,9 @@ function ProfilePreview({
 
   const isMobile = device === 'mobile';
 
-  const sizeClass = isMobile ? 'w-[375px] h-[667px]' : 'w-full h-full';
-
   if (previewState === 'error') {
     return (
-      <div
-        className={cx(
-          'transition-all duration-300 mx-auto flex items-center justify-center rounded-2xl border border-[color:var(--line-soft)] bg-[var(--surface-muted)]',
-          sizeClass,
-        )}
-      >
+      <div className="w-full h-full transition-all duration-300 flex items-center justify-center rounded-2xl border border-[color:var(--line-soft)] bg-[var(--surface-muted)]">
         <div className="text-center px-6">
           <p className="text-sm font-medium text-[var(--text-secondary)]">No se pudo cargar la vista previa</p>
           <button
@@ -149,9 +142,7 @@ function ProfilePreview({
   }
 
   return (
-    <div
-      className={cx('transition-all duration-300 mx-auto relative', sizeClass)}
-    >
+    <div className="w-full h-full transition-all duration-300 relative">
       {/* Skeleton overlay — visible while loading, fades out when ready */}
       {previewState === 'loading' && (
         <div className={cx(
@@ -782,10 +773,13 @@ export default function Profile() {
       </div>
 
       {/* iframe */}
-      <div className="flex-1 overflow-hidden p-4 flex items-center justify-center">
+      <div className={cx(
+        'flex-1 min-h-0 overflow-auto p-4 flex justify-center',
+        device === 'mobile' ? 'items-start' : 'items-stretch',
+      )}>
         <div className={cx(
           'transition-all duration-300',
-          device === 'mobile' ? 'w-[375px] h-[667px]' : 'w-full h-full',
+          device === 'mobile' ? 'w-[375px] h-[667px] shrink-0' : 'w-full',
         )}>
           <ProfilePreview form={form} accentColor={profileAccentColor} forceDark={profileForceDark} device={device} />
         </div>
