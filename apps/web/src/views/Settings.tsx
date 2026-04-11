@@ -38,7 +38,7 @@ const TEMPLATE_VARIABLES = [
   { key: 'contactName', label: 'Contacto' },
   { key: 'creatorName', label: 'Yo' },
   { key: 'deliverable', label: 'Entregable' },
-  { key: 'mediaKitLink', label: 'Perfil Público' },
+  { key: 'mediaKitLink', label: 'EfiLink' },
 ] as const;
 
 const fieldClass =

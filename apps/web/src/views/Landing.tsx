@@ -53,7 +53,7 @@ const professions = [
 const features = [
   {
     icon: ChartBar,
-    title: 'Perfil Público',
+    title: 'EfiLink',
     description: 'Tu vitrina profesional. Un enlace único para tus clientes.',
   },
   {

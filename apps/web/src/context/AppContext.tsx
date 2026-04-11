@@ -24,7 +24,7 @@ import { toast } from '../lib/toast';
 
 // ── Badge display labels ──────────────────────────────────────
 const BADGE_LABELS: Record<BadgeKey, string> = {
-  perfil_estelar: 'Perfil Público Activado',
+  perfil_estelar: 'EfiLink Activado',
   vision_clara: 'Visión Clara',
   circulo_intimo: 'Círculo Íntimo',
   directorio_dorado: 'Directorio Dorado',

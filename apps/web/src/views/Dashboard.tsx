@@ -469,7 +469,7 @@ interface BadgeDef {
 }
 
 const ALL_BADGES: BadgeDef[] = [
-  { key: 'perfil_estelar',    label: 'Perfil Público Activado', description: 'Empezaste a construir tu perfil público', icon: Star },
+  { key: 'perfil_estelar',    label: 'EfiLink Activado', description: 'Empezaste a construir tu EfiLink', icon: Star },
   { key: 'vision_clara',      label: 'Visión Clara',      description: 'Definiste 3 objetivos estratégicos',     icon: Eye },
   { key: 'circulo_intimo',    label: 'Círculo Íntimo',    description: 'Agregaste 5 socios a tu red',            icon: Users },
   { key: 'directorio_dorado', label: 'Directorio Dorado', description: '10 socios y 10 contactos en tu red',    icon: Trophy },

@@ -183,7 +183,7 @@ function ProfilePreview({
 
       <iframe
         ref={iframeRef}
-        title="Vista previa del perfil público"
+        title="Vista previa de tu EfiLink"
         className={cx(
           'w-full h-full border-0 bg-transparent rounded-2xl overflow-hidden',
           isMobile && 'shadow-2xl ring-1 ring-white/10',
@@ -412,7 +412,7 @@ export default function Profile() {
                     className="flex-1 bg-transparent px-1 py-3 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/60 focus:outline-none"
                   />
                 </div>
-                {form.handle.replace(/^@/, '').length > 0 && !/^[a-zA-Z0-9_.]+$/.test(form.handle) && (
+                {form.handle.replace(/^@/, '').length > 0 && !/^[a-zA-Z0-9_.]+$/.test(form.handle.replace(/^@/, '')) && (
                   <p className="mt-1 text-xs text-red-500">Solo se permiten letras, números, guiones bajos y puntos.</p>
                 )}
               </div>
@@ -805,7 +805,7 @@ export default function Profile() {
         <div className="w-[420px] shrink-0 flex flex-col border-r border-[color:var(--line-soft)] overflow-hidden">
           <div className="px-6 py-5 border-b border-[color:var(--line-soft)] shrink-0 flex items-center justify-between">
             <div>
-              <h2 className="text-base font-bold tracking-tight text-[var(--text-primary)]">Perfil público</h2>
+              <h2 className="text-base font-bold tracking-tight text-[var(--text-primary)]">EfiLink</h2>
               <p className="text-xs text-[var(--text-secondary)] mt-0.5">Tu página de enlace personal</p>
             </div>
             {publicUrl && (

@@ -80,9 +80,9 @@ const tabs: Array<{
   },
   {
     id: 'profile',
-    label: 'Perfil Público',
-    shortLabel: 'Perfil Público',
-    description: 'Personaliza la página pública que enviarás a tus prospectos.',
+    label: 'EfiLink',
+    shortLabel: 'EfiLink',
+    description: 'Tu página de enlace personal para compartir con prospectos y marcas.',
     icon: User,
   },
   {
