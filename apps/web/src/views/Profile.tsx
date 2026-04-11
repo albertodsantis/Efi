@@ -753,7 +753,7 @@ export default function Profile() {
             )}
           >
             <DeviceMobile size={14} />
-            Móvil
+            Phone
           </button>
           <button
             onClick={() => setDevice('desktop')}
@@ -782,10 +782,10 @@ export default function Profile() {
       </div>
 
       {/* iframe */}
-      <div className="flex-1 overflow-hidden p-4 flex items-start justify-center">
+      <div className="flex-1 overflow-hidden p-4 flex items-center justify-center">
         <div className={cx(
-          'transition-all duration-300 h-full',
-          device === 'mobile' ? 'w-[375px]' : 'w-full',
+          'transition-all duration-300',
+          device === 'mobile' ? 'w-[375px] h-[667px]' : 'w-full h-full',
         )}>
           <ProfilePreview form={form} accentColor={profileAccentColor} forceDark={profileForceDark} device={device} />
         </div>
