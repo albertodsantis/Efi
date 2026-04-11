@@ -26,6 +26,7 @@ import type { SessionUser } from '@shared';
 import { authApi, ApiError } from '../lib/api';
 import { supabase } from '../lib/supabase';
 import { cx } from '../components/ui';
+import LegalModal, { type LegalPage } from '../components/LegalModal';
 
 type AuthMode = 'login' | 'register' | 'forgot';
 
@@ -97,6 +98,7 @@ export default function Landing({
   const [error, setError] = useState('');
   const [serverUnreachable, setServerUnreachable] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
+  const [legalPage, setLegalPage] = useState<LegalPage | null>(null);
 
   const pillsContainerRef = useRef<HTMLDivElement>(null);
 
@@ -580,9 +582,21 @@ export default function Landing({
                           />
                           <span className="text-[11px] leading-5 text-[var(--text-secondary)]/70">
                             Acepto los{' '}
-                            <span className="font-bold text-[var(--text-secondary)]">términos de servicio</span>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.preventDefault(); setLegalPage('terms'); }}
+                              className="font-bold text-(--text-secondary) underline underline-offset-2 hover:text-(--text-primary) transition-colors"
+                            >
+                              términos de servicio
+                            </button>
                             {' '}y la{' '}
-                            <span className="font-bold text-[var(--text-secondary)]">política de privacidad</span>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.preventDefault(); setLegalPage('privacy'); }}
+                              className="font-bold text-(--text-secondary) underline underline-offset-2 hover:text-(--text-primary) transition-colors"
+                            >
+                              política de privacidad
+                            </button>
                           </span>
                         </label>
                       )}
@@ -609,11 +623,6 @@ export default function Landing({
                   </>
                 )}
 
-                {mode !== 'forgot' && (
-                <p className="mt-5 text-center text-[11px] leading-5 text-[var(--text-secondary)]/60">
-                  Al continuar, aceptas nuestros términos de servicio y política de privacidad.
-                </p>
-                )}
               </div>
             </div>
           </div>
@@ -651,12 +660,34 @@ export default function Landing({
         </div>
 
         {/* Footer */}
-        <div className="border-t py-8 text-center [border-color:var(--line-soft)] lg:mt-16">
-          <p className="text-xs text-[var(--text-secondary)]/60">
-            Efi - workspace operativo para freelancers.
-          </p>
+        <div className="border-t py-8 [border-color:var(--line-soft)] lg:mt-16">
+          <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+            <p className="text-xs text-(--text-secondary)/60">
+              © {new Date().getFullYear()} Efi — workspace operativo para freelancers.
+            </p>
+            <div className="flex items-center gap-4">
+              {([
+                { label: 'Términos', page: 'terms' },
+                { label: 'Privacidad', page: 'privacy' },
+                { label: 'Cookies', page: 'cookies' },
+              ] as { label: string; page: LegalPage }[]).map(({ label, page }) => (
+                <button
+                  key={page}
+                  type="button"
+                  onClick={() => setLegalPage(page)}
+                  className="text-xs text-(--text-secondary)/60 hover:text-(--text-secondary) transition-colors"
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
+
+      {legalPage && (
+        <LegalModal page={legalPage} onClose={() => setLegalPage(null)} />
+      )}
     </div>
   );
 }

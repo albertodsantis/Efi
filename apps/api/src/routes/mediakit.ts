@@ -32,12 +32,23 @@ export function createMediaKitRouter(pool: pg.Pool, isDev = false): Router {
       );
 
       if (rows.length === 0) {
+        const baseUrl = `${req.protocol}://${req.get('host')}`;
         const notFoundHtml = `<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Perfil no encontrado — Efi</title>
+  <meta name="description" content="Este perfil no existe en Efi. Crea el tuyo gratis." />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Perfil no encontrado — Efi" />
+  <meta property="og:description" content="Este perfil no existe en Efi. Crea el tuyo gratis." />
+  <meta property="og:url" content="${baseUrl}${req.path}" />
+  <meta property="og:image" content="${baseUrl}/icons/icon-512.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Perfil no encontrado — Efi" />
+  <meta name="twitter:description" content="Este perfil no existe en Efi. Crea el tuyo gratis." />
+  <meta name="twitter:image" content="${baseUrl}/icons/icon-512.png" />
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {

@@ -253,11 +253,11 @@ export function generateEfiLinkHtml(params: {
   <meta property="og:title" content="${escapeHtml(name)}" />
   <meta property="og:description" content="${escapeHtml(tagline || name)}" />
   ${publicUrl ? `<meta property="og:url" content="${escapeHtml(publicUrl)}" />` : ''}
-  ${avatar ? `<meta property="og:image" content="${escapeHtml(avatar)}" />` : ''}
+  <meta property="og:image" content="${escapeHtml(avatar || (publicUrl ? new URL('/icons/icon-512.png', publicUrl).href : ''))}" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="${escapeHtml(name)}" />
   <meta name="twitter:description" content="${escapeHtml(tagline || name)}" />
-  ${avatar ? `<meta name="twitter:image" content="${escapeHtml(avatar)}" />` : ''}
+  <meta name="twitter:image" content="${escapeHtml(avatar || (publicUrl ? new URL('/icons/icon-512.png', publicUrl).href : ''))}" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
