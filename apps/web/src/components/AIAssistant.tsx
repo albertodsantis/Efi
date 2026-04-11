@@ -29,6 +29,12 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
   } = useAppContext();
   const isAiAvailable = Boolean(ai);
   const [isOpen, setIsOpen] = useState(false);
+
+  useEffect(() => {
+    const handler = () => setIsOpen(false);
+    window.addEventListener('efi:close-ai', handler);
+    return () => window.removeEventListener('efi:close-ai', handler);
+  }, []);
   const [messages, setMessages] = useState<AssistantMessage[]>([
     {
       role: 'model',
@@ -347,6 +353,7 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
           />
 
           <div
+            id="efi-assistant-panel"
             className={`z-[110] flex flex-col overflow-hidden border border-[color:var(--line-soft)] shadow-[0_30px_90px_-34px_rgba(63,43,33,0.42)] animate-in fade-in slide-in-from-bottom-8 duration-300 ${panelGradient} ${
               isDesktop
                 ? 'fixed right-6 bottom-24 h-[min(560px,calc(100dvh-8rem))] w-[min(420px,calc(100vw-2rem))] rounded-[1.45rem]'

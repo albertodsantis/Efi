@@ -40,6 +40,7 @@ import { Avatar, SurfaceCard, cx } from './components/ui';
 import { authApi } from './lib/api';
 import { supabase } from './lib/supabase';
 import { getAccentSecondary } from './lib/accent';
+import { registerAndroidBackHandler } from './lib/androidBack';
 
 type TabId = 'dashboard' | 'pipeline' | 'directory' | 'strategic' | 'profile' | 'settings';
 
@@ -390,6 +391,15 @@ const MainLayout = () => {
   const [activeTab, setActiveTab] = useState<TabId>('dashboard');
   const [activeLegalPage, setActiveLegalPage] = useState<LegalPage | null>(null);
   const isDesktop = useIsDesktop();
+  const activeTabRef = useRef<TabId>('dashboard');
+  activeTabRef.current = activeTab;
+
+  useEffect(() => {
+    return registerAndroidBackHandler(
+      () => activeTabRef.current,
+      setActiveTab,
+    );
+  }, []);
   const mainRegionRef = useRef<HTMLElement | null>(null);
   const {
     accentColor,

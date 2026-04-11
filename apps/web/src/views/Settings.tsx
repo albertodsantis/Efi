@@ -6,6 +6,7 @@ import {
   CaretDown,
   SignOut,
   Chat,
+  DownloadSimple,
   Envelope,
   LockKey,
   Moon,
@@ -38,6 +39,7 @@ import {
 import { authApi } from '../lib/api';
 import { toast } from '../lib/toast';
 import { ACCENT_OPTIONS, getSwatchCss } from '../lib/accent';
+import { exportUserData } from '../lib/exportData';
 
 const TEMPLATE_VARIABLES = [
   { key: 'brandName', label: 'Cliente' },
@@ -69,6 +71,9 @@ export default function Settings() {
     reportActionError,
     onLogout,
     tasks,
+    partners,
+    profileAccentColor,
+    profileForceDark,
   } = useAppContext();
   const [isAddingTemplate, setIsAddingTemplate] = useState(false);
   const [taskRemindersEnabled, setTaskRemindersEnabled] = useState(
@@ -260,6 +265,24 @@ export default function Settings() {
   const handleResetTour = () => {
     localStorage.removeItem('hasSeenOnboardingTour');
     window.location.reload();
+  };
+
+  const handleExport = async () => {
+    try {
+      await exportUserData({
+        tasks,
+        partners,
+        profile,
+        templates,
+        accentColor,
+        theme,
+        profileAccentColor,
+        profileForceDark,
+      });
+      toast.success('Datos exportados correctamente');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'No se pudo exportar los datos.');
+    }
   };
 
   const handleDeleteAccount = async () => {
@@ -568,6 +591,18 @@ export default function Settings() {
               trailing={
                 <span className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
                   {provider === 'google' ? 'Agregar' : 'Cambiar'}
+                </span>
+              }
+              className="px-0 py-3"
+            />
+            <SettingRow
+              icon={DownloadSimple}
+              title="Exportar mis datos"
+              description="Descarga un respaldo de tus tareas, partners y contactos."
+              onClick={() => void handleExport()}
+              trailing={
+                <span className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
+                  Exportar
                 </span>
               }
               className="px-0 py-3"
