@@ -79,6 +79,9 @@ const sectionLabel =
 
 // ─── Preview iframe ───────────────────────────────────────────────────────────
 
+// Desktop preview renders the iframe at 1280px wide and scales it down to fit the container
+const DESKTOP_IFRAME_WIDTH = 1280;
+
 function ProfilePreview({
   form,
   accentColor,
@@ -91,8 +94,10 @@ function ProfilePreview({
   device: PreviewDevice;
 }) {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [previewState, setPreviewState] = useState<PreviewState>('loading');
+  const [desktopScale, setDesktopScale] = useState(1);
 
   const refresh = useCallback(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -122,6 +127,21 @@ function ProfilePreview({
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [refresh]);
 
+  // Recalculate scale whenever the wrapper resizes (Desktop mode only)
+  useEffect(() => {
+    if (device !== 'desktop') return;
+    const el = wrapRef.current;
+    if (!el) return;
+    const measure = () => {
+      const w = el.offsetWidth;
+      if (w > 0) setDesktopScale(w / DESKTOP_IFRAME_WIDTH);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [device]);
+
   const isMobile = device === 'mobile';
 
   if (previewState === 'error') {
@@ -141,44 +161,63 @@ function ProfilePreview({
     );
   }
 
-  return (
-    <div className="w-full h-full transition-all duration-300 relative">
-      {/* Skeleton overlay — visible while loading, fades out when ready */}
-      {previewState === 'loading' && (
-        <div className={cx(
-          'absolute inset-0 z-10 rounded-2xl bg-[var(--surface-muted)] overflow-hidden',
-          isMobile && 'shadow-2xl ring-1 ring-white/10',
-        )}>
-          <div className="flex flex-col items-center pt-14 px-8 gap-4 animate-pulse">
-            {/* Avatar placeholder */}
-            <div className="w-20 h-20 rounded-full bg-[var(--line-soft)]" />
-            {/* Name */}
-            <div className="h-4 w-32 rounded-full bg-[var(--line-soft)]" />
-            {/* Tagline */}
-            <div className="h-3 w-48 rounded-full bg-[var(--line-soft)]" />
-            {/* Socials row */}
-            <div className="flex gap-2 mt-1">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="w-10 h-10 rounded-xl bg-[var(--line-soft)]" />
-              ))}
+  if (isMobile) {
+    return (
+      <div className="w-full h-full transition-all duration-300 relative">
+        {previewState === 'loading' && (
+          <div className="absolute inset-0 z-10 rounded-2xl bg-[var(--surface-muted)] overflow-hidden shadow-2xl ring-1 ring-white/10">
+            <div className="flex flex-col items-center pt-14 px-8 gap-4 animate-pulse">
+              <div className="w-20 h-20 rounded-full bg-[var(--line-soft)]" />
+              <div className="h-4 w-32 rounded-full bg-[var(--line-soft)]" />
+              <div className="h-3 w-48 rounded-full bg-[var(--line-soft)]" />
+              <div className="flex gap-2 mt-1">
+                {[...Array(4)].map((_, i) => <div key={i} className="w-10 h-10 rounded-xl bg-[var(--line-soft)]" />)}
+              </div>
+              <div className="w-full flex flex-col gap-3 mt-2">
+                {[...Array(3)].map((_, i) => <div key={i} className="h-12 w-full rounded-2xl bg-[var(--line-soft)]" />)}
+              </div>
             </div>
-            {/* Link buttons */}
+          </div>
+        )}
+        <iframe
+          ref={iframeRef}
+          title="Vista previa de tu EfiLink"
+          className="w-full h-full border-0 bg-transparent rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10"
+          sandbox="allow-same-origin"
+        />
+      </div>
+    );
+  }
+
+  // Desktop: iframe rendered at full 1280px width, scaled down to fit the container
+  return (
+    <div ref={wrapRef} className="w-full h-full transition-all duration-300 relative overflow-hidden rounded-2xl">
+      {previewState === 'loading' && (
+        <div className="absolute inset-0 z-10 rounded-2xl bg-[var(--surface-muted)] overflow-hidden">
+          <div className="flex flex-col items-center pt-14 px-8 gap-4 animate-pulse">
+            <div className="w-20 h-20 rounded-full bg-[var(--line-soft)]" />
+            <div className="h-4 w-32 rounded-full bg-[var(--line-soft)]" />
+            <div className="h-3 w-48 rounded-full bg-[var(--line-soft)]" />
+            <div className="flex gap-2 mt-1">
+              {[...Array(4)].map((_, i) => <div key={i} className="w-10 h-10 rounded-xl bg-[var(--line-soft)]" />)}
+            </div>
             <div className="w-full flex flex-col gap-3 mt-2">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-12 w-full rounded-2xl bg-[var(--line-soft)]" />
-              ))}
+              {[...Array(3)].map((_, i) => <div key={i} className="h-12 w-full rounded-2xl bg-[var(--line-soft)]" />)}
             </div>
           </div>
         </div>
       )}
-
       <iframe
         ref={iframeRef}
         title="Vista previa de tu EfiLink"
-        className={cx(
-          'w-full h-full border-0 bg-transparent rounded-2xl overflow-hidden',
-          isMobile && 'shadow-2xl ring-1 ring-white/10',
-        )}
+        style={{
+          width: DESKTOP_IFRAME_WIDTH,
+          height: desktopScale > 0 ? `${100 / desktopScale}%` : '100%',
+          transform: `scale(${desktopScale})`,
+          transformOrigin: 'top left',
+          border: 'none',
+          display: 'block',
+        }}
         sandbox="allow-same-origin"
       />
     </div>
