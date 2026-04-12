@@ -38,6 +38,7 @@ export interface Contact {
 export interface Partner {
   id: string;
   name: string;
+  emoji?: string;
   status: PartnerStatus;
   logo?: string;
   contacts: Contact[];
