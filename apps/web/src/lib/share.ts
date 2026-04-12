@@ -40,7 +40,7 @@ export async function copyToClipboard(text: string): Promise<CopyResult> {
  */
 export async function shareEfiLink(handle: string): Promise<CopyResult> {
   const cleanHandle = handle.replace(/^@/, '');
-  const baseUrl = 'https://efi.app';
+  const baseUrl = 'https://efidesk.com';
   const url = `${baseUrl}/@${cleanHandle}`;
   const isNative = Capacitor.isNativePlatform();
 

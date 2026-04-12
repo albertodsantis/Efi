@@ -75,7 +75,7 @@ function PrivacyContent() {
         <p>
           Tienes derecho a acceder, rectificar y eliminar tus datos personales en cualquier
           momento. Para ejercer estos derechos, escríbenos a{' '}
-          <strong className="text-[var(--text-primary)]">soporte@efi.app</strong>.
+          <strong className="text-[var(--text-primary)]">soporte@efidesk.com</strong>.
         </p>
       </Section>
     </>
@@ -226,7 +226,7 @@ function FaqContent() {
     },
     {
       q: '¿Cómo puedo cerrar o eliminar mi cuenta?',
-      a: 'Puedes cerrar sesión desde el botón de la barra lateral. Para eliminar tu cuenta y todos tus datos, escríbenos a soporte@efi.app y lo gestionamos en 48 horas.',
+      a: 'Puedes cerrar sesión desde el botón de la barra lateral. Para eliminar tu cuenta y todos tus datos, escríbenos a soporte@efidesk.com y lo gestionamos en 48 horas.',
     },
     {
       q: '¿Efi funciona en el móvil?',
@@ -234,7 +234,7 @@ function FaqContent() {
     },
     {
       q: '¿Cómo contacto con soporte?',
-      a: 'Escríbenos a soporte@efi.app. Respondemos en un plazo de 1–2 días hábiles.',
+      a: 'Escríbenos a soporte@efidesk.com. Respondemos en un plazo de 1–2 días hábiles.',
     },
   ];
 

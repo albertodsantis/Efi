@@ -678,18 +678,18 @@ export default function Landing({
             </p>
             <div className="flex items-center gap-4">
               {([
-                { label: 'Términos', page: 'terms' },
-                { label: 'Privacidad', page: 'privacy' },
-                { label: 'Cookies', page: 'cookies' },
-              ] as { label: string; page: LegalPage }[]).map(({ label, page }) => (
-                <button
+                { label: 'Términos', page: 'terms' as LegalPage, href: '/terminos' },
+                { label: 'Privacidad', page: 'privacy' as LegalPage, href: '/privacidad' },
+                { label: 'Cookies', page: 'cookies' as LegalPage, href: undefined },
+              ]).map(({ label, page, href }) => (
+                <a
                   key={page}
-                  type="button"
-                  onClick={() => setLegalPage(page)}
+                  href={href ?? '#'}
+                  onClick={(e) => { e.preventDefault(); setLegalPage(page); }}
                   className="text-xs text-(--text-secondary)/60 hover:text-(--text-secondary) transition-colors"
                 >
                   {label}
-                </button>
+                </a>
               ))}
             </div>
           </div>

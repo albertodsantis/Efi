@@ -2,6 +2,7 @@ import path from 'path';
 import express from 'express';
 import { createServer as createViteServer } from 'vite';
 import { createApp } from './app';
+import { renderPrivacyPage, renderTermsPage } from './lib/legalRenderer';
 
 const repoRoot = process.cwd();
 const webRoot = path.join(repoRoot, 'apps', 'web');
@@ -9,6 +10,14 @@ const webDistPath = path.join(webRoot, 'dist');
 
 async function startServer() {
   const { app, env, closePool } = await createApp();
+
+  // Server-rendered legal pages (crawlable by Google for OAuth verification)
+  app.get('/privacidad', (_req, res) => {
+    res.type('html').send(renderPrivacyPage());
+  });
+  app.get('/terminos', (_req, res) => {
+    res.type('html').send(renderTermsPage());
+  });
 
   // Frontend serving
   if (env.NODE_ENV !== 'production') {

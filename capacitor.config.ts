@@ -8,8 +8,8 @@ const config: CapacitorConfig = {
     // During development, point to Railway so the app uses the live backend.
     // Comment this out when building for production app store releases
     // (the built frontend will be bundled into the native app instead).
-    // url: 'https://efi.up.railway.app',
-    // allowNavigation: ['efi.up.railway.app'],
+    // url: 'https://efidesk.com',
+    // allowNavigation: ['efidesk.com'],
   },
   plugins: {
     SplashScreen: {

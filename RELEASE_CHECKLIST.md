@@ -6,7 +6,7 @@ Everything below is a one-time setup. Once done, future updates are just steps 3
 
 ## Prerequisites (do these when ready)
 
-- [ ] Buy domain (efi.app or similar)
+- [x] Buy domain — efidesk.com (purchased via Porkbun)
 - [ ] Pay Google Play Developer account ($25 one-time) at play.google.com/console
 - [ ] Install Android Studio
 
