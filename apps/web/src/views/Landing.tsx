@@ -113,38 +113,44 @@ export default function Landing({
     const ctx = gsap.context(() => {
       const pills = gsap.utils.toArray<HTMLElement>('.profession-pill');
 
-      // Phase 1 — Toy Story entrance: pills snap into place from random scatter
+      // Phase 1 — Toy Story entrance: pills fly in from random scatter
       gsap.fromTo(
         pills,
         {
           opacity: 0,
-          x: () => gsap.utils.random(-15, 15),
-          y: () => gsap.utils.random(-12, 12),
-          rotation: () => gsap.utils.random(-5, 5),
+          scale: 0.4,
+          x: () => gsap.utils.random(-80, 80),
+          y: () => gsap.utils.random(-60, 60),
+          rotation: () => gsap.utils.random(-25, 25),
         },
         {
           opacity: 1,
+          scale: 1,
           x: 0,
           y: 0,
           rotation: 0,
-          duration: 0.65,
-          ease: 'back.out(1.5)',
-          stagger: 0.015,
-          delay: 0.1,
+          duration: 0.7,
+          ease: 'back.out(1.8)',
+          stagger: {
+            each: 0.055,
+            from: 'random',
+          },
+          delay: 0.2,
         },
       );
 
-      // Phase 2 — Hover: each pill tilts to its own fixed random direction
+      // Phase 2 — Hover: each pill lifts and tilts noticeably
       pills.forEach((pill) => {
         const dir = Math.random() > 0.5 ? 1 : -1;
-        const angle = gsap.utils.random(2, 4);
+        const angle = gsap.utils.random(6, 12);
 
         pill.addEventListener('mouseenter', () => {
           gsap.to(pill, {
-            y: -3,
+            y: -6,
+            scale: 1.12,
             rotation: dir * angle,
-            duration: 0.3,
-            ease: 'elastic.out(1, 0.5)',
+            duration: 0.25,
+            ease: 'back.out(2)',
             overwrite: true,
           });
         });
@@ -152,6 +158,7 @@ export default function Landing({
         pill.addEventListener('mouseleave', () => {
           gsap.to(pill, {
             y: 0,
+            scale: 1,
             rotation: 0,
             duration: 0.5,
             ease: 'elastic.out(1, 0.4)',
