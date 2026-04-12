@@ -43,33 +43,6 @@ function buildEmailHtml({
       <td align="center">
         <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px;">
 
-          <!-- Logo -->
-          <tr>
-            <td align="center" style="padding-bottom:32px;">
-              <table cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td style="padding-right:10px;vertical-align:middle;">
-                    <svg width="32" height="32" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <defs>
-                        <linearGradient id="g" x1="0%" y1="100%" x2="100%" y2="0%">
-                          <stop offset="0%"   stop-color="#FCAF45"/>
-                          <stop offset="30%"  stop-color="#F56040"/>
-                          <stop offset="60%"  stop-color="#E1306C"/>
-                          <stop offset="100%" stop-color="#833AB4"/>
-                        </linearGradient>
-                      </defs>
-                      <rect x="26" y="18" width="12" height="28" rx="6" fill="url(#g)" opacity="0.65"/>
-                      <path d="M10,24 C10,15 18,9 32,9 C46,9 54,15 54,24 C54,27 48,28 40,26 C36,25 34,22 32,22 C30,22 28,25 24,26 C16,28 10,27 10,24Z" fill="url(#g)"/>
-                    </svg>
-                  </td>
-                  <td style="vertical-align:middle;">
-                    <span style="font-size:22px;font-weight:400;color:#1a1a1e;letter-spacing:-0.3px;">Efi</span>
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-
           <!-- Card -->
           <tr>
             <td style="background-color:#ffffff;border:1px solid #e4e4e8;border-radius:20px;padding:40px 36px;">
@@ -124,13 +97,14 @@ function buildEmailHtml({
 }
 
 export async function sendWelcomeEmail(email: string, name: string): Promise<void> {
+  const firstName = name.trim().split(/\s+/)[0];
   await getClient().emails.send({
     from: FROM,
     to: email,
-    subject: '¡Bienvenido a Efi! 👋',
+    subject: '¡Bienvenid@ a Efi! 👋',
     html: buildEmailHtml({
       preheader: 'Tu workspace ya está listo. Empieza a gestionar tu actividad freelance.',
-      title: `Bienvenido a Efi, ${name} 👋`,
+      title: `Bienvenid@ a Efi, ${firstName} 👋`,
       body: 'Tu workspace ya está listo.',
       ctaUrl: APP_URL,
       ctaText: 'Ir a mi workspace',
