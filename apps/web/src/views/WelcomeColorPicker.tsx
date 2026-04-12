@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, Check } from '@phosphor-icons/react';
+import { Check } from '@phosphor-icons/react';
 import { ACCENT_OPTIONS, getAccessibleAccentForeground, getRepresentativeHex, getSwatchCss } from '../lib/accent';
 
 const BRAND_ORANGE = '#F56040';
@@ -111,7 +111,6 @@ export default function WelcomeColorPicker({
           }
         >
           {saving ? 'Preparando tu workspace…' : 'Continuar'}
-          {!saving && <ArrowRight size={16} />}
         </button>
       </div>
     </div>

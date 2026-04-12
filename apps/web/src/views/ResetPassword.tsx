@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, Eye, EyeSlash } from '@phosphor-icons/react';
+import { Eye, EyeSlash } from '@phosphor-icons/react';
 import { authApi } from '../lib/api';
 
 const BRAND_ORANGE = '#F56040';
@@ -92,7 +92,6 @@ export default function ResetPassword({ token, onDone }: { token: string; onDone
                   }}
                 >
                   Ir a iniciar sesión
-                  <ArrowRight size={16} />
                 </button>
               </div>
             ) : (
@@ -149,7 +148,6 @@ export default function ResetPassword({ token, onDone }: { token: string; onDone
                   }}
                 >
                   {loading ? 'Guardando…' : 'Guardar contraseña'}
-                  {!loading ? <ArrowRight size={16} /> : null}
                 </button>
               </form>
             )}

@@ -1,6 +1,5 @@
 import React, { useRef, useState } from 'react';
 import {
-  ArrowRight,
   Article,
   Broadcast,
   Briefcase,
@@ -384,7 +383,6 @@ function ProfessionStep({
         className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-(--accent) py-4 text-sm font-bold text-(--accent-foreground) transition-all active:scale-[0.98] hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed"
       >
         {saving ? 'Guardando…' : 'Continuar'}
-        {!saving && <ArrowRight size={16} />}
       </button>
     </div>
   );
@@ -443,7 +441,6 @@ function DataStep({
         className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-(--accent) py-4 text-sm font-bold text-(--accent-foreground) transition-all active:scale-[0.98] hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {saving ? 'Guardando…' : ctaLabel}
-        {!saving && <ArrowRight size={16} />}
       </button>
       <button
         type="button"

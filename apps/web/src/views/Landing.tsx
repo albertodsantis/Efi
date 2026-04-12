@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import gsap from 'gsap';
 import {
-  ArrowRight,
   Article,
   Briefcase,
   Broadcast,
@@ -459,7 +458,6 @@ export default function Landing({
                           style={{ backgroundImage: `linear-gradient(135deg, ${BRAND_ORANGE}, ${BRAND_PINK}, ${BRAND_PURPLE})` }}
                         >
                           {loading ? 'Enviando…' : 'Enviar enlace'}
-                          {!loading ? <ArrowRight size={16} /> : null}
                         </button>
                       </form>
                     )}
@@ -628,7 +626,6 @@ export default function Landing({
                         {loading
                           ? (isLogin ? 'Ingresando…' : 'Creando cuenta…')
                           : (isLogin ? 'Iniciar sesion' : 'Crear cuenta')}
-                        {!loading ? <ArrowRight size={16} /> : null}
                       </button>
                     </form>
                   </>
