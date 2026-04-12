@@ -7,6 +7,7 @@ import {
   Buildings,
   Camera,
   ChatsCircle,
+  Check,
   Compass,
   DotsThreeCircle,
   Headphones,
@@ -64,21 +65,48 @@ function Glows() {
 const STEPS = ['profession', 'partner', 'goal'] as const;
 type Step = (typeof STEPS)[number];
 
+const STEP_LABELS = ['Perfil', 'Colaboración', 'Objetivo'] as const;
+
 function ProgressDots({ current }: { current: Step }) {
   const idx = STEPS.indexOf(current);
   return (
-    <div className="mb-10 flex items-center justify-center gap-2">
-      {STEPS.map((s, i) => (
-        <div
-          key={s}
-          className="h-1.5 rounded-full transition-all duration-300"
-          style={{
-            width: i === idx ? '2rem' : '0.5rem',
-            backgroundColor: i === idx ? 'var(--accent)' : 'var(--text-tertiary)',
-            opacity: i === idx ? 1 : i < idx ? 0.6 : 0.3,
-          }}
-        />
-      ))}
+    <div className="mb-10 flex items-center justify-center gap-6">
+      {STEPS.map((s, i) => {
+        const completed = i < idx;
+        const active = i === idx;
+        return (
+          <div key={s} className="flex flex-col items-center gap-1.5">
+            <div
+              className="flex items-center justify-center rounded-full transition-all duration-300"
+              style={{
+                width: completed || active ? '2rem' : '0.625rem',
+                height: completed || active ? '2rem' : '0.625rem',
+                backgroundColor: completed
+                  ? 'var(--accent)'
+                  : active
+                    ? 'color-mix(in srgb, var(--accent) 15%, transparent)'
+                    : 'var(--border-subtle)',
+                borderWidth: active ? '2px' : '0',
+                borderColor: active ? 'var(--accent)' : 'transparent',
+                borderStyle: 'solid',
+                animation: completed ? 'check-pop 0.22s ease-out' : 'none',
+              }}
+            >
+              {completed && <Check size={14} weight="bold" color="var(--accent-foreground)" />}
+            </div>
+            {(completed || active) && (
+              <span
+                className="text-[0.625rem] font-semibold transition-opacity duration-300"
+                style={{
+                  color: completed ? 'var(--accent)' : 'var(--text-secondary)',
+                }}
+              >
+                {STEP_LABELS[i]}
+              </span>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
