@@ -11,8 +11,152 @@ function getClient(): Resend {
   return resend;
 }
 
-const FROM = 'Efi <onboarding@resend.dev>';
+const FROM = 'Efi <hola@efidesk.com>';
 const APP_URL = process.env.APP_URL || 'http://localhost:3000';
+
+function buildEmailHtml({
+  preheader,
+  title,
+  body,
+  ctaUrl,
+  ctaText,
+  expiryNote,
+}: {
+  preheader: string;
+  title: string;
+  body: string;
+  ctaUrl: string;
+  ctaText: string;
+  expiryNote: string;
+}): string {
+  return `<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Efi</title>
+</head>
+<body style="margin:0;padding:0;background-color:#f4f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+  <span style="display:none;max-height:0;overflow:hidden;">${preheader}</span>
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f4f4f6;padding:40px 16px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="max-width:480px;">
+
+          <!-- Logo -->
+          <tr>
+            <td align="center" style="padding-bottom:32px;">
+              <table cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="padding-right:10px;vertical-align:middle;">
+                    <svg width="32" height="32" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <defs>
+                        <linearGradient id="g" x1="0%" y1="100%" x2="100%" y2="0%">
+                          <stop offset="0%"   stop-color="#FCAF45"/>
+                          <stop offset="30%"  stop-color="#F56040"/>
+                          <stop offset="60%"  stop-color="#E1306C"/>
+                          <stop offset="100%" stop-color="#833AB4"/>
+                        </linearGradient>
+                      </defs>
+                      <rect x="26" y="18" width="12" height="28" rx="6" fill="url(#g)" opacity="0.65"/>
+                      <path d="M10,24 C10,15 18,9 32,9 C46,9 54,15 54,24 C54,27 48,28 40,26 C36,25 34,22 32,22 C30,22 28,25 24,26 C16,28 10,27 10,24Z" fill="url(#g)"/>
+                    </svg>
+                  </td>
+                  <td style="vertical-align:middle;">
+                    <span style="font-size:22px;font-weight:400;color:#1a1a1e;letter-spacing:-0.3px;">Efi</span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- Card -->
+          <tr>
+            <td style="background-color:#ffffff;border:1px solid #e4e4e8;border-radius:20px;padding:40px 36px;">
+              <h2 style="margin:0 0 10px;font-size:22px;font-weight:800;color:#1a1a1e;letter-spacing:-0.4px;line-height:1.2;">
+                ${title}
+              </h2>
+              <p style="margin:0 0 28px;font-size:15px;line-height:1.65;color:#5a5a66;">
+                ${body}
+              </p>
+              <table cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="border-radius:14px;background:linear-gradient(135deg,#F56040,#E1306C,#833AB4);box-shadow:0 12px 30px -10px #E1306C55;">
+                    <a href="${ctaUrl}"
+                       style="display:inline-block;padding:14px 28px;font-size:15px;font-weight:700;color:#ffffff;text-decoration:none;letter-spacing:-0.1px;">
+                      ${ctaText} &rarr;
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:24px 0 0;font-size:13px;color:#8a8a96;line-height:1.6;">
+                ${expiryNote}
+              </p>
+              <hr style="border:none;border-top:1px solid #e4e4e8;margin:28px 0;" />
+              <p style="margin:0;font-size:12px;color:#a0a0ab;line-height:1.6;">
+                Si no solicitaste esto, puedes ignorar este correo. Tu cuenta está segura.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td align="center" style="padding-top:28px;">
+              <p style="margin:0 0 8px;font-size:12px;color:#a0a0ab;">
+                Efi &mdash; workspace para profesionales independientes
+              </p>
+              <p style="margin:0;font-size:12px;">
+                <a href="https://efidesk.com" style="color:#8a8a96;text-decoration:none;">efidesk.com</a>
+                &nbsp;&middot;&nbsp;
+                <a href="https://efidesk.com/privacidad" style="color:#8a8a96;text-decoration:none;">Privacidad</a>
+                &nbsp;&middot;&nbsp;
+                <a href="mailto:hola@efidesk.com" style="color:#8a8a96;text-decoration:none;">hola@efidesk.com</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+export async function sendWelcomeEmail(email: string, name: string): Promise<void> {
+  await getClient().emails.send({
+    from: FROM,
+    to: email,
+    subject: '¡Bienvenido a Efi! 👋',
+    html: buildEmailHtml({
+      preheader: 'Tu workspace ya está listo. Empieza a gestionar tu actividad freelance.',
+      title: `Bienvenido a Efi, ${name} 👋`,
+      body: `Tu workspace ya está listo. Aquí tienes todo lo que necesitas para gestionar tu actividad como profesional independiente.
+        <br/><br/>
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:8px;">
+          <tr><td style="padding:10px 0;border-bottom:1px solid #f0f0f3;">
+            <span style="font-size:14px;font-weight:700;color:#1a1a1e;">🔗 EfiLink</span>
+            <span style="font-size:13px;color:#8a8a96;padding-left:6px;">Tu vitrina profesional en un solo enlace.</span>
+          </td></tr>
+          <tr><td style="padding:10px 0;border-bottom:1px solid #f0f0f3;">
+            <span style="font-size:14px;font-weight:700;color:#1a1a1e;">📋 Pipeline</span>
+            <span style="font-size:13px;color:#8a8a96;padding-left:6px;">Gestiona entregas en Kanban, lista y calendario.</span>
+          </td></tr>
+          <tr><td style="padding:10px 0;border-bottom:1px solid #f0f0f3;">
+            <span style="font-size:14px;font-weight:700;color:#1a1a1e;">👥 Directorio</span>
+            <span style="font-size:13px;color:#8a8a96;padding-left:6px;">Organiza tus clientes y contactos.</span>
+          </td></tr>
+          <tr><td style="padding:10px 0;">
+            <span style="font-size:14px;font-weight:700;color:#1a1a1e;">✨ Asistente IA</span>
+            <span style="font-size:13px;color:#8a8a96;padding-left:6px;">Consultas asistidas por inteligencia artificial.</span>
+          </td></tr>
+        </table>`,
+      ctaUrl: APP_URL,
+      ctaText: 'Ir a mi workspace',
+      expiryNote: 'Cualquier duda, responde este correo — estamos aquí.',
+    }),
+  });
+}
 
 export async function sendPasswordResetEmail(email: string, token: string): Promise<void> {
   const link = `${APP_URL}/reset-password?token=${token}`;
@@ -21,28 +165,14 @@ export async function sendPasswordResetEmail(email: string, token: string): Prom
     from: FROM,
     to: email,
     subject: 'Recupera tu contraseña – Efi',
-    html: `
-      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px;">
-        <h2 style="font-size: 22px; font-weight: 800; color: #1e293b; margin: 0 0 8px;">
-          Recupera tu contraseña
-        </h2>
-        <p style="color: #64748b; font-size: 15px; line-height: 1.6; margin: 0 0 28px;">
-          Recibimos una solicitud para restablecer la contraseña de tu cuenta Efi.
-          Este enlace expira en <strong>1 hora</strong>.
-        </p>
-        <a href="${link}"
-           style="display: inline-block; background: linear-gradient(135deg, #f56040, #e1306c, #833ab4);
-                  color: white; text-decoration: none; font-weight: 700; font-size: 15px;
-                  padding: 14px 28px; border-radius: 12px;">
-          Restablecer contraseña
-        </a>
-        <p style="color: #94a3b8; font-size: 13px; margin: 28px 0 0; line-height: 1.6;">
-          Si no solicitaste este cambio, puedes ignorar este correo. Tu contraseña no cambiará.
-        </p>
-        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 28px 0;" />
-        <p style="color: #cbd5e1; font-size: 12px; margin: 0;">Efi — workspace para freelancers</p>
-      </div>
-    `,
+    html: buildEmailHtml({
+      preheader: 'Restablece tu contraseña de Efi',
+      title: 'Recupera tu contraseña',
+      body: 'Recibimos una solicitud para restablecer la contraseña de tu cuenta. Este enlace expira en <strong style="color:#f1f1f3;">1 hora</strong>.',
+      ctaUrl: link,
+      ctaText: 'Restablecer contraseña',
+      expiryNote: 'Este enlace es de un solo uso y expira en 1 hora.',
+    }),
   });
 }
 
@@ -56,27 +186,13 @@ export async function sendEmailChangeVerification(
     from: FROM,
     to: newEmail,
     subject: 'Confirma tu nuevo correo – Efi',
-    html: `
-      <div style="font-family: sans-serif; max-width: 480px; margin: 0 auto; padding: 32px 24px;">
-        <h2 style="font-size: 22px; font-weight: 800; color: #1e293b; margin: 0 0 8px;">
-          Confirma tu nuevo correo
-        </h2>
-        <p style="color: #64748b; font-size: 15px; line-height: 1.6; margin: 0 0 28px;">
-          Haz clic en el botón para confirmar <strong>${newEmail}</strong> como tu nuevo correo en Efi.
-          Este enlace expira en <strong>1 hora</strong>.
-        </p>
-        <a href="${link}"
-           style="display: inline-block; background: linear-gradient(135deg, #f56040, #e1306c, #833ab4);
-                  color: white; text-decoration: none; font-weight: 700; font-size: 15px;
-                  padding: 14px 28px; border-radius: 12px;">
-          Confirmar correo
-        </a>
-        <p style="color: #94a3b8; font-size: 13px; margin: 28px 0 0; line-height: 1.6;">
-          Si no solicitaste este cambio, puedes ignorar este correo.
-        </p>
-        <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 28px 0;" />
-        <p style="color: #cbd5e1; font-size: 12px; margin: 0;">Efi — workspace para freelancers</p>
-      </div>
-    `,
+    html: buildEmailHtml({
+      preheader: 'Confirma tu nuevo correo en Efi',
+      title: 'Confirma tu nuevo correo',
+      body: `Haz clic para confirmar <strong style="color:#f1f1f3;">${newEmail}</strong> como tu nuevo correo en Efi. Este enlace expira en <strong style="color:#f1f1f3;">1 hora</strong>.`,
+      ctaUrl: link,
+      ctaText: 'Confirmar correo',
+      expiryNote: 'Este enlace es de un solo uso y expira en 1 hora.',
+    }),
   });
 }

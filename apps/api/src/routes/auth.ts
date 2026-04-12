@@ -20,7 +20,7 @@ import type {
   SessionUser,
   SimpleSuccessResponse,
 } from '@shared';
-import { sendPasswordResetEmail, sendEmailChangeVerification } from '../lib/email';
+import { sendPasswordResetEmail, sendEmailChangeVerification, sendWelcomeEmail } from '../lib/email';
 import type { GoogleCreds } from './calendar';
 
 /** Create a fresh OAuth2 client — safe to mutate per-request. */
@@ -127,6 +127,9 @@ export function createAuthRouter(
       );
 
       await ensureUserData(pool, userId, trimmedName, trimmedEmail);
+      sendWelcomeEmail(trimmedEmail, trimmedName).catch((err) =>
+        console.error('Welcome email error:', err),
+      );
 
       const user: SessionUser = {
         id: userId,
@@ -316,8 +319,10 @@ export function createAuthRouter(
         );
 
         let userId: string;
+        let isNewGoogleUser = false;
 
         if (existing.length === 0) {
+          isNewGoogleUser = true;
           userId = randomUUID();
           await pool.query(
             `INSERT INTO users (id, email, password_hash, name, avatar, provider)
@@ -334,6 +339,11 @@ export function createAuthRouter(
         }
 
         await ensureUserData(pool, userId, googleName, googleEmail, googleAvatar);
+        if (isNewGoogleUser) {
+          sendWelcomeEmail(googleEmail, googleName).catch((err) =>
+            console.error('Welcome email error:', err),
+          );
+        }
 
         const user: SessionUser = {
           id: userId,
@@ -464,6 +474,11 @@ export function createAuthRouter(
       }
 
       await ensureUserData(pool, userId, googleName, googleEmail, googleAvatar);
+      if (isNewUser) {
+        sendWelcomeEmail(googleEmail, googleName).catch((err) =>
+          console.error('Welcome email error:', err),
+        );
+      }
 
       const user: SessionUser = {
         id: userId,
