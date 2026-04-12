@@ -131,26 +131,7 @@ export async function sendWelcomeEmail(email: string, name: string): Promise<voi
     html: buildEmailHtml({
       preheader: 'Tu workspace ya está listo. Empieza a gestionar tu actividad freelance.',
       title: `Bienvenido a Efi, ${name} 👋`,
-      body: `Tu workspace ya está listo. Aquí tienes todo lo que necesitas para gestionar tu actividad como profesional independiente.
-        <br/><br/>
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:8px;">
-          <tr><td style="padding:10px 0;border-bottom:1px solid #f0f0f3;">
-            <span style="font-size:14px;font-weight:700;color:#1a1a1e;">🔗 EfiLink</span>
-            <span style="font-size:13px;color:#8a8a96;padding-left:6px;">Tu vitrina profesional en un solo enlace.</span>
-          </td></tr>
-          <tr><td style="padding:10px 0;border-bottom:1px solid #f0f0f3;">
-            <span style="font-size:14px;font-weight:700;color:#1a1a1e;">📋 Pipeline</span>
-            <span style="font-size:13px;color:#8a8a96;padding-left:6px;">Gestiona entregas en Kanban, lista y calendario.</span>
-          </td></tr>
-          <tr><td style="padding:10px 0;border-bottom:1px solid #f0f0f3;">
-            <span style="font-size:14px;font-weight:700;color:#1a1a1e;">👥 Directorio</span>
-            <span style="font-size:13px;color:#8a8a96;padding-left:6px;">Organiza tus clientes y contactos.</span>
-          </td></tr>
-          <tr><td style="padding:10px 0;">
-            <span style="font-size:14px;font-weight:700;color:#1a1a1e;">✨ Asistente IA</span>
-            <span style="font-size:13px;color:#8a8a96;padding-left:6px;">Consultas asistidas por inteligencia artificial.</span>
-          </td></tr>
-        </table>`,
+      body: 'Tu workspace ya está listo.',
       ctaUrl: APP_URL,
       ctaText: 'Ir a mi workspace',
       expiryNote: 'Cualquier duda, responde este correo — estamos aquí.',
