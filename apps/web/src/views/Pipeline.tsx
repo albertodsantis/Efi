@@ -11,7 +11,6 @@ import {
   CaretLeft,
   CaretRight,
   CurrencyCircleDollar,
-  CloudArrowDown,
   List,
   ListChecks,
   PencilLine,
@@ -402,6 +401,11 @@ export default function Pipeline() {
     () => typeof window !== 'undefined' && window.innerWidth >= 1536,
   );
   const [searchQuery, setMagnifyingGlassQuery] = useState('');
+  const [gcalConnected, setGcalConnected] = useState(false);
+
+  useEffect(() => {
+    calendarApi.getStatus().then((res) => setGcalConnected(res.connected)).catch(() => {});
+  }, []);
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);
   const [newItemText, setNewItemText] = useState('');
   const [poppingId, setPoppingId] = useState<string | null>(null);
@@ -756,6 +760,7 @@ export default function Pipeline() {
       const partner = partners.find((item) => item.id === task.partnerId);
       const data = await calendarApi.syncTask({ task: { ...task, partnerName: partner?.name } });
       await updateTask(task.id, { gcalEventId: data.eventId });
+      toast.success('Tarea sincronizada con Google Calendar.');
     } catch (error) {
       if (error instanceof Error && error.message.toLowerCase().includes('unauthorized')) {
         window.dispatchEvent(new CustomEvent('efi:unauthorized'));
@@ -892,25 +897,37 @@ export default function Pipeline() {
             />
 
             <div className="flex items-center justify-between gap-3 border-t pt-3 [border-color:var(--line-soft)]">
-              <span className="inline-flex min-w-0 items-center gap-2 text-xs font-medium text-[var(--text-secondary)]">
-                {task.gcalEventId ? (
-                  <CheckCircle size={14} className="shrink-0 text-emerald-500" />
-                ) : (
-                  <CalendarBlank size={14} className="shrink-0" />
-                )}
-                <span className="truncate">{task.gcalEventId ? 'Calendar activo' : 'Sin enlace externo'}</span>
-              </span>
+              {gcalConnected && (
+                <span className="inline-flex min-w-0 items-center gap-2 text-xs font-medium text-[var(--text-secondary)]">
+                  {task.gcalEventId ? (
+                    <CheckCircle size={14} className="shrink-0 text-emerald-500" />
+                  ) : (
+                    <CalendarBlank size={14} className="shrink-0" />
+                  )}
+                  <span className="truncate">{task.gcalEventId ? 'Calendar activo' : 'Sin sincronizar'}</span>
+                </span>
+              )}
 
               <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  disabled
-                  title="Proximamente"
-                  className="inline-flex h-10 cursor-not-allowed items-center justify-center rounded-[0.8rem] border px-3 text-xs font-bold opacity-40 [border-color:var(--line-soft)] bg-[var(--surface-card)] text-[var(--text-secondary)]"
-                  aria-label="Google Calendar — Proximamente"
-                >
-                  <CalendarBlank size={14} />
-                </button>
+                {gcalConnected && (
+                  <button
+                    type="button"
+                    disabled={syncingTaskId === task.id}
+                    onClick={() => void syncTask(task)}
+                    title={task.gcalEventId ? 'Actualizar en Google Calendar' : 'Sincronizar con Google Calendar'}
+                    className={cx(
+                      'inline-flex h-10 items-center justify-center rounded-[0.8rem] border px-3 text-xs font-bold transition-colors [border-color:var(--line-soft)]',
+                      syncingTaskId === task.id
+                        ? 'cursor-wait opacity-50 bg-[var(--surface-card)] text-[var(--text-secondary)]'
+                        : task.gcalEventId
+                          ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300'
+                          : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-muted)]',
+                    )}
+                    aria-label="Sincronizar con Google Calendar"
+                  >
+                    {syncingTaskId === task.id ? <ArrowClockwise size={14} className="animate-spin" /> : <CalendarBlank size={14} />}
+                  </button>
+                )}
                 <IconButton
                   icon={PencilLine}
                   label={`Editar ${task.title}`}
@@ -942,7 +959,7 @@ export default function Pipeline() {
             <p className="text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/70 uppercase">
               {partner?.name || 'Sin marca'}
             </p>
-            {task.gcalEventId ? (
+            {gcalConnected && task.gcalEventId ? (
               <span className="rounded-[0.75rem] bg-emerald-50 px-2.5 py-1 text-[10px] font-bold tracking-[0.12em] text-emerald-600 uppercase dark:bg-emerald-500/15 dark:text-emerald-300">
                 Calendar
               </span>
@@ -1015,15 +1032,25 @@ export default function Pipeline() {
           />
 
           <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  disabled
-                  title="Proximamente"
-                  className="inline-flex h-10 cursor-not-allowed items-center justify-center rounded-[0.8rem] border px-3 text-xs font-bold opacity-40 [border-color:var(--line-soft)] bg-[var(--surface-card)] text-[var(--text-secondary)]"
-                  aria-label="Google Calendar — Proximamente"
-                >
-                  <CalendarBlank size={14} />
-                </button>
+            {gcalConnected && (
+              <button
+                type="button"
+                disabled={syncingTaskId === task.id}
+                onClick={() => void syncTask(task)}
+                title={task.gcalEventId ? 'Actualizar en Google Calendar' : 'Sincronizar con Google Calendar'}
+                className={cx(
+                  'inline-flex h-10 items-center justify-center rounded-[0.8rem] border px-3 text-xs font-bold transition-colors [border-color:var(--line-soft)]',
+                  syncingTaskId === task.id
+                    ? 'cursor-wait opacity-50 bg-[var(--surface-card)] text-[var(--text-secondary)]'
+                    : task.gcalEventId
+                      ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300'
+                      : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-muted)]',
+                )}
+                aria-label="Sincronizar con Google Calendar"
+              >
+                {syncingTaskId === task.id ? <ArrowClockwise size={14} className="animate-spin" /> : <CalendarBlank size={14} />}
+              </button>
+            )}
             <IconButton
               icon={PencilLine}
               label={`Editar ${task.title}`}
@@ -1146,15 +1173,6 @@ export default function Pipeline() {
           </div>
 
           <div className="flex flex-wrap gap-2 xl:justify-end">
-            <Button
-              tone="secondary"
-              disabled
-              title="Proximamente"
-              className="flex-1 cursor-not-allowed opacity-40 sm:flex-none"
-            >
-              <CloudArrowDown size={16} />
-              Actualizar Calendar
-            </Button>
             <Button accentColor={accentGradient} onClick={openCreate} className="flex-1 sm:flex-none">
               <Plus size={16} weight="regular" />
               Nueva tarea

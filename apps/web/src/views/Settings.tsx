@@ -36,7 +36,7 @@ import {
   ToggleSwitch,
   cx,
 } from '../components/ui';
-import { authApi } from '../lib/api';
+import { authApi, calendarApi } from '../lib/api';
 import { toast } from '../lib/toast';
 import { ACCENT_OPTIONS, getSwatchCss } from '../lib/accent';
 import { exportUserData } from '../lib/exportData';
@@ -94,11 +94,52 @@ export default function Settings() {
   const [emailError, setEmailError] = useState<string | null>(null);
   const [emailSent, setEmailSent] = useState(false);
   const [savingEmail, setSavingEmail] = useState(false);
+  const [gcalConnected, setGcalConnected] = useState(false);
+  const [gcalLoading, setGcalLoading] = useState(true);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setAccountName(profile.name);
   }, [profile.name]);
+
+  useEffect(() => {
+    calendarApi.getStatus().then((res) => setGcalConnected(res.connected)).catch(() => {}).finally(() => setGcalLoading(false));
+  }, []);
+
+  const connectGoogleCalendar = async () => {
+    try {
+      const { url } = await calendarApi.getConnectUrl();
+      const popup = window.open(url, 'gcal-auth', 'width=500,height=600');
+
+      const onMessage = (event: MessageEvent) => {
+        if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
+          window.removeEventListener('message', onMessage);
+          setGcalConnected(true);
+          toast.success('Google Calendar conectado.');
+        }
+      };
+      window.addEventListener('message', onMessage);
+
+      const checkClosed = setInterval(() => {
+        if (popup?.closed) {
+          clearInterval(checkClosed);
+          window.removeEventListener('message', onMessage);
+        }
+      }, 500);
+    } catch {
+      toast.error('No se pudo iniciar la conexión con Google Calendar.');
+    }
+  };
+
+  const disconnectGoogleCalendar = async () => {
+    try {
+      await calendarApi.disconnect();
+      setGcalConnected(false);
+      toast.info('Google Calendar desconectado.');
+    } catch {
+      toast.error('No se pudo desconectar Google Calendar.');
+    }
+  };
 
   const handleAccountNameBlur = async () => {
     const trimmed = accountName.trim();
@@ -525,13 +566,18 @@ export default function Settings() {
             <SettingRow
               icon={CalendarBlank}
               title="Google Calendar"
-              description="Sincroniza entregas y fechas con tu calendario."
+              description={gcalConnected ? 'Conectado — tus entregas se sincronizan con Google Calendar.' : 'Sincroniza entregas y fechas con tu calendario.'}
+              onClick={gcalLoading ? undefined : gcalConnected ? disconnectGoogleCalendar : connectGoogleCalendar}
               trailing={
-                <span className="rounded-full border border-slate-200 bg-slate-100 px-2.5 py-1 text-[10px] font-bold tracking-[0.14em] text-slate-400 uppercase dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500">
-                  Próximamente
-                </span>
+                gcalLoading ? (
+                  <span className="text-xs text-[var(--text-secondary)]">…</span>
+                ) : gcalConnected ? (
+                  <StatusBadge tone="success">Conectado</StatusBadge>
+                ) : (
+                  <Button tone="secondary" className="text-xs">Conectar</Button>
+                )
               }
-              className="px-0 py-3 opacity-60"
+              className="px-0 py-3"
             />
           </div>
         </div>
