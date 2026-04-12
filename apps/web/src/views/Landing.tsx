@@ -139,12 +139,12 @@ export default function Landing({
         },
       );
 
-      // Phase 2 — Hover: each pill lifts and tilts noticeably
+      // Phase 2 — Press/hover: works on both mouse and touch
       pills.forEach((pill) => {
         const dir = Math.random() > 0.5 ? 1 : -1;
         const angle = gsap.utils.random(6, 12);
 
-        pill.addEventListener('mouseenter', () => {
+        const lift = () => {
           gsap.to(pill, {
             y: -6,
             scale: 1.12,
@@ -153,9 +153,9 @@ export default function Landing({
             ease: 'back.out(2)',
             overwrite: true,
           });
-        });
+        };
 
-        pill.addEventListener('mouseleave', () => {
+        const drop = () => {
           gsap.to(pill, {
             y: 0,
             scale: 1,
@@ -164,7 +164,11 @@ export default function Landing({
             ease: 'elastic.out(1, 0.4)',
             overwrite: true,
           });
-        });
+        };
+
+        pill.addEventListener('pointerenter', lift);
+        pill.addEventListener('pointerleave', drop);
+        pill.addEventListener('pointercancel', drop);
       });
     }, pillsContainerRef);
 
