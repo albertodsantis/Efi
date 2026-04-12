@@ -366,7 +366,12 @@ function SwipeableTaskCard({
   );
 }
 
-export default function Pipeline() {
+interface PipelineProps {
+  pendingPartnerName?: string | null;
+  onPendingPartnerConsumed?: () => void;
+}
+
+export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed }: PipelineProps = {}) {
   const {
     tasks,
     partners,
@@ -406,6 +411,15 @@ export default function Pipeline() {
   useEffect(() => {
     calendarApi.getStatus().then((res) => setGcalConnected(res.connected)).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!pendingPartnerName) return;
+    setEditingTaskId(null);
+    setForm({ ...EMPTY_FORM, dueDate: formatLocalDateISO(new Date()), status: 'Pendiente', partnerName: pendingPartnerName });
+    setIsPartnerPickerOpen(false);
+    setModalMode('create');
+    onPendingPartnerConsumed?.();
+  }, [pendingPartnerName]);
   const [checklistItems, setChecklistItems] = useState<ChecklistItem[]>([]);
   const [newItemText, setNewItemText] = useState('');
   const [poppingId, setPoppingId] = useState<string | null>(null);

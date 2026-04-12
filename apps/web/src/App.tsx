@@ -412,7 +412,15 @@ const MainLayout = () => {
     dismissActionError,
     refreshAppData,
     onLogout,
+    pendingNewTaskPartner,
+    setPendingNewTaskPartner,
   } = useAppContext();
+
+  useEffect(() => {
+    if (pendingNewTaskPartner) {
+      setActiveTab('pipeline');
+    }
+  }, [pendingNewTaskPartner]);
 
   const accentSecondary = getAccentSecondary(accentColor);
 
@@ -626,7 +634,16 @@ const MainLayout = () => {
                     activeTab === 'profile' ? 'h-full' : isDesktop ? 'w-full' : 'px-0',
                   )}>
                     <Suspense fallback={<LazyFallback />}>
-                      {renderActiveView(activeTab)}
+                      {activeTab === 'pipeline'
+                        ? (
+                          <ErrorBoundary key="pipeline">
+                            <Pipeline
+                              pendingPartnerName={pendingNewTaskPartner}
+                              onPendingPartnerConsumed={() => setPendingNewTaskPartner(null)}
+                            />
+                          </ErrorBoundary>
+                        )
+                        : renderActiveView(activeTab)}
                     </Suspense>
                   </div>
                 </div>

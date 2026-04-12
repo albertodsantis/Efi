@@ -114,6 +114,7 @@ export default function Directory() {
     updatePartner,
     addPartner,
     tasks,
+    setPendingNewTaskPartner,
   } = useAppContext();
   const [search, setMagnifyingGlass] = useState('');
   const [selectedPartnerId, setSelectedPartnerId] = useState<string | null>(partners[0]?.id ?? null);
@@ -483,6 +484,14 @@ export default function Directory() {
                         className="h-8 w-8 rounded-[0.6rem]"
                         iconSize={16}
                       />
+                      <Button
+                        tone="ghost"
+                        onClick={() => setPendingNewTaskPartner(activePartner.name)}
+                        className="ml-4 h-8 gap-1.5 rounded-[0.6rem] px-2.5 py-0 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                      >
+                        <Plus size={15} weight="fill" />
+                        Tarea
+                      </Button>
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2">
                       <StatusBadge tone={statusTone(activePartner.status)}>{statusLabel(activePartner.status)}</StatusBadge>

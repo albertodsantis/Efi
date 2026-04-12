@@ -58,6 +58,8 @@ interface AppContextType extends AppState {
   actionError: string | null;
   efisystem: EfisystemSnapshot;
   onLogout: () => void;
+  pendingNewTaskPartner: string | null;
+  setPendingNewTaskPartner: (partnerName: string | null) => void;
   refreshAppData: () => Promise<void>;
   dismissActionError: () => void;
   reportActionError: (message: string) => void;
@@ -141,6 +143,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [bootstrapError, setBootstrapError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [pendingNewTaskPartner, setPendingNewTaskPartner] = useState<string | null>(null);
   const splashHiddenRef = React.useRef(false);
   const notifPermissionRef = React.useRef<boolean | null>(null);
 
@@ -733,6 +736,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     setProfileForceDark,
     addTemplate,
     deleteTemplate,
+    pendingNewTaskPartner,
+    setPendingNewTaskPartner,
   }), [
     state,
     email,
@@ -766,6 +771,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     setProfileForceDark,
     addTemplate,
     deleteTemplate,
+    pendingNewTaskPartner,
+    setPendingNewTaskPartner,
   ]);
 
   return (
