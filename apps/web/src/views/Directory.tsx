@@ -430,8 +430,8 @@ export default function Directory() {
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0">
                         <div className="flex items-center gap-3">
-                          <div className={cx('flex h-11 w-11 items-center justify-center rounded-[0.95rem] text-sm font-black', isActive ? 'bg-white/85 text-[var(--text-primary)]' : 'bg-[var(--surface-muted)] text-[var(--text-secondary)]')}>
-                            <Buildings size={20} />
+                          <div className={cx('flex h-11 w-11 items-center justify-center rounded-[0.95rem] text-xs font-black tracking-wide', isActive ? 'bg-white/85 text-[var(--text-primary)]' : 'bg-[var(--surface-muted)] text-[var(--text-secondary)]')}>
+                            {partner.name.split(' ').filter(Boolean).slice(0, 2).map(w => w[0].toUpperCase()).join('')}
                           </div>
                           <div className="min-w-0">
                             <h3 className="truncate text-base font-bold leading-tight text-[var(--text-primary)]">{partner.name}</h3>
