@@ -11,7 +11,6 @@ import {
   Copy,
   FileText,
   InstagramLogo,
-  Stack,
   Envelope,
   ChatCircle,
   Chat,
@@ -139,7 +138,6 @@ export default function Directory() {
     endDate: '',
     monthlyRevenue: '',
     annualRevenue: '',
-    mainChannel: '',
   });
   const [newContact, setNewContact] = useState({ name: '', role: '', email: '', ig: '', phonePrefix: '+34', phoneNumber: '' });
 
@@ -271,13 +269,12 @@ export default function Directory() {
         endDate: newPartner.endDate,
         monthlyRevenue: Number(newPartner.monthlyRevenue) || 0,
         annualRevenue: Number(newPartner.annualRevenue) || 0,
-        mainChannel: newPartner.mainChannel,
         contacts: [],
       } as any);
       setSelectedPartnerId(partnerId);
       setIsAddingPartner(false);
-      setNewPartner({ name: '', status: 'Prospecto', partnershipType: 'Por definir', keyTerms: '', startDate: '', endDate: '', monthlyRevenue: '', annualRevenue: '', mainChannel: '' });
-      toast.success(`Cliente ${name} añadido al directorio`);
+      setNewPartner({ name: '', status: 'Prospecto', partnershipType: 'Por definir', keyTerms: '', startDate: '', endDate: '', monthlyRevenue: '', annualRevenue: '' });
+      toast.success(`${name} añadido al directorio`);
     } finally { setSaving(false); }
   };
 
@@ -294,7 +291,6 @@ export default function Directory() {
         endDate: editingPartner.endDate,
         monthlyRevenue: Number(editingPartner.monthlyRevenue) || 0,
         annualRevenue: Number(editingPartner.annualRevenue) || 0,
-        mainChannel: editingPartner.mainChannel,
       } as any);
       setEditingPartner(null);
       toast.success('Cliente actualizado');
@@ -394,7 +390,7 @@ export default function Directory() {
             <MagnifyingGlass className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" size={20} />
             <input
               type="text"
-              placeholder="Buscar marcas o contactos"
+              placeholder="Buscar partners o contactos"
               value={search}
               onChange={(event) => setMagnifyingGlass(event.target.value)}
               className={cx(fieldClass, 'py-4 pl-14 pr-5 text-base sm:text-[15px]')}
@@ -454,12 +450,12 @@ export default function Directory() {
                 <EmptyState
                   icon={Buildings}
                   title="No hay resultados"
-                  description="Prueba con otro termino o crea una nueva marca para empezar."
+                  description="Prueba con otro termino o crea un nuevo partner para empezar."
                   className="border-dashed"
                   action={
                     <Button accentColor={accentGradient} onClick={() => setIsAddingPartner(true)}>
                       <Plus size={16} weight="regular" />
-                      Añadir marca
+                      Añadir partner
                     </Button>
                   }
                 />
@@ -518,10 +514,6 @@ export default function Directory() {
                     <div>
                       <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--text-secondary)]/80">Tipo</p>
                       <p className="mt-1 text-sm font-semibold text-[var(--text-primary)]">{activePartner.partnershipType || '-'}</p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--text-secondary)]/80">Canal</p>
-                      <p className="mt-1 text-sm font-semibold text-[var(--text-primary)]">{activePartner.mainChannel || '-'}</p>
                     </div>
                     <div className="sm:col-span-2">
                       <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[var(--text-secondary)]/80">
@@ -591,7 +583,7 @@ export default function Directory() {
                   <EmptyState
                     icon={CalendarDots}
                     title="Sin tareas abiertas"
-                    description="Esta marca no tiene entregables activos ahora mismo."
+                    description="Este partner no tiene entregables activos ahora mismo."
                     className="py-10"
                   />
                 )}
@@ -601,7 +593,7 @@ export default function Directory() {
               <div className="border-t border-[color:var(--line-soft)] p-5 sm:p-6">
               <div className="mb-5 flex items-center justify-between gap-3">
                 <div className="flex items-baseline gap-3">
-                  <h3 className="text-lg font-bold text-[var(--text-primary)]">Red de la marca</h3>
+                  <h3 className="text-lg font-bold text-[var(--text-primary)]">Red del partner</h3>
                   <span className="hidden text-[10px] font-bold uppercase tracking-[0.24em] text-[var(--text-secondary)]/70 sm:inline-block">Contactos</span>
                 </div>
                 <Button accentColor={accentGradient} onClick={() => setAddingContactTo(activePartner.id)}>
@@ -682,7 +674,7 @@ export default function Directory() {
             </SurfaceCard>
           ) : (
             <SurfaceCard className="p-5 sm:p-6">
-              <EmptyState icon={Buildings} title="Selecciona una marca" description="Usa la lista de la izquierda para abrir el detalle de un partner." />
+              <EmptyState icon={Buildings} title="Selecciona un partner" description="Usa la lista de la izquierda para abrir el detalle de un partner." />
             </SurfaceCard>
           )}
         </div>
@@ -691,7 +683,7 @@ export default function Directory() {
       {contactPendingDeletion ? (
         <ConfirmDialog
           title="Eliminar contacto"
-          description={`Se eliminará a ${contactPendingDeletion.contact.name} del directorio de ${activePartner?.name || 'esta marca'}.`}
+          description={`Se eliminará a ${contactPendingDeletion.contact.name} del directorio de ${activePartner?.name || 'este partner'}.`}
           confirmLabel="Eliminar"
           onConfirm={() => void handleDeleteContact()}
           onClose={() => setContactPendingDeletion(null)}
@@ -700,7 +692,7 @@ export default function Directory() {
 
       {editingPartner && (
         <OverlayModal tone="slate" onClose={() => setEditingPartner(null)}>
-          <ModalPanel title="Editar marca" description="Modifica los detalles del acuerdo comercial de esta marca." onClose={() => setEditingPartner(null)} size="lg">
+          <ModalPanel title="Editar partner" description="Modifica los detalles del acuerdo comercial de este partner." onClose={() => setEditingPartner(null)} size="lg">
             <form onSubmit={handleEditPartner} className="space-y-6">
               <div className="grid gap-6 sm:grid-cols-2">
                 <div className="space-y-4">
@@ -713,17 +705,10 @@ export default function Directory() {
                   </div>
                   <div>
                     <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
-                      <Stack size={14} />
-                      Canal Principal
-                    </label>
-                    <input value={editingPartner.mainChannel || ''} onChange={(event) => setEditingPartner({ ...editingPartner, mainChannel: event.target.value })} className={fieldClass} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} placeholder="" />
-                  </div>
-                  <div>
-                    <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
                       <FileText size={14} />
                       Condiciones del acuerdo
                     </label>
-                    <textarea value={editingPartner.keyTerms || ''} onChange={(event) => setEditingPartner({ ...editingPartner, keyTerms: event.target.value })} className={cx(fieldClass, 'min-h-[118px]')} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} placeholder="Ej. 4 Historias/mes, 1 Reel" />
+                    <textarea value={editingPartner.keyTerms || ''} onChange={(event) => setEditingPartner({ ...editingPartner, keyTerms: event.target.value })} className={cx(fieldClass, 'min-h-[118px]')} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} placeholder="" />
                   </div>
                 </div>
 
@@ -794,7 +779,7 @@ export default function Directory() {
 
       {isAddingPartner && (
         <OverlayModal tone="slate" onClose={() => setIsAddingPartner(false)}>
-          <ModalPanel title="Nueva marca" description="Añade un partner e ingresa su acuerdo comercial." onClose={() => setIsAddingPartner(false)} size="lg">
+          <ModalPanel title="Nuevo partner" description="Añade un partner e ingresa su acuerdo comercial." onClose={() => setIsAddingPartner(false)} size="lg">
             <form onSubmit={handleAddPartner} className="space-y-6">
               <div className="grid gap-6 sm:grid-cols-2">
                 <div className="space-y-4">
@@ -807,17 +792,10 @@ export default function Directory() {
                   </div>
                   <div>
                     <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
-                      <Stack size={14} />
-                      Canal Principal
-                    </label>
-                    <input value={newPartner.mainChannel} onChange={(event) => setNewPartner({ ...newPartner, mainChannel: event.target.value })} className={fieldClass} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} placeholder="" />
-                  </div>
-                  <div>
-                    <label className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-[var(--text-secondary)]/70">
                       <FileText size={14} />
                       Condiciones del acuerdo
                     </label>
-                    <textarea value={newPartner.keyTerms} onChange={(event) => setNewPartner({ ...newPartner, keyTerms: event.target.value })} className={cx(fieldClass, 'min-h-[118px]')} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} placeholder="Ej. 4 Historias/mes, 1 Reel" />
+                    <textarea value={newPartner.keyTerms} onChange={(event) => setNewPartner({ ...newPartner, keyTerms: event.target.value })} className={cx(fieldClass, 'min-h-[118px]')} style={{ '--tw-ring-color': accentHex } as React.CSSProperties} placeholder="" />
                   </div>
                 </div>
 
@@ -883,7 +861,7 @@ export default function Directory() {
                   </div>
                 </div>
               </div>
-              <Button type="submit" accentColor={accentGradient} className="w-full" disabled={saving}>Crear marca</Button>
+              <Button type="submit" accentColor={accentGradient} className="w-full" disabled={saving}>Crear partner</Button>
             </form>
           </ModalPanel>
         </OverlayModal>
@@ -943,7 +921,7 @@ export default function Directory() {
 
       {addingContactTo && (
         <OverlayModal tone="slate" onClose={() => setAddingContactTo(null)}>
-          <ModalPanel title="Nuevo contacto" description="Guarda la persona clave para esta marca." onClose={() => setAddingContactTo(null)} size="sm">
+          <ModalPanel title="Nuevo contacto" description="Guarda la persona clave para este partner." onClose={() => setAddingContactTo(null)} size="sm">
             <form onSubmit={handleAddContact} className="space-y-6">
               <div className="space-y-4">
                 <div>
