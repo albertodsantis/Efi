@@ -469,16 +469,17 @@ interface BadgeDef {
   icon: React.ElementType;
 }
 
+// Ordered Bronze → Diamond so the drawer progresses smoothly through tiers.
 const ALL_BADGES: BadgeDef[] = [
-  { key: 'perfil_estelar',    label: 'EfiLink Activado', description: 'Empezaste a construir tu EfiLink', icon: Star },
-  { key: 'vision_clara',      label: 'Visión Clara',      description: 'Definiste 3 objetivos estratégicos',     icon: Eye },
-  { key: 'circulo_intimo',    label: 'Círculo Íntimo',    description: 'Agregaste 5 socios a tu red',            icon: Users },
-  { key: 'directorio_dorado', label: 'Directorio Dorado', description: '10 socios y 10 contactos en tu red',    icon: Trophy },
-  { key: 'motor_de_ideas',    label: 'Motor de Ideas',    description: 'Creaste 5 entregas en tu pipeline',      icon: Rocket },
-  { key: 'promesa_cumplida',  label: 'Promesa Cumplida',  description: 'Completaste 10 entregas',                icon: Medal },
-  { key: 'creador_imparable', label: 'Creador Imparable', description: 'Completaste 25 entregas',                icon: Target },
-  { key: 'negocio_en_marcha', label: 'Negocio en Marcha', description: 'Cobraste 5 entregas',                   icon: CurrencyDollar },
-  { key: 'lluvia_de_billetes',label: 'Lluvia de Billetes',description: 'Cobraste 20 entregas',                  icon: Money },
+  { key: 'perfil_estelar',    label: 'EfiLink Activado',  description: 'Empezaste a construir tu EfiLink',   icon: Star },
+  { key: 'vision_clara',      label: 'Visión Clara',      description: 'Definiste 3 objetivos estratégicos', icon: Eye },
+  { key: 'motor_de_ideas',    label: 'Motor de Ideas',    description: 'Creaste 5 entregas en tu pipeline',  icon: Rocket },
+  { key: 'circulo_intimo',    label: 'Círculo Íntimo',    description: 'Agregaste 5 socios a tu red',        icon: Users },
+  { key: 'promesa_cumplida',  label: 'Promesa Cumplida',  description: 'Completaste 10 entregas',            icon: Medal },
+  { key: 'negocio_en_marcha', label: 'Negocio en Marcha', description: 'Cobraste 5 entregas',                icon: CurrencyDollar },
+  { key: 'directorio_dorado', label: 'Directorio Dorado', description: '10 socios y 10 contactos en tu red', icon: Trophy },
+  { key: 'creador_imparable', label: 'Creador Imparable', description: 'Completaste 25 entregas',            icon: Target },
+  { key: 'lluvia_de_billetes',label: 'Lluvia de Billetes',description: 'Cobraste 20 entregas',               icon: Money },
 ];
 
 // ── Material tier per badge (progression order: Bronze → Diamond) ─

@@ -185,9 +185,9 @@ export function createV1Router(appStore: PostgresAppStore, pool: pg.Pool, gamifi
 
       let efisystem = null;
       if (body.status === 'Cobrado') {
-        efisystem = await gamification.processEvent(userId, 'pipeline_task_paid');
+        efisystem = await gamification.processEvent(userId, 'pipeline_task_paid', { taskId: req.params.taskId });
       } else if (body.status === 'Completada') {
-        efisystem = await gamification.processEvent(userId, 'pipeline_task_completed');
+        efisystem = await gamification.processEvent(userId, 'pipeline_task_completed', { taskId: req.params.taskId });
       } else if (body.status !== undefined) {
         efisystem = await gamification.processEvent(userId, 'pipeline_task_moved');
       } else if (Array.isArray(body.checklistItems) && body.checklistItems.length > 0) {

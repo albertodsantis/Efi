@@ -41,7 +41,11 @@ export function checkProfileComplete(profile: UserProfile): boolean {
 export class GamificationService {
   constructor(private appStore: PostgresAppStore) {}
 
-  async processEvent(userId: string, eventType: PointEventType): Promise<EfisystemAward> {
+  async processEvent(
+    userId: string,
+    eventType: PointEventType,
+    context: { taskId?: string } = {},
+  ): Promise<EfisystemAward> {
     const { totalPoints: currentTotal, currentLevel: prevLevel } =
       await this.appStore.getEfisystemSummary(userId);
 
@@ -85,15 +89,15 @@ export class GamificationService {
         break;
       }
 
-      case 'pipeline_task_completed': {
-        pointsEarned = 50;
-        await this.appStore.insertTransaction(userId, eventType, 50);
-        break;
-      }
-
+      case 'pipeline_task_completed':
       case 'pipeline_task_paid': {
-        pointsEarned = 100;
-        await this.appStore.insertTransaction(userId, eventType, 100);
+        // Only award the first time a given task reaches this status —
+        // prevents farming by toggling a task back and forth.
+        if (!context.taskId) break;
+        const already = await this.appStore.hasTransactionForTask(userId, eventType, context.taskId);
+        if (already) break;
+        pointsEarned = eventType === 'pipeline_task_paid' ? 100 : 50;
+        await this.appStore.insertTransaction(userId, eventType, pointsEarned, { taskId: context.taskId });
         break;
       }
     }

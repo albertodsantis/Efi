@@ -1332,6 +1332,16 @@ export class PostgresAppStore {
     return result.rows.length > 0;
   }
 
+  async hasTransactionForTask(userId: string, eventType: string, taskId: string): Promise<boolean> {
+    const result = await this.pool.query(
+      `SELECT 1 FROM efisystem_transactions
+       WHERE user_id = $1 AND event_type = $2 AND meta->>'taskId' = $3
+       LIMIT 1`,
+      [userId, eventType, taskId],
+    );
+    return result.rows.length > 0;
+  }
+
   async getUnlockedBadges(userId: string): Promise<BadgeKey[]> {
     const result = await this.pool.query(
       `SELECT badge_key FROM efisystem_badges
