@@ -288,7 +288,7 @@ export class PostgresAppStore {
         [userId, today],
       ),
       this.pool.query(
-        `SELECT id, title, description, partner_id, goal_id, status, due_date, value, gcal_event_id,
+        `SELECT id, title, description, partner_id, goal_id, status, due_date, start_time, end_time, value, gcal_event_id,
                 created_at, completed_at, cobrado_at, actual_payment, checklist_items
          FROM tasks WHERE user_id = $1 ORDER BY due_date ASC LIMIT 4`,
         [userId],
@@ -461,7 +461,7 @@ export class PostgresAppStore {
 
     if (setClauses.length === 0) {
       const { rows } = await this.pool.query(
-        `SELECT id, title, description, partner_id, goal_id, status, due_date, value, gcal_event_id,
+        `SELECT id, title, description, partner_id, goal_id, status, due_date, start_time, end_time, value, gcal_event_id,
                 created_at, completed_at, cobrado_at, actual_payment, checklist_items
          FROM tasks WHERE id = $1 AND user_id = $2`,
         [taskId, userId],

@@ -387,10 +387,12 @@ interface WeekCalendarProps {
   accentHex: string;
   onTaskClick: (task: Task) => void;
   onCreateInSlot: (dueDate: string, startTime: string, endTime: string) => void;
+  onTaskReschedule: (taskId: string, dueDate: string, startTime: string, endTime: string) => void;
 }
 
 const HOUR_HEIGHT_PX = 48;
 const WEEKDAY_SHORT = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+const SNAP_MIN = 15;
 
 function timeToMinutes(time: string): number {
   const [h, m] = time.split(':').map(Number);
@@ -404,9 +406,14 @@ function minutesToTime(minutes: number): string {
   return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
 
-function snapMinutes(minutes: number, step = 15): number {
+function snapMinutes(minutes: number, step = SNAP_MIN): number {
   return Math.round(minutes / step) * step;
 }
+
+type Interaction =
+  | { kind: 'create'; dayIndex: number; startMinutes: number; currentMinutes: number }
+  | { kind: 'move'; taskId: string; originalDayIndex: number; originalStart: number; originalEnd: number; dayIndex: number; startMinutes: number; endMinutes: number; pointerOffsetMinutes: number; hasMoved: boolean }
+  | { kind: 'resize'; taskId: string; dayIndex: number; startMinutes: number; endMinutes: number };
 
 function WeekCalendar({
   weekStart,
@@ -417,13 +424,23 @@ function WeekCalendar({
   accentHex,
   onTaskClick,
   onCreateInSlot,
+  onTaskReschedule,
 }: WeekCalendarProps) {
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const [dragState, setDragState] = useState<{
-    dayIndex: number;
-    startMinutes: number;
-    currentMinutes: number;
-  } | null>(null);
+  const gridRef = useRef<HTMLDivElement | null>(null);
+  const [interaction, setInteraction] = useState<Interaction | null>(null);
+  const [nowMinutes, setNowMinutes] = useState(() => {
+    const d = new Date();
+    return d.getHours() * 60 + d.getMinutes();
+  });
+
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      const d = new Date();
+      setNowMinutes(d.getHours() * 60 + d.getMinutes());
+    }, 60_000);
+    return () => window.clearInterval(id);
+  }, []);
 
   const weekDays = useMemo(
     () => Array.from({ length: 7 }, (_, i) => addLocalDays(weekStart, i)),
@@ -523,38 +540,135 @@ function WeekCalendar({
     return layouts;
   };
 
-  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>, dayIndex: number) => {
-    if (e.target !== e.currentTarget) return; // don't start drag when clicking on a task block
-    const rect = e.currentTarget.getBoundingClientRect();
-    const y = e.clientY - rect.top;
-    const minutes = snapMinutes((y / HOUR_HEIGHT_PX) * 60);
+  // Resolve the day index and minutes from a pointer event relative to the grid
+  const locateFromPointer = (clientX: number, clientY: number) => {
+    const grid = gridRef.current;
+    if (!grid) return null;
+    const rect = grid.getBoundingClientRect();
+    const columnWidth = rect.width / 7;
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    const dayIndex = Math.max(0, Math.min(6, Math.floor(x / columnWidth)));
+    const minutes = Math.max(0, Math.min(24 * 60, (y / HOUR_HEIGHT_PX) * 60));
+    return { dayIndex, minutes };
+  };
+
+  const handleBgPointerDown = (e: React.PointerEvent<HTMLDivElement>, dayIndex: number) => {
+    if (e.target !== e.currentTarget) return;
+    const loc = locateFromPointer(e.clientX, e.clientY);
+    if (!loc) return;
+    const minutes = snapMinutes(loc.minutes);
     e.currentTarget.setPointerCapture(e.pointerId);
-    setDragState({ dayIndex, startMinutes: minutes, currentMinutes: minutes });
+    setInteraction({ kind: 'create', dayIndex, startMinutes: minutes, currentMinutes: minutes });
   };
 
-  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>, dayIndex: number) => {
-    if (!dragState || dragState.dayIndex !== dayIndex) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const y = e.clientY - rect.top;
-    const minutes = snapMinutes((y / HOUR_HEIGHT_PX) * 60);
-    setDragState({ ...dragState, currentMinutes: minutes });
+  const handleEventPointerDown = (
+    e: React.PointerEvent<HTMLButtonElement>,
+    task: Task,
+    dayIndex: number,
+    start: number,
+    end: number,
+  ) => {
+    e.stopPropagation();
+    const loc = locateFromPointer(e.clientX, e.clientY);
+    if (!loc) return;
+    const pointerOffsetMinutes = loc.minutes - start;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setInteraction({
+      kind: 'move',
+      taskId: task.id,
+      originalDayIndex: dayIndex,
+      originalStart: start,
+      originalEnd: end,
+      dayIndex,
+      startMinutes: start,
+      endMinutes: end,
+      pointerOffsetMinutes,
+      hasMoved: false,
+    });
   };
 
-  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>, dayIndex: number) => {
-    if (!dragState || dragState.dayIndex !== dayIndex) return;
-    try { e.currentTarget.releasePointerCapture(e.pointerId); } catch {}
-    const a = Math.min(dragState.startMinutes, dragState.currentMinutes);
-    const b = Math.max(dragState.startMinutes, dragState.currentMinutes);
-    // Click without drag → default 1h slot
-    let startMin = a;
-    let endMin = b;
-    if (b - a < 15) {
-      endMin = a + 60;
+  const handleResizePointerDown = (
+    e: React.PointerEvent<HTMLDivElement>,
+    task: Task,
+    dayIndex: number,
+    start: number,
+    end: number,
+  ) => {
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setInteraction({ kind: 'resize', taskId: task.id, dayIndex, startMinutes: start, endMinutes: end });
+  };
+
+  const handlePointerMove = (e: React.PointerEvent) => {
+    if (!interaction) return;
+    const loc = locateFromPointer(e.clientX, e.clientY);
+    if (!loc) return;
+
+    if (interaction.kind === 'create') {
+      const minutes = snapMinutes(loc.minutes);
+      setInteraction({ ...interaction, currentMinutes: minutes });
+    } else if (interaction.kind === 'move') {
+      const duration = interaction.endMinutes - interaction.startMinutes;
+      const rawStart = loc.minutes - interaction.pointerOffsetMinutes;
+      const snappedStart = Math.max(0, Math.min(24 * 60 - duration, snapMinutes(rawStart)));
+      const snappedEnd = snappedStart + duration;
+      const hasMoved =
+        interaction.hasMoved ||
+        loc.dayIndex !== interaction.originalDayIndex ||
+        snappedStart !== interaction.originalStart;
+      setInteraction({
+        ...interaction,
+        dayIndex: loc.dayIndex,
+        startMinutes: snappedStart,
+        endMinutes: snappedEnd,
+        hasMoved,
+      });
+    } else if (interaction.kind === 'resize') {
+      const minutes = Math.max(interaction.startMinutes + SNAP_MIN, snapMinutes(loc.minutes));
+      setInteraction({ ...interaction, endMinutes: Math.min(minutes, 24 * 60) });
     }
-    if (endMin > 24 * 60) endMin = 24 * 60;
-    const iso = formatLocalDateISO(weekDays[dayIndex]);
-    onCreateInSlot(iso, minutesToTime(startMin), minutesToTime(endMin));
-    setDragState(null);
+  };
+
+  const handlePointerUp = (e: React.PointerEvent) => {
+    if (!interaction) return;
+    try { (e.target as Element)?.releasePointerCapture?.(e.pointerId); } catch {}
+
+    if (interaction.kind === 'create') {
+      const a = Math.min(interaction.startMinutes, interaction.currentMinutes);
+      const b = Math.max(interaction.startMinutes, interaction.currentMinutes);
+      let startMin = a;
+      let endMin = b;
+      if (b - a < SNAP_MIN) endMin = a + 60; // click-without-drag → 1h default
+      if (endMin > 24 * 60) endMin = 24 * 60;
+      const iso = formatLocalDateISO(weekDays[interaction.dayIndex]);
+      onCreateInSlot(iso, minutesToTime(startMin), minutesToTime(endMin));
+    } else if (interaction.kind === 'move') {
+      if (!interaction.hasMoved) {
+        // Treat as click → open editor
+        const task = tasks.find((t) => t.id === interaction.taskId);
+        if (task) onTaskClick(task);
+      } else {
+        const iso = formatLocalDateISO(weekDays[interaction.dayIndex]);
+        onTaskReschedule(
+          interaction.taskId,
+          iso,
+          minutesToTime(interaction.startMinutes),
+          minutesToTime(interaction.endMinutes),
+        );
+      }
+    } else if (interaction.kind === 'resize') {
+      const task = tasks.find((t) => t.id === interaction.taskId);
+      if (task) {
+        onTaskReschedule(
+          interaction.taskId,
+          task.dueDate,
+          minutesToTime(interaction.startMinutes),
+          minutesToTime(interaction.endMinutes),
+        );
+      }
+    }
+    setInteraction(null);
   };
 
   return (
@@ -643,9 +757,14 @@ function WeekCalendar({
 
       {/* Scrollable 24h grid */}
       <div ref={scrollRef} className="relative max-h-[70vh] overflow-y-auto">
-        <div className="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))]">
+        <div
+          className="flex"
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={() => setInteraction(null)}
+        >
           {/* Hour labels column */}
-          <div className="relative">
+          <div className="relative w-14 shrink-0">
             {Array.from({ length: 24 }, (_, h) => (
               <div
                 key={h}
@@ -659,92 +778,146 @@ function WeekCalendar({
             ))}
           </div>
 
-          {/* Day columns */}
-          {weekDays.map((d, dayIdx) => {
-            const iso = formatLocalDateISO(d);
-            const dayTimed = timedByDay.get(iso) || [];
-            const layouts = layoutTimedTasks(dayTimed);
-            const isToday = iso === todayIso;
-            const showDragPreview = dragState?.dayIndex === dayIdx;
-            const previewTop = showDragPreview
-              ? (Math.min(dragState!.startMinutes, dragState!.currentMinutes) / 60) * HOUR_HEIGHT_PX
-              : 0;
-            const previewHeight = showDragPreview
-              ? (Math.max(Math.abs(dragState!.currentMinutes - dragState!.startMinutes), 15) / 60) * HOUR_HEIGHT_PX
-              : 0;
+          {/* Day columns — share a ref grid for cross-column drag */}
+          <div ref={gridRef} className="grid flex-1 grid-cols-7">
+            {weekDays.map((d, dayIdx) => {
+              const iso = formatLocalDateISO(d);
+              const dayTimed = timedByDay.get(iso) || [];
+              const layouts = layoutTimedTasks(dayTimed);
+              const isToday = iso === todayIso;
 
-            return (
-              <div
-                key={`day-${iso}`}
-                className={cx(
-                  'relative select-none',
-                  dayIdx < 6 ? 'border-r [border-color:var(--line-soft)]' : '',
-                  isToday ? 'bg-[var(--accent-soft)]/30' : '',
-                )}
-                style={{ height: 24 * HOUR_HEIGHT_PX, touchAction: 'none' }}
-                onPointerDown={(e) => handlePointerDown(e, dayIdx)}
-                onPointerMove={(e) => handlePointerMove(e, dayIdx)}
-                onPointerUp={(e) => handlePointerUp(e, dayIdx)}
-                onPointerCancel={() => setDragState(null)}
-              >
-                {/* Hour gridlines */}
-                {Array.from({ length: 24 }, (_, h) => (
-                  <div
-                    key={h}
-                    className="border-b [border-color:var(--line-soft)]"
-                    style={{ height: HOUR_HEIGHT_PX }}
-                  />
-                ))}
+              // Create preview (empty slot)
+              const showCreatePreview = interaction?.kind === 'create' && interaction.dayIndex === dayIdx;
+              const createTop = showCreatePreview
+                ? (Math.min(interaction!.startMinutes, (interaction as any).currentMinutes) / 60) * HOUR_HEIGHT_PX
+                : 0;
+              const createHeight = showCreatePreview
+                ? (Math.max(Math.abs((interaction as any).currentMinutes - interaction!.startMinutes), SNAP_MIN) / 60) *
+                  HOUR_HEIGHT_PX
+                : 0;
 
-                {/* Drag preview */}
-                {showDragPreview && previewHeight > 0 ? (
-                  <div
-                    className="pointer-events-none absolute left-1 right-1 rounded-[0.5rem] border-2 border-dashed"
-                    style={{
-                      top: previewTop,
-                      height: previewHeight,
-                      borderColor: accentHex,
-                      backgroundColor: `${accentHex}22`,
-                    }}
-                  />
-                ) : null}
+              // Move ghost preview
+              const showMoveGhost = interaction?.kind === 'move' && interaction.dayIndex === dayIdx && interaction.hasMoved;
+              const moveTop = showMoveGhost ? (interaction!.startMinutes / 60) * HOUR_HEIGHT_PX : 0;
+              const moveHeight = showMoveGhost
+                ? ((interaction!.endMinutes - interaction!.startMinutes) / 60) * HOUR_HEIGHT_PX
+                : 0;
 
-                {/* Timed task blocks */}
-                {layouts.map(({ task, col, cols, start, end }) => {
-                  const partner = partnerById.get(task.partnerId);
-                  const top = (start / 60) * HOUR_HEIGHT_PX;
-                  const height = Math.max(((end - start) / 60) * HOUR_HEIGHT_PX, 20);
-                  const widthPct = 100 / cols;
-                  const leftPct = col * widthPct;
-                  return (
-                    <button
-                      key={task.id}
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onTaskClick(task);
-                      }}
-                      onPointerDown={(e) => e.stopPropagation()}
-                      className="absolute overflow-hidden rounded-[0.5rem] px-2 py-1 text-left text-[11px] font-bold text-white shadow-sm"
-                      style={{
-                        top,
-                        height,
-                        left: `calc(${leftPct}% + 2px)`,
-                        width: `calc(${widthPct}% - 4px)`,
-                        backgroundColor: accentHex,
-                      }}
+              return (
+                <div
+                  key={`day-${iso}`}
+                  className={cx(
+                    'relative select-none',
+                    dayIdx < 6 ? 'border-r [border-color:var(--line-soft)]' : '',
+                    isToday ? 'bg-[var(--accent-soft)]/30' : '',
+                  )}
+                  style={{ height: 24 * HOUR_HEIGHT_PX, touchAction: 'none' }}
+                  onPointerDown={(e) => handleBgPointerDown(e, dayIdx)}
+                >
+                  {/* Hour + half-hour gridlines */}
+                  {Array.from({ length: 24 }, (_, h) => (
+                    <React.Fragment key={h}>
+                      <div
+                        className="absolute inset-x-0 border-b [border-color:var(--line-soft)]"
+                        style={{ top: h * HOUR_HEIGHT_PX }}
+                      />
+                      {h < 24 && (
+                        <div
+                          className="absolute inset-x-0 border-b border-dashed [border-color:var(--line-soft)] opacity-40"
+                          style={{ top: h * HOUR_HEIGHT_PX + HOUR_HEIGHT_PX / 2 }}
+                        />
+                      )}
+                    </React.Fragment>
+                  ))}
+
+                  {/* Now indicator (only on today) */}
+                  {isToday ? (
+                    <div
+                      className="pointer-events-none absolute inset-x-0 z-10"
+                      style={{ top: (nowMinutes / 60) * HOUR_HEIGHT_PX }}
                     >
-                      <div className="truncate">{task.title}</div>
-                      <div className="truncate text-[10px] font-semibold opacity-90">
-                        {task.startTime}–{task.endTime}
-                        {partner ? ` · ${partner.name}` : ''}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            );
-          })}
+                      <div className="absolute -left-1 h-2 w-2 -translate-y-1/2 rounded-full" style={{ backgroundColor: accentHex }} />
+                      <div className="h-[2px] w-full" style={{ backgroundColor: accentHex }} />
+                    </div>
+                  ) : null}
+
+                  {/* Create preview */}
+                  {showCreatePreview && createHeight > 0 ? (
+                    <div
+                      className="pointer-events-none absolute left-1 right-1 rounded-[0.5rem] border-2 border-dashed"
+                      style={{
+                        top: createTop,
+                        height: createHeight,
+                        borderColor: accentHex,
+                        backgroundColor: `${accentHex}22`,
+                      }}
+                    />
+                  ) : null}
+
+                  {/* Move ghost */}
+                  {showMoveGhost ? (
+                    <div
+                      className="pointer-events-none absolute left-1 right-1 rounded-[0.5rem] border-2 border-dashed"
+                      style={{
+                        top: moveTop,
+                        height: moveHeight,
+                        borderColor: accentHex,
+                        backgroundColor: `${accentHex}33`,
+                      }}
+                    />
+                  ) : null}
+
+                  {/* Timed task blocks */}
+                  {layouts.map(({ task, col, cols, start, end }) => {
+                    const partner = partnerById.get(task.partnerId);
+                    const top = (start / 60) * HOUR_HEIGHT_PX;
+                    const height = Math.max(((end - start) / 60) * HOUR_HEIGHT_PX, 20);
+                    const widthPct = 100 / cols;
+                    const leftPct = col * widthPct;
+                    const isBeingMoved =
+                      interaction?.kind === 'move' && interaction.taskId === task.id && interaction.hasMoved;
+                    const isBeingResized = interaction?.kind === 'resize' && interaction.taskId === task.id;
+                    const liveHeight = isBeingResized
+                      ? Math.max(((interaction!.endMinutes - start) / 60) * HOUR_HEIGHT_PX, 20)
+                      : height;
+
+                    return (
+                      <button
+                        key={task.id}
+                        type="button"
+                        onPointerDown={(e) => handleEventPointerDown(e, task, dayIdx, start, end)}
+                        className={cx(
+                          'absolute overflow-hidden rounded-[0.5rem] px-2 py-1 text-left text-[11px] font-bold text-white shadow-sm transition-opacity',
+                          isBeingMoved && 'opacity-40',
+                        )}
+                        style={{
+                          top,
+                          height: liveHeight,
+                          left: `calc(${leftPct}% + 2px)`,
+                          width: `calc(${widthPct}% - 4px)`,
+                          backgroundColor: accentHex,
+                          cursor: interaction?.kind === 'move' ? 'grabbing' : 'grab',
+                        }}
+                        title={`${task.title} · ${task.startTime}–${task.endTime}`}
+                      >
+                        <div className="truncate">{task.title}</div>
+                        <div className="truncate text-[10px] font-semibold opacity-90">
+                          {task.startTime}–{task.endTime}
+                          {partner ? ` · ${partner.name}` : ''}
+                        </div>
+                        {/* Resize handle */}
+                        <div
+                          onPointerDown={(e) => handleResizePointerDown(e, task, dayIdx, start, end)}
+                          className="absolute inset-x-0 bottom-0 h-2 cursor-ns-resize"
+                          style={{ touchAction: 'none' }}
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </SurfaceCard>
@@ -1280,6 +1453,11 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
             <StatusBadge tone={isOverdue ? 'danger' : 'neutral'}>
               {formatTaskDate(task.dueDate, { day: '2-digit', month: 'short' })}{relativeTime ? ` · ${relativeTime}` : ''}
             </StatusBadge>
+            {task.startTime && task.endTime ? (
+              <StatusBadge tone="neutral">
+                {task.startTime}–{task.endTime}
+              </StatusBadge>
+            ) : null}
           </div>
 
           <p
@@ -1450,10 +1628,15 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
           )}
         </div>
 
-        <div className="xl:pt-[1.55rem]">
+        <div className="flex flex-wrap items-center gap-2 xl:pt-[1.55rem]">
           <StatusBadge tone={isOverdue ? 'danger' : 'neutral'}>
             {formatTaskDate(task.dueDate)}{relativeTime ? ` · ${relativeTime}` : ''}
           </StatusBadge>
+          {task.startTime && task.endTime ? (
+            <StatusBadge tone="neutral">
+              {task.startTime}–{task.endTime}
+            </StatusBadge>
+          ) : null}
         </div>
 
         <div className="xl:pt-[1.3rem]">
@@ -1515,7 +1698,15 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
   const days = Array.from({ length: daysInMonth }, (_, offset) => {
     const date = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), offset + 1);
     const iso = formatLocalDateISO(date);
-    const dayTasks = filteredSortedTasks.filter((task) => task.dueDate === iso);
+    const dayTasks = filteredSortedTasks
+      .filter((task) => task.dueDate === iso)
+      .sort((a, b) => {
+        // All-day first, then by startTime
+        if (!a.startTime && b.startTime) return -1;
+        if (a.startTime && !b.startTime) return 1;
+        if (a.startTime && b.startTime) return a.startTime.localeCompare(b.startTime);
+        return 0;
+      });
     const isToday = iso === todayIso;
     const isSelected = iso === selectedDate;
 
@@ -1558,6 +1749,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                 'bg-[var(--surface-muted)]/90 text-[var(--text-secondary)]',
               )}
             >
+              {task.startTime ? <span className="mr-1 font-bold tabular-nums" style={{ color: accentHex }}>{task.startTime}</span> : null}
               {task.title}
             </div>
           ))}
@@ -2021,6 +2213,29 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                 });
                 setIsPartnerPickerOpen(false);
                 setModalMode('create');
+              }}
+              onTaskReschedule={async (taskId, dueDate, startTime, endTime) => {
+                const task = tasks.find((t) => t.id === taskId);
+                if (!task) return;
+                if (task.dueDate === dueDate && task.startTime === startTime && task.endTime === endTime) {
+                  return;
+                }
+                try {
+                  await hapticLight();
+                  await updateTask(taskId, { dueDate, startTime, endTime } as any);
+                  if (gcalConnected && task.gcalEventId) {
+                    const partner = partners.find((p) => p.id === task.partnerId);
+                    try {
+                      await calendarApi.syncTask({
+                        task: { ...task, dueDate, startTime, endTime, partnerName: partner?.name },
+                      });
+                    } catch {
+                      // Silent — user can re-sync manually
+                    }
+                  }
+                } catch {
+                  reportActionError('No pudimos actualizar la tarea.');
+                }
               }}
             />
           )}
