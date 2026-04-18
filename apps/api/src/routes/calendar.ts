@@ -181,11 +181,29 @@ export function createCalendarRouter(creds: GoogleCreds, pool: pg.Pool) {
     const { task } = req.body as CalendarSyncRequest;
 
     try {
+      const tzOffset = new Date().getTimezoneOffset();
+      const sign = tzOffset <= 0 ? '+' : '-';
+      const absOff = Math.abs(tzOffset);
+      const tzHours = String(Math.floor(absOff / 60)).padStart(2, '0');
+      const tzMins = String(absOff % 60).padStart(2, '0');
+      const offsetStr = `${sign}${tzHours}:${tzMins}`;
+
+      let start: Record<string, string>;
+      let end: Record<string, string>;
+
+      if (task.startTime && task.endTime) {
+        start = { dateTime: `${task.dueDate}T${task.startTime}:00${offsetStr}` };
+        end = { dateTime: `${task.dueDate}T${task.endTime}:00${offsetStr}` };
+      } else {
+        start = { date: task.dueDate };
+        end = { date: task.dueDate };
+      }
+
       const event = {
         summary: `Entrega: ${task.title}`,
         description: `Partner: ${task.partnerName}\n\n${task.description}`,
-        start: { date: task.dueDate, timeZone: 'UTC' },
-        end: { date: task.dueDate, timeZone: 'UTC' },
+        start,
+        end,
       };
 
       let result;
@@ -236,11 +254,25 @@ export function createCalendarRouter(creds: GoogleCreds, pool: pg.Pool) {
           const response = await calendar.events.get({ calendarId: 'primary', eventId });
 
           if (response.data?.start) {
+            const startDateTime = response.data.start.dateTime;
+            const endDateTime = response.data.end?.dateTime;
             const date =
               response.data.start.date ||
-              (response.data.start.dateTime ? response.data.start.dateTime.split('T')[0] : null);
+              (startDateTime ? startDateTime.split('T')[0] : null);
 
-            if (date) updatedEvents.push({ eventId, dueDate: date });
+            if (date) {
+              const extractTime = (dt?: string | null): string | null => {
+                if (!dt) return null;
+                const match = dt.match(/T(\d{2}:\d{2})/);
+                return match ? match[1] : null;
+              };
+              updatedEvents.push({
+                eventId,
+                dueDate: date,
+                startTime: extractTime(startDateTime),
+                endTime: extractTime(endDateTime),
+              });
+            }
           }
         } catch (error: any) {
           if (error.code !== 404) console.error(`Error fetching event ${eventId}`, error);

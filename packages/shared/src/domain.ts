@@ -72,6 +72,8 @@ export interface Task {
   goalId?: string;
   status: TaskStatus;
   dueDate: string;
+  startTime?: string; // "HH:mm" local time; absent = all-day
+  endTime?: string;   // "HH:mm" local time; absent = all-day
   value: number;
   gcalEventId?: string;
   createdAt: string;

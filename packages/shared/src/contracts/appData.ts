@@ -57,6 +57,8 @@ export interface CreateTaskRequest {
   goalId?: string;
   status: TaskStatus;
   dueDate: string;
+  startTime?: string | null;
+  endTime?: string | null;
   value?: number;
   gcalEventId?: string;
   actualPayment?: number;

@@ -72,6 +72,15 @@ function normalizeDate(value: string | undefined) {
   return normalized;
 }
 
+function normalizeTime(value: string | null | undefined): string | null {
+  if (value === null || value === undefined || value === '') return null;
+  const trimmed = value.trim();
+  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(trimmed)) {
+    throw new Error('La hora debe tener formato HH:mm.');
+  }
+  return trimmed;
+}
+
 function normalizeMoney(value: number | undefined) {
   if (typeof value !== 'number' || Number.isNaN(value) || value < 0) {
     throw new Error('El valor debe ser un numero igual o mayor que 0.');
@@ -155,6 +164,8 @@ function mapRowToTask(row: any): Task {
     ...(row.goal_id ? { goalId: row.goal_id } : {}),
     status: row.status,
     dueDate: row.due_date,
+    ...(row.start_time ? { startTime: row.start_time } : {}),
+    ...(row.end_time ? { endTime: row.end_time } : {}),
     value: Number(row.value),
     ...(row.gcal_event_id ? { gcalEventId: row.gcal_event_id } : {}),
     createdAt: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
@@ -295,7 +306,7 @@ export class PostgresAppStore {
 
   async listTasks(userId: string): Promise<Task[]> {
     const { rows } = await this.pool.query(
-      `SELECT id, title, description, partner_id, goal_id, status, due_date, value, gcal_event_id,
+      `SELECT id, title, description, partner_id, goal_id, status, due_date, start_time, end_time, value, gcal_event_id,
               created_at, completed_at, cobrado_at, actual_payment, checklist_items
        FROM tasks WHERE user_id = $1 ORDER BY due_date ASC`,
       [userId],
@@ -310,6 +321,8 @@ export class PostgresAppStore {
     const partnerId = normalizeRequiredText(input.partnerId, 'La marca');
     const status = normalizeRequiredText(input.status, 'El estado');
     const dueDate = normalizeDate(input.dueDate);
+    const startTime = normalizeTime(input.startTime);
+    const endTime = normalizeTime(input.endTime);
     const value = input.value !== undefined ? normalizeMoney(input.value) : 0;
     const gcalEventId = normalizeOptionalText(input.gcalEventId) || null;
     const actualPayment = input.actualPayment !== undefined ? normalizeMoney(input.actualPayment) : null;
@@ -334,10 +347,10 @@ export class PostgresAppStore {
     }
 
     const { rows } = await this.pool.query(
-      `INSERT INTO tasks (id, user_id, title, description, partner_id, goal_id, status, due_date, value, gcal_event_id, actual_payment)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+      `INSERT INTO tasks (id, user_id, title, description, partner_id, goal_id, status, due_date, start_time, end_time, value, gcal_event_id, actual_payment)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
        RETURNING created_at`,
-      [id, userId, title, description, partnerId, goalId, status, dueDate, value, gcalEventId, actualPayment],
+      [id, userId, title, description, partnerId, goalId, status, dueDate, startTime, endTime, value, gcalEventId, actualPayment],
     );
 
     const createdAt = rows[0].created_at instanceof Date ? rows[0].created_at.toISOString() : rows[0].created_at;
@@ -356,6 +369,8 @@ export class PostgresAppStore {
       ...(goalId ? { goalId } : {}),
       status: status as Task['status'],
       dueDate,
+      ...(startTime ? { startTime } : {}),
+      ...(endTime ? { endTime } : {}),
       value,
       createdAt,
       ...(gcalEventId ? { gcalEventId } : {}),
@@ -410,6 +425,14 @@ export class PostgresAppStore {
       setClauses.push(`due_date = $${idx++}`);
       values.push(normalizeDate(updates.dueDate));
     }
+    if ((updates as any).startTime !== undefined) {
+      setClauses.push(`start_time = $${idx++}`);
+      values.push(normalizeTime((updates as any).startTime));
+    }
+    if ((updates as any).endTime !== undefined) {
+      setClauses.push(`end_time = $${idx++}`);
+      values.push(normalizeTime((updates as any).endTime));
+    }
     if (updates.value !== undefined) {
       setClauses.push(`value = $${idx++}`);
       values.push(normalizeMoney(updates.value));
@@ -452,7 +475,7 @@ export class PostgresAppStore {
 
     const { rows: updated } = await this.pool.query(
       `UPDATE tasks SET ${setClauses.join(', ')} WHERE id = $${idx} AND user_id = $${idx + 1} RETURNING
-       id, title, description, partner_id, goal_id, status, due_date, value, gcal_event_id,
+       id, title, description, partner_id, goal_id, status, due_date, start_time, end_time, value, gcal_event_id,
        created_at, completed_at, cobrado_at, actual_payment, checklist_items`,
       values,
     );

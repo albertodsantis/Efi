@@ -33,7 +33,7 @@ import {
   useDraggable,
   useDroppable,
 } from '@dnd-kit/core';
-import { getPartnerLookupKey, type ChecklistItem, type Task, type TaskStatus } from '@shared';
+import { getPartnerLookupKey, type ChecklistItem, type Partner, type Task, type TaskStatus } from '@shared';
 import { Target } from '@phosphor-icons/react';
 import { useAppContext } from '../context/AppContext';
 import OverlayModal from '../components/OverlayModal';
@@ -48,7 +48,7 @@ import {
 } from '../components/ui';
 import CustomSelect from '../components/CustomSelect';
 import ConfirmDialog from '../components/ConfirmDialog';
-import { formatLocalDateISO, parseLocalDate, startOfLocalDay } from '../lib/date';
+import { addLocalDays, formatLocalDateISO, parseLocalDate, startOfLocalDay, startOfWeek } from '../lib/date';
 import { toast } from '../lib/toast';
 import { calendarApi } from '../lib/api';
 import { hapticLight, hapticMedium, hapticWarning } from '../lib/haptics';
@@ -62,6 +62,8 @@ const EMPTY_FORM = {
   partnerName: '',
   value: '',
   dueDate: '',
+  startTime: '',
+  endTime: '',
   status: 'Pendiente' as TaskStatus,
   goalId: '',
 };
@@ -372,6 +374,383 @@ interface PipelineProps {
   onPendingPartnerConsumed?: () => void;
 }
 
+// ────────────────────────────────────────────────────────────
+// Week calendar — Google-style 24h grid with all-day row and drag-to-create
+// ────────────────────────────────────────────────────────────
+
+interface WeekCalendarProps {
+  weekStart: Date;
+  setWeekStart: (date: Date) => void;
+  tasks: Task[];
+  partners: Partner[];
+  todayIso: string;
+  accentHex: string;
+  onTaskClick: (task: Task) => void;
+  onCreateInSlot: (dueDate: string, startTime: string, endTime: string) => void;
+}
+
+const HOUR_HEIGHT_PX = 48;
+const WEEKDAY_SHORT = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+
+function timeToMinutes(time: string): number {
+  const [h, m] = time.split(':').map(Number);
+  return h * 60 + m;
+}
+
+function minutesToTime(minutes: number): string {
+  const clamped = Math.max(0, Math.min(24 * 60, minutes));
+  const h = Math.floor(clamped / 60);
+  const m = clamped % 60;
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+function snapMinutes(minutes: number, step = 15): number {
+  return Math.round(minutes / step) * step;
+}
+
+function WeekCalendar({
+  weekStart,
+  setWeekStart,
+  tasks,
+  partners,
+  todayIso,
+  accentHex,
+  onTaskClick,
+  onCreateInSlot,
+}: WeekCalendarProps) {
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const [dragState, setDragState] = useState<{
+    dayIndex: number;
+    startMinutes: number;
+    currentMinutes: number;
+  } | null>(null);
+
+  const weekDays = useMemo(
+    () => Array.from({ length: 7 }, (_, i) => addLocalDays(weekStart, i)),
+    [weekStart],
+  );
+
+  const weekIsoSet = useMemo(
+    () => new Set(weekDays.map((d) => formatLocalDateISO(d))),
+    [weekDays],
+  );
+
+  const tasksInWeek = useMemo(
+    () => tasks.filter((t) => weekIsoSet.has(t.dueDate)),
+    [tasks, weekIsoSet],
+  );
+
+  const allDayByDay = useMemo(() => {
+    const map = new Map<string, Task[]>();
+    for (const iso of weekIsoSet) map.set(iso, []);
+    for (const t of tasksInWeek) {
+      if (!t.startTime || !t.endTime) {
+        map.get(t.dueDate)?.push(t);
+      }
+    }
+    return map;
+  }, [tasksInWeek, weekIsoSet]);
+
+  const timedByDay = useMemo(() => {
+    const map = new Map<string, Task[]>();
+    for (const iso of weekIsoSet) map.set(iso, []);
+    for (const t of tasksInWeek) {
+      if (t.startTime && t.endTime) map.get(t.dueDate)?.push(t);
+    }
+    return map;
+  }, [tasksInWeek, weekIsoSet]);
+
+  // Scroll to 8 AM on initial render
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = 8 * HOUR_HEIGHT_PX;
+    }
+  }, []);
+
+  const weekLabel = useMemo(() => {
+    const end = addLocalDays(weekStart, 6);
+    const sameMonth = weekStart.getMonth() === end.getMonth();
+    const startStr = weekStart.toLocaleDateString('es-ES', { day: 'numeric', month: sameMonth ? undefined : 'short' });
+    const endStr = end.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+    return `${startStr} – ${endStr}`;
+  }, [weekStart]);
+
+  const partnerById = useMemo(() => {
+    const m = new Map<string, Partner>();
+    for (const p of partners) m.set(p.id, p);
+    return m;
+  }, [partners]);
+
+  // Compute side-by-side columns for overlapping events within a day
+  const layoutTimedTasks = (dayTasks: Task[]) => {
+    const sorted = [...dayTasks].sort((a, b) => timeToMinutes(a.startTime!) - timeToMinutes(b.startTime!));
+    const columns: Array<Array<{ task: Task; start: number; end: number }>> = [];
+    const layouts: Array<{ task: Task; col: number; cols: number; start: number; end: number }> = [];
+
+    for (const t of sorted) {
+      const start = timeToMinutes(t.startTime!);
+      const end = Math.max(start + 15, timeToMinutes(t.endTime!));
+      let placed = false;
+      for (let c = 0; c < columns.length; c++) {
+        const last = columns[c][columns[c].length - 1];
+        if (last.end <= start) {
+          columns[c].push({ task: t, start, end });
+          layouts.push({ task: t, col: c, cols: 0, start, end });
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        columns.push([{ task: t, start, end }]);
+        layouts.push({ task: t, col: columns.length - 1, cols: 0, start, end });
+      }
+    }
+
+    // Determine overlap cluster widths: find groups of items that mutually overlap
+    // Simple approximation: cols = max column index used in any time overlap + 1 across the whole day.
+    // Walk a timeline and assign each layout the max concurrent columns it overlaps with.
+    for (const item of layouts) {
+      let maxCols = 1;
+      for (const other of layouts) {
+        if (other === item) continue;
+        if (other.start < item.end && other.end > item.start) {
+          maxCols = Math.max(maxCols, other.col + 1);
+        }
+      }
+      item.cols = Math.max(maxCols, item.col + 1);
+    }
+
+    return layouts;
+  };
+
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>, dayIndex: number) => {
+    if (e.target !== e.currentTarget) return; // don't start drag when clicking on a task block
+    const rect = e.currentTarget.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    const minutes = snapMinutes((y / HOUR_HEIGHT_PX) * 60);
+    e.currentTarget.setPointerCapture(e.pointerId);
+    setDragState({ dayIndex, startMinutes: minutes, currentMinutes: minutes });
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>, dayIndex: number) => {
+    if (!dragState || dragState.dayIndex !== dayIndex) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const y = e.clientY - rect.top;
+    const minutes = snapMinutes((y / HOUR_HEIGHT_PX) * 60);
+    setDragState({ ...dragState, currentMinutes: minutes });
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>, dayIndex: number) => {
+    if (!dragState || dragState.dayIndex !== dayIndex) return;
+    try { e.currentTarget.releasePointerCapture(e.pointerId); } catch {}
+    const a = Math.min(dragState.startMinutes, dragState.currentMinutes);
+    const b = Math.max(dragState.startMinutes, dragState.currentMinutes);
+    // Click without drag → default 1h slot
+    let startMin = a;
+    let endMin = b;
+    if (b - a < 15) {
+      endMin = a + 60;
+    }
+    if (endMin > 24 * 60) endMin = 24 * 60;
+    const iso = formatLocalDateISO(weekDays[dayIndex]);
+    onCreateInSlot(iso, minutesToTime(startMin), minutesToTime(endMin));
+    setDragState(null);
+  };
+
+  return (
+    <SurfaceCard className="p-4 lg:p-5">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <IconButton
+          icon={CaretLeft}
+          label="Semana anterior"
+          onClick={() => setWeekStart(addLocalDays(weekStart, -7))}
+          tone="ghost"
+        />
+        <div className="flex flex-col items-center gap-1 sm:flex-row sm:gap-2">
+          <h2 className="text-lg font-extrabold capitalize text-[var(--text-primary)]">{weekLabel}</h2>
+          <button
+            type="button"
+            onClick={() => setWeekStart(startOfWeek(new Date()))}
+            className="rounded-[0.8rem] border bg-[var(--surface-muted)] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--text-secondary)] hover:text-[var(--text-primary)] [border-color:var(--line-soft)]"
+          >
+            Hoy
+          </button>
+        </div>
+        <IconButton
+          icon={CaretRight}
+          label="Semana siguiente"
+          onClick={() => setWeekStart(addLocalDays(weekStart, 7))}
+          tone="ghost"
+        />
+      </div>
+
+      {/* Header row: weekdays */}
+      <div className="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))] border-b [border-color:var(--line-soft)]">
+        <div />
+        {weekDays.map((d) => {
+          const iso = formatLocalDateISO(d);
+          const isToday = iso === todayIso;
+          return (
+            <div key={iso} className="flex flex-col items-center gap-1 py-2">
+              <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--text-secondary)]/70">
+                {WEEKDAY_SHORT[(d.getDay() + 6) % 7]}
+              </span>
+              <span
+                className={cx(
+                  'flex h-8 w-8 items-center justify-center rounded-full text-sm font-extrabold',
+                  isToday ? 'text-white' : 'text-[var(--text-primary)]',
+                )}
+                style={isToday ? { backgroundColor: accentHex } : undefined}
+              >
+                {d.getDate()}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* All-day row */}
+      <div className="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))] border-b [border-color:var(--line-soft)]">
+        <div className="flex items-start justify-end pr-2 pt-1 text-[9px] font-bold uppercase tracking-[0.14em] text-[var(--text-secondary)]/70">
+          Todo el día
+        </div>
+        {weekDays.map((d, idx) => {
+          const iso = formatLocalDateISO(d);
+          const list = allDayByDay.get(iso) || [];
+          return (
+            <div
+              key={`allday-${iso}`}
+              className={cx(
+                'min-h-[2.25rem] space-y-1 p-1',
+                idx < 6 ? 'border-r [border-color:var(--line-soft)]' : '',
+              )}
+            >
+              {list.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  onClick={() => onTaskClick(t)}
+                  className="flex w-full truncate rounded-[0.5rem] px-2 py-1 text-left text-[11px] font-bold text-white"
+                  style={{ backgroundColor: accentHex }}
+                >
+                  <span className="truncate">{t.title}</span>
+                </button>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Scrollable 24h grid */}
+      <div ref={scrollRef} className="relative max-h-[70vh] overflow-y-auto">
+        <div className="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))]">
+          {/* Hour labels column */}
+          <div className="relative">
+            {Array.from({ length: 24 }, (_, h) => (
+              <div
+                key={h}
+                className="relative border-b [border-color:var(--line-soft)] pr-2 text-right"
+                style={{ height: HOUR_HEIGHT_PX }}
+              >
+                <span className="absolute right-2 -top-2 text-[10px] font-bold text-[var(--text-secondary)]/70">
+                  {h === 0 ? '' : `${String(h).padStart(2, '0')}:00`}
+                </span>
+              </div>
+            ))}
+          </div>
+
+          {/* Day columns */}
+          {weekDays.map((d, dayIdx) => {
+            const iso = formatLocalDateISO(d);
+            const dayTimed = timedByDay.get(iso) || [];
+            const layouts = layoutTimedTasks(dayTimed);
+            const isToday = iso === todayIso;
+            const showDragPreview = dragState?.dayIndex === dayIdx;
+            const previewTop = showDragPreview
+              ? (Math.min(dragState!.startMinutes, dragState!.currentMinutes) / 60) * HOUR_HEIGHT_PX
+              : 0;
+            const previewHeight = showDragPreview
+              ? (Math.max(Math.abs(dragState!.currentMinutes - dragState!.startMinutes), 15) / 60) * HOUR_HEIGHT_PX
+              : 0;
+
+            return (
+              <div
+                key={`day-${iso}`}
+                className={cx(
+                  'relative select-none',
+                  dayIdx < 6 ? 'border-r [border-color:var(--line-soft)]' : '',
+                  isToday ? 'bg-[var(--accent-soft)]/30' : '',
+                )}
+                style={{ height: 24 * HOUR_HEIGHT_PX, touchAction: 'none' }}
+                onPointerDown={(e) => handlePointerDown(e, dayIdx)}
+                onPointerMove={(e) => handlePointerMove(e, dayIdx)}
+                onPointerUp={(e) => handlePointerUp(e, dayIdx)}
+                onPointerCancel={() => setDragState(null)}
+              >
+                {/* Hour gridlines */}
+                {Array.from({ length: 24 }, (_, h) => (
+                  <div
+                    key={h}
+                    className="border-b [border-color:var(--line-soft)]"
+                    style={{ height: HOUR_HEIGHT_PX }}
+                  />
+                ))}
+
+                {/* Drag preview */}
+                {showDragPreview && previewHeight > 0 ? (
+                  <div
+                    className="pointer-events-none absolute left-1 right-1 rounded-[0.5rem] border-2 border-dashed"
+                    style={{
+                      top: previewTop,
+                      height: previewHeight,
+                      borderColor: accentHex,
+                      backgroundColor: `${accentHex}22`,
+                    }}
+                  />
+                ) : null}
+
+                {/* Timed task blocks */}
+                {layouts.map(({ task, col, cols, start, end }) => {
+                  const partner = partnerById.get(task.partnerId);
+                  const top = (start / 60) * HOUR_HEIGHT_PX;
+                  const height = Math.max(((end - start) / 60) * HOUR_HEIGHT_PX, 20);
+                  const widthPct = 100 / cols;
+                  const leftPct = col * widthPct;
+                  return (
+                    <button
+                      key={task.id}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onTaskClick(task);
+                      }}
+                      onPointerDown={(e) => e.stopPropagation()}
+                      className="absolute overflow-hidden rounded-[0.5rem] px-2 py-1 text-left text-[11px] font-bold text-white shadow-sm"
+                      style={{
+                        top,
+                        height,
+                        left: `calc(${leftPct}% + 2px)`,
+                        width: `calc(${widthPct}% - 4px)`,
+                        backgroundColor: accentHex,
+                      }}
+                    >
+                      <div className="truncate">{task.title}</div>
+                      <div className="truncate text-[10px] font-semibold opacity-90">
+                        {task.startTime}–{task.endTime}
+                        {partner ? ` · ${partner.name}` : ''}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </SurfaceCard>
+  );
+}
+
 export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed }: PipelineProps = {}) {
   const {
     tasks,
@@ -389,6 +768,8 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
     profile,
   } = useAppContext();
   const [view, setView] = useState<'kanban' | 'list' | 'calendar'>('kanban');
+  const [calendarMode, setCalendarMode] = useState<'week' | 'month'>('week');
+  const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => startOfWeek(new Date()));
   const [currentStatusIdx, setCurrentStatusIdx] = useState(0);
   const [modalMode, setModalMode] = useState<'create' | 'edit' | null>(null);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
@@ -591,6 +972,8 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
       partnerName,
       value: String(task.value),
       dueDate: task.dueDate,
+      startTime: task.startTime || '',
+      endTime: task.endTime || '',
       status: task.status,
       goalId: task.goalId || '',
     });
@@ -624,6 +1007,8 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
         partnerId: partner.id,
         status: form.status,
         dueDate: form.dueDate,
+        startTime: form.startTime || null,
+        endTime: form.endTime || null,
         value: Number(form.value) || 0,
         goalId: form.goalId || undefined,
         checklistItems,
@@ -824,10 +1209,18 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
 
       const data = await calendarApi.syncDown({ eventIds });
       await Promise.all(
-        (data.updatedEvents || []).map(async (updated: { eventId: string; dueDate: string }) => {
+        (data.updatedEvents || []).map(async (updated: { eventId: string; dueDate: string; startTime?: string | null; endTime?: string | null }) => {
           const task = tasks.find((item) => item.gcalEventId === updated.eventId);
-          if (task && task.dueDate !== updated.dueDate) {
-            await updateTask(task.id, { dueDate: updated.dueDate });
+          if (!task) return;
+          const startTime = updated.startTime ?? null;
+          const endTime = updated.endTime ?? null;
+          const timeChanged = (task.startTime ?? null) !== startTime || (task.endTime ?? null) !== endTime;
+          if (task.dueDate !== updated.dueDate || timeChanged) {
+            await updateTask(task.id, {
+              dueDate: updated.dueDate,
+              startTime,
+              endTime,
+            } as any);
           }
         }),
       );
@@ -1191,7 +1584,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
             {[
               { id: 'kanban', icon: Kanban, label: 'Kanban' },
               { id: 'list', icon: List, label: 'Lista' },
-              { id: 'calendar', icon: CalendarBlank, label: 'Mes' },
+              { id: 'calendar', icon: CalendarBlank, label: 'Calendario' },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -1496,93 +1889,141 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
       ) : null}
 
       {view === 'calendar' ? (
-        <div className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_minmax(18rem,22vw)]">
-          <SurfaceCard className="p-5 lg:p-6">
-            <div className="mb-5 flex items-center justify-between gap-3">
-              <IconButton
-                icon={CaretLeft}
-                label="Mes anterior"
-                onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}
-                tone="ghost"
-              />
-              <div className="text-center">
-                <div className="flex flex-col items-center gap-1 sm:flex-row sm:gap-2">
-                  <h2 className="text-lg font-extrabold capitalize text-[var(--text-primary)]">
-                    {monthLabel}
-                  </h2>
-                  <span className="text-[10px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/70 uppercase sm:text-[11px]">
-                    Vista mensual
-                  </span>
-                </div>
-              </div>
-              <IconButton
-                icon={CaretRight}
-                label="Mes siguiente"
-                onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}
-                tone="ghost"
-              />
-            </div>
-
-            <div className="mb-3 grid grid-cols-7 gap-1 sm:gap-2">
-              {WEEKDAY_LABELS.map((day) => (
-                <div
-                  key={day}
-                  className="py-1.5 text-center text-[9px] font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase sm:py-2 sm:text-[10px]"
-                >
-                  {day}
-                </div>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-7 gap-1 sm:gap-2">
-              {blanks}
-              {days}
-            </div>
-          </SurfaceCard>
-
-          <div className="hidden 2xl:block">
-            <SurfaceCard tone="muted" className="p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-baseline gap-3">
-                    <h3 className="text-lg font-extrabold capitalize text-[var(--text-primary)]">
-                      {calendarPanelLabel}
-                    </h3>
-                    <span className="hidden text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/70 uppercase sm:inline-block">
-                      {selectedDate ? 'Agenda del día' : 'Agenda del mes'}
-                    </span>
-                  </div>
-                  <p className="text-sm text-[var(--text-secondary)]">
-                    {calendarPanelTasks.length > 0
-                      ? calendarPanelSummary
-                      : 'No hay tareas programadas en este bloque de tiempo.'}
-                  </p>
-                </div>
-                {selectedDate ? (
-                  <button
-                    type="button"
-                    onClick={() => setSelectedDate(null)}
-                    className="rounded-[0.8rem] border bg-[var(--surface-card)] px-3 py-2 text-xs font-bold text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)] [border-color:var(--line-soft)]"
-                  >
-                    Ver mes
-                  </button>
-                ) : null}
-              </div>
-
-              <div className="mt-5 space-y-3">
-                {calendarPanelTasks.length > 0 ? (
-                  calendarPanelTasks.map((task) => <div key={task.id}>{renderTaskCard(task, 'calendar')}</div>)
-                ) : (
-                  <EmptyState
-                    icon={CalendarDots}
-                    title="Sin tareas programadas"
-                    description="Selecciona otro día o crea una nueva entrega para poblar el calendario."
-                    className="px-4 py-6"
-                  />
+        <div className="space-y-4">
+          <div className="flex h-11 items-center gap-1 self-start rounded-[1rem] bg-[var(--surface-muted)] p-1">
+            {[
+              { id: 'week', label: 'Semana' },
+              { id: 'month', label: 'Mes' },
+            ].map((mode) => (
+              <button
+                key={mode.id}
+                type="button"
+                onClick={() => setCalendarMode(mode.id as typeof calendarMode)}
+                className={cx(
+                  'flex h-full items-center justify-center rounded-[0.8rem] px-4 text-sm font-bold transition-all',
+                  calendarMode === mode.id
+                    ? 'bg-[var(--surface-card)] text-[var(--text-primary)] shadow-sm'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]',
                 )}
-              </div>
-            </SurfaceCard>
+                style={calendarMode === mode.id ? { color: accentHex } : undefined}
+              >
+                {mode.label}
+              </button>
+            ))}
           </div>
+
+          {calendarMode === 'month' ? (
+            <div className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_minmax(18rem,22vw)]">
+              <SurfaceCard className="p-5 lg:p-6">
+                <div className="mb-5 flex items-center justify-between gap-3">
+                  <IconButton
+                    icon={CaretLeft}
+                    label="Mes anterior"
+                    onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}
+                    tone="ghost"
+                  />
+                  <div className="text-center">
+                    <div className="flex flex-col items-center gap-1 sm:flex-row sm:gap-2">
+                      <h2 className="text-lg font-extrabold capitalize text-[var(--text-primary)]">
+                        {monthLabel}
+                      </h2>
+                      <span className="text-[10px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/70 uppercase sm:text-[11px]">
+                        Vista mensual
+                      </span>
+                    </div>
+                  </div>
+                  <IconButton
+                    icon={CaretRight}
+                    label="Mes siguiente"
+                    onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}
+                    tone="ghost"
+                  />
+                </div>
+
+                <div className="mb-3 grid grid-cols-7 gap-1 sm:gap-2">
+                  {WEEKDAY_LABELS.map((day) => (
+                    <div
+                      key={day}
+                      className="py-1.5 text-center text-[9px] font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase sm:py-2 sm:text-[10px]"
+                    >
+                      {day}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-7 gap-1 sm:gap-2">
+                  {blanks}
+                  {days}
+                </div>
+              </SurfaceCard>
+
+              <div className="hidden 2xl:block">
+                <SurfaceCard tone="muted" className="p-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-baseline gap-3">
+                        <h3 className="text-lg font-extrabold capitalize text-[var(--text-primary)]">
+                          {calendarPanelLabel}
+                        </h3>
+                        <span className="hidden text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/70 uppercase sm:inline-block">
+                          {selectedDate ? 'Agenda del día' : 'Agenda del mes'}
+                        </span>
+                      </div>
+                      <p className="text-sm text-[var(--text-secondary)]">
+                        {calendarPanelTasks.length > 0
+                          ? calendarPanelSummary
+                          : 'No hay tareas programadas en este bloque de tiempo.'}
+                      </p>
+                    </div>
+                    {selectedDate ? (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedDate(null)}
+                        className="rounded-[0.8rem] border bg-[var(--surface-card)] px-3 py-2 text-xs font-bold text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)] [border-color:var(--line-soft)]"
+                      >
+                        Ver mes
+                      </button>
+                    ) : null}
+                  </div>
+
+                  <div className="mt-5 space-y-3">
+                    {calendarPanelTasks.length > 0 ? (
+                      calendarPanelTasks.map((task) => <div key={task.id}>{renderTaskCard(task, 'calendar')}</div>)
+                    ) : (
+                      <EmptyState
+                        icon={CalendarDots}
+                        title="Sin tareas programadas"
+                        description="Selecciona otro día o crea una nueva entrega para poblar el calendario."
+                        className="px-4 py-6"
+                      />
+                    )}
+                  </div>
+                </SurfaceCard>
+              </div>
+            </div>
+          ) : (
+            <WeekCalendar
+              weekStart={currentWeekStart}
+              setWeekStart={setCurrentWeekStart}
+              tasks={filteredSortedTasks}
+              partners={partners}
+              todayIso={todayIso}
+              accentHex={accentHex}
+              onTaskClick={openEdit}
+              onCreateInSlot={(dueDate, startTime, endTime) => {
+                setEditingTaskId(null);
+                setForm({
+                  ...EMPTY_FORM,
+                  dueDate,
+                  startTime,
+                  endTime,
+                  status: 'Pendiente',
+                });
+                setIsPartnerPickerOpen(false);
+                setModalMode('create');
+              }}
+            />
+          )}
         </div>
       ) : null}
 
@@ -1787,6 +2228,47 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                   className={cx(fieldClass, 'appearance-none bg-[var(--surface-card)]')}
                   style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
                 />
+              </div>
+
+              <div className="sm:col-span-2 grid grid-cols-2 gap-3">
+                <div className="min-w-0">
+                  <label className="mb-2 flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
+                    <CalendarDots size={14} />
+                    Hora inicio
+                  </label>
+                  <input
+                    type="time"
+                    value={form.startTime}
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      setForm((prev) => {
+                        const next = { ...prev, startTime: value };
+                        if (value && !prev.endTime) {
+                          const [h, m] = value.split(':').map(Number);
+                          const end = new Date();
+                          end.setHours(h + 1, m, 0, 0);
+                          next.endTime = `${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`;
+                        }
+                        return next;
+                      });
+                    }}
+                    className={cx(fieldClass, 'appearance-none bg-[var(--surface-card)]')}
+                    style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
+                  />
+                </div>
+                <div className="min-w-0">
+                  <label className="mb-2 flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
+                    <CalendarDots size={14} />
+                    Hora fin
+                  </label>
+                  <input
+                    type="time"
+                    value={form.endTime}
+                    onChange={(event) => setForm({ ...form, endTime: event.target.value })}
+                    className={cx(fieldClass, 'appearance-none bg-[var(--surface-card)]')}
+                    style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
+                  />
+                </div>
               </div>
 
               <div className="sm:col-span-2 mt-1">

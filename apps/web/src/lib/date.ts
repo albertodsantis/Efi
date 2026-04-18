@@ -22,3 +22,12 @@ export function addLocalDays(date: Date, amount: number) {
   nextDate.setDate(nextDate.getDate() + amount);
   return nextDate;
 }
+
+// Monday-based week start. Returns 00:00 local on Monday of the given date's week.
+export function startOfWeek(date: Date) {
+  const nextDate = startOfLocalDay(date);
+  const dow = nextDate.getDay(); // 0 = Sun
+  const diff = dow === 0 ? -6 : 1 - dow;
+  nextDate.setDate(nextDate.getDate() + diff);
+  return nextDate;
+}

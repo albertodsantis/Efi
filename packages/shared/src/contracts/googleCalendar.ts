@@ -3,6 +3,8 @@ export interface CalendarTaskPayload {
   description: string;
   partnerName: string;
   dueDate: string;
+  startTime?: string;
+  endTime?: string;
   gcalEventId?: string;
 }
 
@@ -24,6 +26,8 @@ export interface CalendarSyncDownResponse {
   updatedEvents: Array<{
     eventId: string;
     dueDate: string;
+    startTime?: string | null;
+    endTime?: string | null;
   }>;
 }
 
