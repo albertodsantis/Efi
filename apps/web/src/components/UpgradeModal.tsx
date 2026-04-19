@@ -18,7 +18,7 @@ export default function UpgradeModal({ onClose }: { onClose: () => void }) {
   return (
     <OverlayModal onClose={onClose}>
       <ModalPanel
-        title="Pásate a Pro"
+        title="Cambia a Pro"
         description="Durante el acceso anticipado, todos los usuarios disfrutan Pro sin costo. Cuando activemos los pagos, estas serán las condiciones."
         onClose={onClose}
         size="lg"

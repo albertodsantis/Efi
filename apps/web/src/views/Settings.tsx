@@ -88,12 +88,12 @@ export default function Settings() {
       ? 'Pro'
       : 'Free';
   const planDescription = planState.earlyAccess
-    ? 'Disfrutá todas las funciones Pro gratis mientras dure el early access.'
+    ? 'Disfruta todas las funciones Pro gratis mientras dure el early access.'
     : planState.subscribedUntil
       ? `Suscripción activa hasta ${new Date(planState.subscribedUntil).toLocaleDateString('es-AR')}.`
       : trialDays !== null && trialDays > 0
         ? `Te quedan ${trialDays} días de prueba Pro.`
-        : 'Estás en el plan Free. Pásate a Pro para desbloquear todo.';
+        : 'Estás en el plan Free. Cambia a Pro para desbloquear todo.';
   const [isAddingTemplate, setIsAddingTemplate] = useState(false);
   const [taskRemindersEnabled, setTaskRemindersEnabled] = useState(
     () => localStorage.getItem('efi_task_reminders_enabled') !== 'false',
