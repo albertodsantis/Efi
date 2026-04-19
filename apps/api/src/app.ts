@@ -225,10 +225,15 @@ export async function createApp(): Promise<{
   app.use('/api/calendar', createCalendarRouter(googleCreds, pool));
   app.use('/api/admin', createAdminRouter(pool, env.ADMIN_API_KEY));
 
-  // Sentry error handler — must be registered before any other error middleware
-  // and only captures errors from the routes mounted above.
+  // Manual Sentry error capture — avoids setupExpressErrorHandler, which
+  // requires Sentry auto-instrumentation (only possible in ESM via --import).
+  // This middleware captures the exception then forwards it to Express's
+  // default error handler so the response is unchanged.
   if (env.SENTRY_DSN) {
-    Sentry.setupExpressErrorHandler(app);
+    app.use((err: Error, _req: express.Request, _res: express.Response, next: express.NextFunction) => {
+      Sentry.captureException(err);
+      next(err);
+    });
   }
 
   return { app, env, pool, closePool };
