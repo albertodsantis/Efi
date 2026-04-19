@@ -4,6 +4,9 @@ import { IconContext } from '@phosphor-icons/react';
 import App from './App.tsx';
 import './index.css';
 import { initializeStatusBar } from './lib/statusBar';
+import { initSentry } from './lib/sentry';
+
+initSentry();
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {

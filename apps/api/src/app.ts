@@ -13,6 +13,7 @@ import session from 'express-session';
 import connectPgSimple from 'connect-pg-simple';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import * as Sentry from '@sentry/node';
 import { createAuthRouter } from './routes/auth';
 import { createCalendarRouter } from './routes/calendar';
 import { createV1Router } from './routes/v1';
@@ -98,6 +99,12 @@ export async function createApp(): Promise<{
   app.use('/api/v1', createV1Router(appStore, pool, gamification));
   app.use('/api/auth', authLimiter, createAuthRouter(googleCreds, env.APP_URL, pool, env.EARLY_ACCESS));
   app.use('/api/calendar', createCalendarRouter(googleCreds, pool));
+
+  // Sentry error handler — must be registered before any other error middleware
+  // and only captures errors from the routes mounted above.
+  if (env.SENTRY_DSN) {
+    Sentry.setupExpressErrorHandler(app);
+  }
 
   return { app, env, pool, closePool };
 }

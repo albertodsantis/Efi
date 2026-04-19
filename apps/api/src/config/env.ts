@@ -11,6 +11,7 @@ export interface AppEnv {
   SUPABASE_URL?: string;
   SUPABASE_SERVICE_KEY?: string;
   RESEND_API_KEY?: string;
+  SENTRY_DSN?: string;
 }
 
 function requireEnv(name: string): string {
@@ -46,5 +47,6 @@ export function loadEnv(): AppEnv {
     SUPABASE_URL: process.env.SUPABASE_URL || undefined,
     SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY || undefined,
     RESEND_API_KEY: process.env.RESEND_API_KEY || undefined,
+    SENTRY_DSN: process.env.SENTRY_DSN || undefined,
   };
 }
