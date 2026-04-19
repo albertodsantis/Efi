@@ -205,6 +205,7 @@ export interface AppNotification {
 // ────────────────────────────────────────────────────────────
 
 export type PointEventType =
+  | 'daily_login'             // once per calendar day on first bootstrap
   | 'config_accent_change'    // every accent change; service awards points only on 2nd
   | 'config_profile_complete'
   | 'config_first_goal'

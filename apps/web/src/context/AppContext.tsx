@@ -185,9 +185,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     setBootstrapError(null);
 
     try {
-      const { appState, efisystem: efisystemData } = await appApi.getBootstrap();
+      const { appState, efisystem: efisystemData, dailyLoginAward } = await appApi.getBootstrap();
       setState(normalizeAppState(appState));
       setEfisystem(efisystemData ?? emptyEfisystem);
+      applyAward(dailyLoginAward, '¡Bienvenido de vuelta!');
 
       // Hide the native splash screen once app data is ready, on first load only.
       if (!splashHiddenRef.current) {

@@ -122,8 +122,19 @@ export const authApi = {
     }),
 };
 
+function clientTimezone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  } catch {
+    return 'UTC';
+  }
+}
+
 export const appApi = {
-  getBootstrap: () => apiRequest<AppBootstrapResponse>('/api/v1/bootstrap'),
+  getBootstrap: () =>
+    apiRequest<AppBootstrapResponse>('/api/v1/bootstrap', {
+      headers: { 'X-Timezone': clientTimezone() },
+    }),
   getEfisystem: () => apiRequest<EfisystemSnapshot>('/api/v1/efisystem'),
   getStrategicView: () => apiRequest<StrategicViewResponse>('/api/v1/strategic-view'),
   getProfile: () => apiRequest<UserProfile>('/api/v1/profile'),

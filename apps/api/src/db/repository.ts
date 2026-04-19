@@ -1301,7 +1301,17 @@ export class PostgresAppStore {
     );
   }
 
-  async countTodayTransactions(userId: string, eventType: string): Promise<number> {
+  async countTodayTransactions(userId: string, eventType: string, timezone?: string): Promise<number> {
+    if (timezone) {
+      const result = await this.pool.query(
+        `SELECT COUNT(*)::int AS cnt
+         FROM efisystem_transactions
+         WHERE user_id = $1 AND event_type = $2
+           AND (created_at AT TIME ZONE $3)::date = (NOW() AT TIME ZONE $3)::date`,
+        [userId, eventType, timezone],
+      );
+      return result.rows[0].cnt;
+    }
     const result = await this.pool.query(
       `SELECT COUNT(*)::int AS cnt
        FROM efisystem_transactions

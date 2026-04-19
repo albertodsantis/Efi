@@ -23,6 +23,7 @@ import type {
 export interface AppBootstrapResponse {
   appState: AppState;
   efisystem: EfisystemSnapshot;
+  dailyLoginAward?: EfisystemAward;
 }
 
 // Mutating responses that include gamification award data

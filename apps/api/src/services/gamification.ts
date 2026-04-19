@@ -44,7 +44,7 @@ export class GamificationService {
   async processEvent(
     userId: string,
     eventType: PointEventType,
-    context: { taskId?: string } = {},
+    context: { taskId?: string; timezone?: string } = {},
   ): Promise<EfisystemAward> {
     const { totalPoints: currentTotal, currentLevel: prevLevel } =
       await this.appStore.getEfisystemSummary(userId);
@@ -52,6 +52,15 @@ export class GamificationService {
     let pointsEarned = 0;
 
     switch (eventType) {
+      case 'daily_login': {
+        const todayCount = await this.appStore.countTodayTransactions(userId, eventType, context.timezone);
+        if (todayCount === 0) {
+          pointsEarned = 25;
+          await this.appStore.insertTransaction(userId, eventType, 25);
+        }
+        break;
+      }
+
       case 'config_accent_change': {
         // Always insert the transaction (log every change), award only on 2nd
         await this.appStore.insertTransaction(userId, eventType, 0);

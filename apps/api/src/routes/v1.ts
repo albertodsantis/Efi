@@ -63,6 +63,18 @@ function getUserId(req: Request): string {
   return (req as any).userId;
 }
 
+function parseTimezoneHeader(raw: string | undefined): string | undefined {
+  if (!raw) return undefined;
+  const value = raw.trim();
+  if (!/^[A-Za-z_+\-/0-9]{1,64}$/.test(value)) return undefined;
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: value });
+    return value;
+  } catch {
+    return undefined;
+  }
+}
+
 export function createV1Router(appStore: PostgresAppStore, pool: pg.Pool, gamification: GamificationService) {
   const router = Router();
 
@@ -72,11 +84,17 @@ export function createV1Router(appStore: PostgresAppStore, pool: pg.Pool, gamifi
   router.get('/bootstrap', async (req, res) => {
     try {
       const userId = getUserId(req);
+      const timezone = parseTimezoneHeader(req.get('X-Timezone'));
+      const dailyLoginAward = await gamification.processEvent(userId, 'daily_login', { timezone });
       const [appState, efisystem] = await Promise.all([
         appStore.getSnapshot(userId),
         appStore.getEfisystemSnapshot(userId),
       ]);
-      const response: AppBootstrapResponse = { appState, efisystem };
+      const response: AppBootstrapResponse = {
+        appState,
+        efisystem,
+        ...(dailyLoginAward.pointsEarned > 0 ? { dailyLoginAward } : {}),
+      };
       res.json(response);
     } catch (error) {
       console.error('Bootstrap error:', error);
