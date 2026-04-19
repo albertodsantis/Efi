@@ -21,6 +21,7 @@ import { createAuthRouter } from './routes/auth';
 import { createCalendarRouter } from './routes/calendar';
 import { createV1Router } from './routes/v1';
 import { createMediaKitRouter } from './routes/mediakit';
+import { createAdminRouter } from './routes/admin';
 import { initPool, closePool } from './db/connection';
 import { runMigrations } from './db/migrate';
 import { PostgresAppStore } from './db/repository';
@@ -222,6 +223,7 @@ export async function createApp(): Promise<{
   app.use('/api/v1', createV1Router(appStore, pool, gamification));
   app.use('/api/auth', authLimiter, createAuthRouter(googleCreds, env.APP_URL, pool, env.EARLY_ACCESS));
   app.use('/api/calendar', createCalendarRouter(googleCreds, pool));
+  app.use('/api/admin', createAdminRouter(pool, env.ADMIN_API_KEY));
 
   // Sentry error handler — must be registered before any other error middleware
   // and only captures errors from the routes mounted above.
