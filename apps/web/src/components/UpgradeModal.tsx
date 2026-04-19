@@ -32,7 +32,7 @@ export default function UpgradeModal({ onClose }: { onClose: () => void }) {
                 className={cx(
                   'rounded-full px-4 py-2 text-xs font-bold tracking-[0.14em] uppercase transition-colors',
                   period === 'monthly'
-                    ? 'bg-[var(--accent-solid)] text-white shadow-sm'
+                    ? 'bg-[var(--accent-solid)] text-[var(--accent-foreground)] shadow-sm'
                     : 'text-[var(--text-primary)] hover:bg-[var(--surface-muted)]',
                 )}
               >
@@ -44,7 +44,7 @@ export default function UpgradeModal({ onClose }: { onClose: () => void }) {
                 className={cx(
                   'relative rounded-full px-4 py-2 text-xs font-bold tracking-[0.14em] uppercase transition-colors',
                   period === 'annual'
-                    ? 'bg-[var(--accent-solid)] text-white shadow-sm'
+                    ? 'bg-[var(--accent-solid)] text-[var(--accent-foreground)] shadow-sm'
                     : 'text-[var(--text-primary)] hover:bg-[var(--surface-muted)]',
                 )}
               >
@@ -53,7 +53,7 @@ export default function UpgradeModal({ onClose }: { onClose: () => void }) {
                   className={cx(
                     'ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-normal',
                     period === 'annual'
-                      ? 'bg-white/20 text-white'
+                      ? 'bg-[var(--accent-foreground)]/20 text-[var(--accent-foreground)]'
                       : 'bg-emerald-500/15 text-emerald-600',
                   )}
                 >
