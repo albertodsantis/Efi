@@ -18,22 +18,22 @@ export default function UpgradeModal({ onClose }: { onClose: () => void }) {
   return (
     <OverlayModal onClose={onClose}>
       <ModalPanel
-        title="Pasate a Pro"
-        description="Mientras dure el acceso anticipado, todos los usuarios disfrutan Pro sin costo. Cuando activemos los pagos, estas serán las condiciones."
+        title="Pásate a Pro"
+        description="Durante el acceso anticipado, todos los usuarios disfrutan Pro sin costo. Cuando activemos los pagos, estas serán las condiciones."
         onClose={onClose}
         size="lg"
       >
         <div className="space-y-6">
           <div className="flex flex-col items-center gap-4 rounded-2xl border [border-color:var(--line-soft)] bg-[var(--surface-muted)]/60 p-5">
-            <div className="inline-flex rounded-full border [border-color:var(--line-soft)] bg-[var(--surface-card)] p-1">
+            <div className="inline-flex rounded-full border [border-color:var(--line-soft)] bg-[var(--surface-card-strong)] p-1 shadow-inner">
               <button
                 type="button"
                 onClick={() => setPeriod('monthly')}
                 className={cx(
                   'rounded-full px-4 py-2 text-xs font-bold tracking-[0.14em] uppercase transition-colors',
                   period === 'monthly'
-                    ? 'bg-[var(--accent-solid)] text-white'
-                    : 'text-[var(--text-secondary)]',
+                    ? 'bg-[var(--accent-solid)] text-white shadow-sm'
+                    : 'text-[var(--text-primary)] hover:bg-[var(--surface-muted)]',
                 )}
               >
                 Mensual
@@ -44,12 +44,19 @@ export default function UpgradeModal({ onClose }: { onClose: () => void }) {
                 className={cx(
                   'relative rounded-full px-4 py-2 text-xs font-bold tracking-[0.14em] uppercase transition-colors',
                   period === 'annual'
-                    ? 'bg-[var(--accent-solid)] text-white'
-                    : 'text-[var(--text-secondary)]',
+                    ? 'bg-[var(--accent-solid)] text-white shadow-sm'
+                    : 'text-[var(--text-primary)] hover:bg-[var(--surface-muted)]',
                 )}
               >
                 Anual
-                <span className="ml-2 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold tracking-normal text-emerald-600">
+                <span
+                  className={cx(
+                    'ml-2 rounded-full px-2 py-0.5 text-[10px] font-bold tracking-normal',
+                    period === 'annual'
+                      ? 'bg-white/20 text-white'
+                      : 'bg-emerald-500/15 text-emerald-600',
+                  )}
+                >
                   -{PLAN_PRICING.annualDiscountPct}%
                 </span>
               </button>
@@ -98,7 +105,7 @@ export default function UpgradeModal({ onClose }: { onClose: () => void }) {
           <div className="rounded-2xl border [border-color:var(--line-soft)] bg-[var(--surface-muted)]/40 p-4 text-center">
             <StatusBadge tone="success">Acceso anticipado</StatusBadge>
             <p className="mt-3 text-sm text-[var(--text-secondary)]">
-              Estás disfrutando de todas las funciones Pro de forma gratuita mientras Efi está en acceso anticipado. Te avisaremos con tiempo antes de activar los pagos.
+              Estás disfrutando todas las funciones Pro de forma gratuita mientras Efi está en acceso anticipado. Te avisaremos con tiempo antes de activar los pagos.
             </p>
           </div>
         </div>
