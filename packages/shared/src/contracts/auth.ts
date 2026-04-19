@@ -31,6 +31,10 @@ export interface SessionUser {
   name: string;
   avatar: string;
   provider: 'email' | 'google';
+  plan: 'free' | 'pro';
+  trialEndsAt: string | null;
+  subscribedUntil: string | null;
+  earlyAccess: boolean;
 }
 
 export interface MeResponse {

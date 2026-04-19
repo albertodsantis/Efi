@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   TextAlignLeft,
   Bell,
@@ -13,12 +13,14 @@ import {
   PencilLine,
   Plus,
   ArrowCounterClockwise,
+  Sparkle,
   Sun,
   Trash,
   TextT,
   UserMinus,
   Alarm,
 } from '@phosphor-icons/react';
+import { isPro, trialDaysRemaining } from '@shared';
 import {
   requestNotificationPermission,
   scheduleDueDateReminders,
@@ -26,6 +28,7 @@ import {
 } from '../lib/localNotifications';
 import { useAppContext } from '../context/AppContext';
 import OverlayModal from '../components/OverlayModal';
+import UpgradeModal from '../components/UpgradeModal';
 import {
   Button,
   EmptyState,
@@ -74,7 +77,23 @@ export default function Settings() {
     partners,
     profileAccentColor,
     profileForceDark,
+    planState,
   } = useAppContext();
+  const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
+  const planIsPro = useMemo(() => isPro(planState), [planState]);
+  const trialDays = useMemo(() => trialDaysRemaining(planState), [planState]);
+  const planBadgeLabel = planState.earlyAccess
+    ? 'Pro — Acceso anticipado'
+    : planIsPro
+      ? 'Pro'
+      : 'Free';
+  const planDescription = planState.earlyAccess
+    ? 'Disfrutá todas las funciones Pro gratis mientras dure el early access.'
+    : planState.subscribedUntil
+      ? `Suscripción activa hasta ${new Date(planState.subscribedUntil).toLocaleDateString('es-AR')}.`
+      : trialDays !== null && trialDays > 0
+        ? `Te quedan ${trialDays} días de prueba Pro.`
+        : 'Estás en el plan Free. Pasate a Pro para desbloquear todo.';
   const [isAddingTemplate, setIsAddingTemplate] = useState(false);
   const [taskRemindersEnabled, setTaskRemindersEnabled] = useState(
     () => localStorage.getItem('efi_task_reminders_enabled') !== 'false',
@@ -337,6 +356,30 @@ export default function Settings() {
 
   return (
     <div className="space-y-5 p-4 pb-6 lg:space-y-6 lg:px-8 lg:pt-4 lg:pb-8">
+      <SurfaceCard className="overflow-hidden p-0">
+        <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between lg:p-7">
+          <div className="flex items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--accent-soft-strong)] text-[var(--accent-solid)]">
+              <Sparkle size={22} weight="fill" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <h2 className="text-lg font-bold tracking-tight text-slate-800 dark:text-slate-100">
+                  Plan
+                </h2>
+                <StatusBadge tone={planIsPro ? 'success' : 'neutral'}>{planBadgeLabel}</StatusBadge>
+              </div>
+              <p className="mt-1 text-sm text-[var(--text-secondary)]">{planDescription}</p>
+            </div>
+          </div>
+          <Button tone="secondary" onClick={() => setIsUpgradeOpen(true)}>
+            Ver planes
+          </Button>
+        </div>
+      </SurfaceCard>
+
+      {isUpgradeOpen ? <UpgradeModal onClose={() => setIsUpgradeOpen(false)} /> : null}
+
       <SurfaceCard className="overflow-hidden p-0">
         <div className="grid xl:grid-cols-[minmax(260px,0.72fr)_minmax(0,1.28fr)]">
           <div className="p-6 lg:p-7">

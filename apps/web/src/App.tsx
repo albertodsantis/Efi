@@ -853,6 +853,12 @@ export default function App() {
         email={sessionUser?.email ?? ''}
         provider={sessionUser?.provider ?? 'email'}
         onProviderChange={(p: 'email' | 'google') => setSessionUser((u: SessionUser | null) => u ? { ...u, provider: p } : u)}
+        planState={{
+          plan: sessionUser?.plan ?? 'pro',
+          trialEndsAt: sessionUser?.trialEndsAt ?? null,
+          subscribedUntil: sessionUser?.subscribedUntil ?? null,
+          earlyAccess: sessionUser?.earlyAccess ?? true,
+        }}
       >
         <AppShell isNewRegistration={isNewRegistration} />
       </AppProvider>

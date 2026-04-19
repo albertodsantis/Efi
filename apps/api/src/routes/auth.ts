@@ -56,6 +56,7 @@ export function createAuthRouter(
   googleCreds: GoogleCreds,
   appUrl: string,
   pool: pg.Pool,
+  earlyAccess: boolean,
 ) {
   const router = Router();
 
@@ -67,6 +68,36 @@ export function createAuthRouter(
   const setSessionUser = (req: Express.Request, user: SessionUser) => {
     (req.session as any).user = user;
   };
+
+  async function loadPlanFields(userId: string): Promise<{
+    plan: 'free' | 'pro';
+    trialEndsAt: string | null;
+    subscribedUntil: string | null;
+  }> {
+    const { rows } = await pool.query(
+      'SELECT plan, trial_ends_at, subscribed_until FROM users WHERE id = $1',
+      [userId],
+    );
+    const row = rows[0];
+    return {
+      plan: (row?.plan === 'free' ? 'free' : 'pro'),
+      trialEndsAt: row?.trial_ends_at ? new Date(row.trial_ends_at).toISOString() : null,
+      subscribedUntil: row?.subscribed_until ? new Date(row.subscribed_until).toISOString() : null,
+    };
+  }
+
+  function withPlan(
+    base: Omit<SessionUser, 'plan' | 'trialEndsAt' | 'subscribedUntil' | 'earlyAccess'>,
+    planFields: { plan: 'free' | 'pro'; trialEndsAt: string | null; subscribedUntil: string | null },
+  ): SessionUser {
+    return {
+      ...base,
+      plan: planFields.plan,
+      trialEndsAt: planFields.trialEndsAt,
+      subscribedUntil: planFields.subscribedUntil,
+      earlyAccess: earlyAccess,
+    };
+  }
 
   // ── GET /me ───────────────────────────────────────────────────
 
@@ -81,9 +112,15 @@ export function createAuthRouter(
           const response: MeResponse = { user: null };
           return res.json(response);
         }
+
+        const planFields = await loadPlanFields(sessionUser.id);
+        const refreshed = withPlan(sessionUser, planFields);
+        setSessionUser(req, refreshed);
+        const response: MeResponse = { user: refreshed };
+        return res.json(response);
       }
 
-      const response: MeResponse = { user: sessionUser };
+      const response: MeResponse = { user: null };
       res.json(response);
     } catch (error) {
       console.error('Auth /me error:', error);
@@ -131,13 +168,16 @@ export function createAuthRouter(
         console.error('Welcome email error:', err),
       );
 
-      const user: SessionUser = {
-        id: userId,
-        email: trimmedEmail,
-        name: trimmedName,
-        avatar: '',
-        provider: 'email',
-      };
+      const user = withPlan(
+        {
+          id: userId,
+          email: trimmedEmail,
+          name: trimmedName,
+          avatar: '',
+          provider: 'email',
+        },
+        await loadPlanFields(userId),
+      );
 
       setSessionUser(req, user);
 
@@ -182,13 +222,16 @@ export function createAuthRouter(
       // Ensure profile/settings exist (idempotent — handles legacy users)
       await ensureUserData(pool, dbUser.id, dbUser.name, dbUser.email, dbUser.avatar || '');
 
-      const user: SessionUser = {
-        id: dbUser.id,
-        email: dbUser.email,
-        name: dbUser.name,
-        avatar: dbUser.avatar || '',
-        provider: dbUser.provider,
-      };
+      const user = withPlan(
+        {
+          id: dbUser.id,
+          email: dbUser.email,
+          name: dbUser.name,
+          avatar: dbUser.avatar || '',
+          provider: dbUser.provider,
+        },
+        await loadPlanFields(dbUser.id),
+      );
 
       setSessionUser(req, user);
 
@@ -345,13 +388,16 @@ export function createAuthRouter(
           );
         }
 
-        const user: SessionUser = {
-          id: userId,
-          email: googleEmail,
-          name: googleName,
-          avatar: googleAvatar,
-          provider: 'google',
-        };
+        const user = withPlan(
+          {
+            id: userId,
+            email: googleEmail,
+            name: googleName,
+            avatar: googleAvatar,
+            provider: 'google',
+          },
+          await loadPlanFields(userId),
+        );
 
         setSessionUser(req, user);
         (req.session as any).tokens = tokens;
@@ -480,13 +526,16 @@ export function createAuthRouter(
         );
       }
 
-      const user: SessionUser = {
-        id: userId,
-        email: googleEmail,
-        name: googleName,
-        avatar: googleAvatar,
-        provider: 'google',
-      };
+      const user = withPlan(
+        {
+          id: userId,
+          email: googleEmail,
+          name: googleName,
+          avatar: googleAvatar,
+          provider: 'google',
+        },
+        await loadPlanFields(userId),
+      );
 
       setSessionUser(req, user);
 

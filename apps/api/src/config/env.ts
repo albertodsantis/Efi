@@ -6,6 +6,7 @@ export interface AppEnv {
   GOOGLE_CLIENT_SECRET: string;
   PORT: number;
   NODE_ENV: 'development' | 'production';
+  EARLY_ACCESS: boolean;
   GEMINI_API_KEY?: string;
   SUPABASE_URL?: string;
   SUPABASE_SERVICE_KEY?: string;
@@ -40,6 +41,7 @@ export function loadEnv(): AppEnv {
     GOOGLE_CLIENT_SECRET: warnIfMissing('GOOGLE_CLIENT_SECRET'),
     PORT: Number(process.env.PORT || 3000),
     NODE_ENV: (process.env.NODE_ENV === 'production' ? 'production' : 'development'),
+    EARLY_ACCESS: process.env.EARLY_ACCESS !== 'false',
     GEMINI_API_KEY: process.env.GEMINI_API_KEY || undefined,
     SUPABASE_URL: process.env.SUPABASE_URL || undefined,
     SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY || undefined,

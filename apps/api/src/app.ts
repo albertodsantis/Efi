@@ -96,7 +96,7 @@ export async function createApp(): Promise<{
 
   const gamification = new GamificationService(appStore);
   app.use('/api/v1', createV1Router(appStore, pool, gamification));
-  app.use('/api/auth', authLimiter, createAuthRouter(googleCreds, env.APP_URL, pool));
+  app.use('/api/auth', authLimiter, createAuthRouter(googleCreds, env.APP_URL, pool, env.EARLY_ACCESS));
   app.use('/api/calendar', createCalendarRouter(googleCreds, pool));
 
   return { app, env, pool, closePool };

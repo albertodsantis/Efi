@@ -12,6 +12,7 @@ import type {
   EfisystemAward,
   EfisystemSnapshot,
   Partner,
+  PlanState,
   Task,
   Template,
   UpdateProfileRequest,
@@ -51,6 +52,7 @@ interface AppContextType extends AppState {
   email: string;
   provider: 'email' | 'google';
   onProviderChange: (provider: 'email' | 'google') => void;
+  planState: PlanState;
   accentHex: string;
   accentGradient: string;
   isBootstrapping: boolean;
@@ -137,7 +139,7 @@ function upsertPartnerInState(partners: Partner[], incomingPartner: Partner) {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => void; email: string; provider: 'email' | 'google'; onProviderChange: (provider: 'email' | 'google') => void }> = ({ children, onLogout, email, provider, onProviderChange }) => {
+export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => void; email: string; provider: 'email' | 'google'; onProviderChange: (provider: 'email' | 'google') => void; planState: PlanState }> = ({ children, onLogout, email, provider, onProviderChange, planState }) => {
   const [state, setState] = useState<AppState>(emptyState);
   const [efisystem, setEfisystem] = useState<EfisystemSnapshot>(emptyEfisystem);
   const [isBootstrapping, setIsBootstrapping] = useState(true);
@@ -712,6 +714,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     email,
     provider,
     onProviderChange,
+    planState,
     accentHex,
     accentGradient,
     isBootstrapping,
@@ -747,6 +750,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     email,
     provider,
     onProviderChange,
+    planState,
     accentHex,
     accentGradient,
     isBootstrapping,
