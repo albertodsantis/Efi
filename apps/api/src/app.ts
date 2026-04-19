@@ -119,8 +119,75 @@ export async function createApp(): Promise<{
     redirectUri: `${env.APP_URL}/api/auth/google/callback`,
   };
 
-  app.get('/api/health', (_req, res) => {
+  app.get('/api/health', async (_req, res) => {
     res.json({ ok: true });
+  });
+
+  app.get('/api/health/deep', async (_req, res) => {
+    const start = Date.now();
+    const checks: Record<string, { ok: boolean; latencyMs?: number; error?: string }> = {};
+
+    // Database
+    const dbStart = Date.now();
+    try {
+      await pool.query('SELECT 1');
+      checks.database = { ok: true, latencyMs: Date.now() - dbStart };
+    } catch (err) {
+      checks.database = {
+        ok: false,
+        latencyMs: Date.now() - dbStart,
+        error: err instanceof Error ? err.message : 'unknown',
+      };
+    }
+
+    // Session store (same pool, but verifies the session table exists)
+    const sessStart = Date.now();
+    try {
+      await pool.query('SELECT 1 FROM session LIMIT 1');
+      checks.sessionStore = { ok: true, latencyMs: Date.now() - sessStart };
+    } catch (err) {
+      checks.sessionStore = {
+        ok: false,
+        latencyMs: Date.now() - sessStart,
+        error: err instanceof Error ? err.message : 'unknown',
+      };
+    }
+
+    // Supabase storage
+    const storageStart = Date.now();
+    if (env.SUPABASE_URL && env.SUPABASE_SERVICE_KEY) {
+      try {
+        const response = await fetch(`${env.SUPABASE_URL}/storage/v1/bucket`, {
+          method: 'GET',
+          headers: {
+            apikey: env.SUPABASE_SERVICE_KEY,
+            Authorization: `Bearer ${env.SUPABASE_SERVICE_KEY}`,
+          },
+          signal: AbortSignal.timeout(3000),
+        });
+        checks.storage = {
+          ok: response.ok,
+          latencyMs: Date.now() - storageStart,
+          ...(response.ok ? {} : { error: `HTTP ${response.status}` }),
+        };
+      } catch (err) {
+        checks.storage = {
+          ok: false,
+          latencyMs: Date.now() - storageStart,
+          error: err instanceof Error ? err.message : 'unknown',
+        };
+      }
+    } else {
+      checks.storage = { ok: false, error: 'not configured' };
+    }
+
+    const allOk = Object.values(checks).every((c) => c.ok);
+    res.status(allOk ? 200 : 503).json({
+      ok: allOk,
+      uptime: Math.round(process.uptime()),
+      totalLatencyMs: Date.now() - start,
+      checks,
+    });
   });
 
   // Public profile route (no auth required) — mounted at root so /@handle is matched explicitly
