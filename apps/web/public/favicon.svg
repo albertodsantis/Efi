@@ -1,15 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <defs>
-    <linearGradient id="g" x1="0%" y1="100%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#FCAF45"/>
-      <stop offset="30%" stop-color="#F56040"/>
-      <stop offset="60%" stop-color="#E1306C"/>
-      <stop offset="100%" stop-color="#833AB4"/>
+    <linearGradient id="efiGrad" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#FF1E7A"/>
+      <stop offset="55%" stop-color="#FF4D3D"/>
+      <stop offset="100%" stop-color="#FFA500"/>
     </linearGradient>
   </defs>
-  <rect width="64" height="64" rx="14" fill="#2A2A2E"/>
-  <!-- T stem (drawn first so cap overlaps it) -->
-  <rect x="27" y="18" width="10" height="26" rx="5" fill="url(#g)" opacity="0.7"/>
-  <!-- Mushroom cap -->
-  <path d="M12,24 C12,16 20,11 32,11 C44,11 52,16 52,24 C52,26 47,27 40,25 C36,24 34,22 32,22 C30,22 28,24 24,25 C17,27 12,26 12,24Z" fill="url(#g)"/>
+  <path d="M32 8 C46 8 54 18 54 26 C54 31 50 32 44 30 C40 29 37 29 32 29 C27 29 24 29 20 30 C14 32 10 31 10 26 C10 18 18 8 32 8 Z" fill="url(#efiGrad)"/>
+  <path d="M25 29 C25 28 26 27 28 27 L36 27 C38 27 39 28 39 29 L38 48 C38 52 36 55 32 55 C28 55 26 52 26 48 Z" fill="url(#efiGrad)"/>
 </svg>
