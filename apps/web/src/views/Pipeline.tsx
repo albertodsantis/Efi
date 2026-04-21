@@ -41,6 +41,7 @@ import {
   Button,
   EmptyState,
   IconButton,
+  LoadingMushroom,
   ModalPanel,
   StatusBadge,
   SurfaceCard,
@@ -1429,7 +1430,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
         >
           {isUpdating && (
             <div className="absolute inset-0 z-10 flex items-center justify-center rounded-[inherit] bg-[var(--surface-card)]/60 backdrop-blur-[2px]">
-              <ArrowClockwise size={20} className="animate-spin text-[var(--accent)]" weight="bold" />
+              <LoadingMushroom size={28} />
             </div>
           )}
           <div className="flex items-start justify-between gap-3">

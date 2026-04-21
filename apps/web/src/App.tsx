@@ -36,7 +36,7 @@ import MoreOptionsMenu from './components/MoreOptionsMenu';
 import NotificationBell from './components/NotificationBell';
 import LegalModal from './components/LegalModal';
 import type { LegalPage } from './components/LegalModal';
-import { Avatar, SurfaceCard, cx } from './components/ui';
+import { Avatar, LoadingMushroom, SurfaceCard, cx } from './components/ui';
 import { authApi } from './lib/api';
 import { supabase } from './lib/supabase';
 import { getAccentSecondary } from './lib/accent';
@@ -172,7 +172,7 @@ function usePullToRefresh(onRefresh: () => Promise<void>) {
 
 const LazyFallback = () => (
   <div className="flex flex-1 items-center justify-center py-16">
-    <CircleNotch size={24} className="animate-spin text-(--text-secondary)" />
+    <LoadingMushroom size={40} />
   </div>
 );
 

@@ -506,3 +506,25 @@ export function Avatar({
     />
   );
 }
+
+export function LoadingMushroom({
+  size = 40,
+  className,
+}: {
+  size?: number;
+  className?: string;
+}) {
+  return (
+    <img
+      src="/brand/isotipo.png"
+      alt="Cargando"
+      aria-label="Cargando"
+      role="status"
+      draggable={false}
+      width={size}
+      height={size}
+      className={cx('select-none origin-bottom animate-mushroom-wobble', className)}
+      style={{ width: size, height: size }}
+    />
+  );
+}
