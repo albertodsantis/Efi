@@ -142,12 +142,12 @@ a:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid var(--accent-color, #c96f5b);
+  outline: 2px solid var(--accent-color, #ff1e7a);
   outline-offset: 2px;
 }
 
 ::selection {
-  background: color-mix(in srgb, var(--accent-color, #c96f5b) 22%, white);
+  background: color-mix(in srgb, var(--accent-color, #ff1e7a) 22%, white);
 }
 
 html.dark body {

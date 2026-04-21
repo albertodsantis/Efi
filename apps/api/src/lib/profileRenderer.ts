@@ -43,6 +43,10 @@ function getAccessibleForeground(bgHex: string): string {
 // ─── Accent resolution ────────────────────────────────────────────────────────
 
 const GRADIENT_PRESETS: Record<string, { gradient: string; representative: string }> = {
+  efi: {
+    gradient: 'linear-gradient(180deg, #FF1E7A 0%, #FF4D3D 55%, #FFA500 100%)',
+    representative: '#FF1E7A',
+  },
   instagram: {
     gradient: 'linear-gradient(135deg, #FCAF45, #F56040, #E1306C, #833AB4)',
     representative: '#E1306C',
@@ -79,13 +83,13 @@ export function resolveAccent(accentColor: string): ResolvedAccent {
   if (accentColor.startsWith('gradient:')) {
     const key = accentColor.replace('gradient:', '');
     const preset = GRADIENT_PRESETS[key];
-    const hex = preset?.representative ?? '#C96F5B';
+    const hex = preset?.representative ?? '#FF1E7A';
     return { hex, gradient: preset?.gradient ?? hex, isRetro: false, forceDark: false };
   }
   if (accentColor.startsWith('conic:')) {
     const key = accentColor.replace('conic:', '');
     const preset = CONIC_PRESETS[key];
-    const hex = preset?.representative ?? '#C96F5B';
+    const hex = preset?.representative ?? '#FF1E7A';
     return { hex, gradient: preset?.conic ?? hex, isRetro: false, forceDark: false };
   }
   if (accentColor.startsWith('retro:')) {

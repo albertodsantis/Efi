@@ -43,7 +43,7 @@ export default function ImageUpload({
   value,
   onChange,
   category,
-  accentColor = '#C96F5B',
+  accentColor = '#FF1E7A',
   aspectRatio = 'aspect-square',
   className,
   placeholder = 'Subir imagen',

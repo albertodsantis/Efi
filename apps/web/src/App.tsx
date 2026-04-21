@@ -684,7 +684,7 @@ const AppSplash = () => (
   </div>
 );
 
-const DEFAULT_ACCENT = '#C96F5B';
+const DEFAULT_ACCENT = 'gradient:efi';
 
 const ONBOARDING_STORAGE_KEY = 'hasSeenOnboardingTour';
 

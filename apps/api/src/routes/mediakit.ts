@@ -82,7 +82,7 @@ export function createMediaKitRouter(pool: pg.Pool, isDev = false): Router {
       align-items: center;
       gap: 8px;
       padding: 12px 24px;
-      background: linear-gradient(135deg, #c96f5b, #d47f6b);
+      background: linear-gradient(180deg, #FF1E7A 0%, #FF4D3D 55%, #FFA500 100%);
       color: white;
       text-decoration: none;
       border-radius: 12px;
@@ -125,7 +125,7 @@ export function createMediaKitRouter(pool: pg.Pool, isDev = false): Router {
         ...(row.efi_profile || {}),
       };
 
-      const profileAccent = settingsRow?.profile_accent_color ?? settingsRow?.accent_color ?? '#C96F5B';
+      const profileAccent = settingsRow?.profile_accent_color ?? settingsRow?.accent_color ?? 'gradient:efi';
       const publicUrl = `${req.protocol}://${req.get('host')}/@${row.handle.replace(/^@/, '')}`;
       const html = generateEfiLinkHtml({
         name: row.name || '',

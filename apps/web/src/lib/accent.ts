@@ -1,4 +1,5 @@
 export const ACCENT_OPTIONS = [
+  { name: 'Efi', value: 'gradient:efi' },
   { name: 'Vintage TV', value: 'retro:crt' },
   { name: 'Dawn', value: 'gradient:dawn' },
   { name: 'IG', value: 'gradient:instagram' },
@@ -13,6 +14,8 @@ export const ACCENT_OPTIONS = [
   { name: 'Fucsia', value: '#D946EF' },
 ] as const;
 
+export const DEFAULT_ACCENT = 'gradient:efi';
+
 // Retro presets — stored as "retro:<key>" in the database
 const RETRO_PRESETS: Record<string, { representative: string; swatch: string }> = {
   crt: {
@@ -23,6 +26,10 @@ const RETRO_PRESETS: Record<string, { representative: string; swatch: string }> 
 
 // Gradient presets — stored as "gradient:<key>" in the database
 const GRADIENT_PRESETS: Record<string, { gradient: string; representative: string }> = {
+  efi: {
+    gradient: 'linear-gradient(180deg, #FF1E7A 0%, #FF4D3D 55%, #FFA500 100%)',
+    representative: '#FF1E7A',
+  },
   instagram: {
     gradient: 'linear-gradient(135deg, #FCAF45, #F56040, #E1306C, #833AB4)',
     representative: '#E1306C',
@@ -79,21 +86,52 @@ export function getAccentSecondary(value: string): string | null {
 export function getRepresentativeHex(value: string): string {
   if (isRetroAccent(value)) {
     const key = value.replace('retro:', '');
-    return RETRO_PRESETS[key]?.representative ?? '#C96F5B';
+    return RETRO_PRESETS[key]?.representative ?? '#FF1E7A';
   }
   if (isGradientAccent(value)) {
     const key = value.replace('gradient:', '');
-    return GRADIENT_PRESETS[key]?.representative ?? '#C96F5B';
+    return GRADIENT_PRESETS[key]?.representative ?? '#FF1E7A';
   }
   if (isConicAccent(value)) {
     const key = value.replace('conic:', '');
-    return CONIC_PRESETS[key]?.representative ?? '#C96F5B';
+    return CONIC_PRESETS[key]?.representative ?? '#FF1E7A';
   }
   return value;
 }
 
 // Surface overrides — keyed by normalized accent value, defines light + dark surface variables
 const SURFACE_THEMES: Record<string, { light: Record<string, string>; dark: Record<string, string> }> = {
+  'gradient:efi': {
+    light: {
+      '--surface-app': '#fdf3f0',
+      '--surface-shell': 'rgba(253, 243, 240, 0.84)',
+      '--surface-card': 'rgba(253, 243, 240, 0.78)',
+      '--surface-card-strong': 'rgba(254, 247, 244, 0.94)',
+      '--surface-muted': 'rgba(248, 232, 226, 0.78)',
+      '--surface-overlay': 'rgba(251, 238, 232, 0.7)',
+      '--text-secondary': '#8a3a52',
+      '--line-soft': 'rgba(255, 30, 122, 0.12)',
+      '--line-strong': 'rgba(255, 30, 122, 0.2)',
+      '--body-theme-bg': [
+        'radial-gradient(ellipse 60% 22% at 50% 50%, rgba(255, 80, 60, 0.32) 0%, transparent 72%)',
+        'linear-gradient(180deg, #ffb3c8 0%, #ff9a90 30%, #ff8856 55%, #ffb347 78%, #fdf3f0 100%)',
+      ].join(', '),
+    },
+    dark: {
+      '--surface-app': '#0c0210',
+      '--surface-shell': 'rgba(18, 4, 24, 0.84)',
+      '--surface-card': 'rgba(24, 6, 32, 0.66)',
+      '--surface-card-strong': 'rgba(30, 8, 40, 0.82)',
+      '--surface-muted': 'rgba(20, 5, 28, 0.62)',
+      '--surface-overlay': 'rgba(14, 3, 20, 0.6)',
+      '--line-soft': 'rgba(255, 30, 122, 0.12)',
+      '--line-strong': 'rgba(255, 30, 122, 0.2)',
+      '--body-theme-bg': [
+        'radial-gradient(ellipse 72% 24% at 50% 52%, rgba(255, 30, 122, 0.42) 0%, rgba(255, 77, 61, 0.18) 55%, transparent 82%)',
+        'linear-gradient(180deg, #0c0210 0%, #2a0620 16%, #5a0e3e 32%, #a81858 48%, #e02e4a 62%, #f26028 74%, #ffa500 88%, rgba(255, 165, 0, 0.4) 100%)',
+      ].join(', '),
+    },
+  },
   'gradient:dawn': {
     light: {
       '--surface-app': '#f5efed',

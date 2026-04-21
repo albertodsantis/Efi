@@ -98,10 +98,10 @@ const emptyState: AppState = {
     goals: [],
     notificationsEnabled: false,
   },
-  accentColor: '#C96F5B',
+  accentColor: 'gradient:efi',
   theme: 'light',
   templates: [],
-  profileAccentColor: '#C96F5B',
+  profileAccentColor: 'gradient:efi',
   profileForceDark: false,
 };
 
