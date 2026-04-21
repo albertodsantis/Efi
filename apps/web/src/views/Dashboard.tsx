@@ -555,7 +555,7 @@ const SECTIONS: BadgeSection[] = [
   {
     id: 'leyenda',
     title: 'Leyenda',
-    subtitle: 'Las raras — algunas ni siquiera las ves venir',
+    subtitle: 'Las raras - algunas ni siquiera las ves venir',
     badges: [
       { key: 'fundador',       label: 'Fundador',  description: 'Formaste parte de la etapa beta de Efi', icon: SealCheck },
       { key: 'tres_en_un_dia', label: 'Secreta',   description: 'Algunos logros no se anuncian',          icon: Question, secret: true, secretHint: 'Algunos logros no se anuncian' },

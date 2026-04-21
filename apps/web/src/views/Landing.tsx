@@ -661,7 +661,7 @@ export default function Landing({
         <div className="border-t py-8 [border-color:var(--line-soft)] lg:mt-16">
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
             <p className="text-xs text-(--text-secondary)/60">
-              © {new Date().getFullYear()} Efi — workspace operativo para freelancers.
+              © {new Date().getFullYear()} Efi - workspace operativo para freelancers.
             </p>
             <div className="flex items-center gap-4">
               {([

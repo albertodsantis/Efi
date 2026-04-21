@@ -98,7 +98,7 @@ function TermsContent() {
         <p>
           Efi es una plataforma de CRM personal diseñada para freelancers. Permite gestionar
           relaciones con clientes y colaboradores, hacer seguimiento de proyectos y organizar
-          tareas. Es un espacio personal — no existe colaboración entre cuentas.
+          tareas. Es un espacio personal - no existe colaboración entre cuentas.
         </p>
       </Section>
 
@@ -218,7 +218,7 @@ function FaqContent() {
     },
     {
       q: '¿Mis datos son privados?',
-      a: 'Sí. Tu cuenta es completamente privada — ningún otro usuario puede ver tus datos. Cada cuenta tiene aislamiento estricto en la base de datos. Consulta la Política de Privacidad para más detalle.',
+      a: 'Sí. Tu cuenta es completamente privada - ningún otro usuario puede ver tus datos. Cada cuenta tiene aislamiento estricto en la base de datos. Consulta la Política de Privacidad para más detalle.',
     },
     {
       q: '¿Puedo cambiar el tema o los colores de la interfaz?',

@@ -83,7 +83,7 @@ export default function Settings() {
   const planIsPro = useMemo(() => isPro(planState), [planState]);
   const trialDays = useMemo(() => trialDaysRemaining(planState), [planState]);
   const planBadgeLabel = planState.earlyAccess
-    ? 'Pro — Acceso anticipado'
+    ? 'Pro - Acceso anticipado'
     : planIsPro
       ? 'Pro'
       : 'Free';
@@ -609,7 +609,7 @@ export default function Settings() {
             <SettingRow
               icon={CalendarBlank}
               title="Google Calendar"
-              description={gcalConnected ? 'Conectado — tus entregas se sincronizan con Google Calendar.' : 'Sincroniza entregas y fechas con tu calendario.'}
+              description={gcalConnected ? 'Conectado - tus entregas se sincronizan con Google Calendar.' : 'Sincroniza entregas y fechas con tu calendario.'}
               onClick={gcalLoading ? undefined : gcalConnected ? disconnectGoogleCalendar : connectGoogleCalendar}
               trailing={
                 gcalLoading ? (
@@ -650,7 +650,7 @@ export default function Settings() {
                 Correo electrónico
               </label>
               <p className="rounded-[1rem] border border-[color:var(--line-soft)] bg-[var(--surface-muted)]/60 px-4 py-3.5 text-base sm:text-sm font-medium text-[var(--text-secondary)]">
-                {email || '—'}
+                {email || '-'}
               </p>
             </div>
           </div>
