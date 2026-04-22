@@ -79,13 +79,6 @@ export function checkProfileComplete(profile: UserProfile): boolean {
 }
 
 // ────────────────────────────────────────────────────────────
-// Fundador gate: only the first N users (by created_at) are founders.
-// Copy shown to the user never mentions the number.
-// ────────────────────────────────────────────────────────────
-
-const FUNDADOR_CAP = 500;
-
-// ────────────────────────────────────────────────────────────
 // Local-date helpers (for streak math in user's timezone)
 // ────────────────────────────────────────────────────────────
 
@@ -485,16 +478,6 @@ export class GamificationService {
     }
 
     return unlocked;
-  }
-
-  /**
-   * Unlocks the 'fundador' badge if this user is among the first N registered.
-   * Called from the signup endpoint right after user creation.
-   */
-  async tryAwardFundador(userId: string): Promise<boolean> {
-    const totalUsers = await this.appStore.countUsers();
-    if (totalUsers > FUNDADOR_CAP) return false;
-    return this.appStore.unlockBadge(userId, 'fundador');
   }
 
   /** Merge two awards into one (used when two processEvent calls fire for one action). */

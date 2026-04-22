@@ -11,6 +11,7 @@ import type {
   CreateTaskRequest,
   CreateTemplateRequest,
   DashboardSummaryResponse,
+  EfisystemAward,
   NotificationsResponse,
   SessionUser,
   SettingsResponse,
@@ -208,16 +209,20 @@ export function createV1Router(appStore: PostgresAppStore, pool: pg.Pool, gamifi
         return res.status(404).json({ error: 'Task not found' });
       }
 
-      let efisystem = null;
+      let efisystem: EfisystemAward | null = null;
       if (body.status === 'Cobrado') {
         efisystem = await gamification.processEvent(userId, 'pipeline_task_paid', { taskId: req.params.taskId, timezone });
       } else if (body.status === 'Completada') {
         efisystem = await gamification.processEvent(userId, 'pipeline_task_completed', { taskId: req.params.taskId, timezone });
       } else if (body.status !== undefined) {
         efisystem = await gamification.processEvent(userId, 'pipeline_task_moved', { timezone });
-      } else if (Array.isArray(body.checklistItems) && body.checklistItems.length > 0) {
+      }
+
+      if (Array.isArray(body.checklistItems) && body.checklistItems.length > 0) {
         const award = await gamification.processEvent(userId, 'pipeline_first_checklist_item', { timezone });
-        if (award.pointsEarned > 0) efisystem = award;
+        if (award.pointsEarned > 0 || award.newBadges.length > 0) {
+          efisystem = efisystem ? GamificationService.mergeAwards(efisystem, award) : award;
+        }
       }
 
       res.json({ ...task, ...(efisystem ? { efisystem } : {}) });

@@ -1635,14 +1635,4 @@ export class PostgresAppStore {
       values,
     );
   }
-
-  // ────────────────────────────────────────────────────────────
-  // Fundador (sección 5)
-  // ────────────────────────────────────────────────────────────
-
-  /** Total registered users — used to gate the 'fundador' badge at signup. */
-  async countUsers(): Promise<number> {
-    const result = await this.pool.query(`SELECT COUNT(*)::int AS cnt FROM users`);
-    return result.rows[0].cnt;
-  }
 }

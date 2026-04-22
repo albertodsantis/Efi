@@ -177,7 +177,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
 
   // ── Award processing ──────────────────────────────────────────
   const applyAward = useCallback((award: EfisystemAward | undefined, toastMsg?: string) => {
-    if (!award || award.pointsEarned === 0) return;
+    if (!award || (award.pointsEarned === 0 && award.newBadges.length === 0)) return;
 
     setEfisystem((current) => ({
       totalPoints: award.newTotal,
@@ -197,7 +197,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
       toast.success(`Logro desbloqueado: ${BADGE_LABELS[badge] ?? badge}`);
     });
 
-    if (toastMsg) {
+    if (toastMsg && award.pointsEarned > 0) {
       toast.success(toastMsg, award.pointsEarned);
     }
   }, []);
