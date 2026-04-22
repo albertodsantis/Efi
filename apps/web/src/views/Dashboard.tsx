@@ -505,10 +505,10 @@ const SECTIONS: BadgeSection[] = [
     badges: [
       { key: 'perfil_estelar',    label: 'EfiLink Activado', description: 'Empezaste a construir tu EfiLink',     icon: Star },
       { key: 'primer_trazo',      label: 'Primer Trazo',     description: 'Creaste tu primera entrega',           icon: PencilSimpleLine },
-      { key: 'red_inicial',       label: 'Red Inicial',      description: 'Agregaste tu primer socio',            icon: UserPlus },
-      { key: 'rumbo_fijo',        label: 'Rumbo Fijo',       description: 'Definiste tu primer objetivo',         icon: Compass },
+      { key: 'red_inicial',       label: 'Red Inicial',      description: 'Sumaste 2 socios a tu red',            icon: UserPlus },
+      { key: 'rumbo_fijo',        label: 'Rumbo Fijo',       description: 'Definiste 2 objetivos',                icon: Compass },
       { key: 'vision_clara',      label: 'Visión Clara',     description: 'Definiste 3 objetivos estratégicos',   icon: Eye },
-      { key: 'identidad_propia',  label: 'Identidad Propia', description: 'Elegiste tu color de acento',          icon: Palette },
+      { key: 'identidad_propia',  label: 'Identidad Propia', description: 'Personalizaste tu color de acento',    icon: Palette },
     ],
   },
   {

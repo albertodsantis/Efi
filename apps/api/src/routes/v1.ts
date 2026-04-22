@@ -6,6 +6,7 @@ import { isStorageConfigured, uploadFile, deleteFile } from '../lib/storage';
 import type {
   AppBootstrapResponse,
   AppNotification,
+  BadgeKey,
   CreateContactRequest,
   CreatePartnerRequest,
   CreateTaskRequest,
@@ -379,24 +380,28 @@ export function createV1Router(appStore: PostgresAppStore, pool: pg.Pool, gamifi
           awards.push(award);
         }
 
-        // vision_clara badge: 3+ goals. Handled inside the gamification service on
-        // config_first_goal / goal_achieved events, but we also cover the case where the
-        // user reaches 3 goals without either event firing (e.g. bulk edit keeping status unchanged).
-        if (profile.goals.length >= 3) {
-          const isNew = await appStore.unlockBadge(userId, 'vision_clara');
-          if (isNew) {
-            if (awards.length > 0) {
-              awards[0].newBadges.push('vision_clara');
-            } else {
-              const snap = await appStore.getEfisystemSummary(userId);
-              awards.push({
-                pointsEarned: 0,
-                newTotal: snap.totalPoints,
-                newLevel: snap.currentLevel,
-                leveledUp: false,
-                newBadges: ['vision_clara' as const],
-              });
-            }
+        // rumbo_fijo (2+ goals) and vision_clara (3+ goals) are normally handled by the
+        // gamification service on config_first_goal / goal_achieved, but we also cover the
+        // bulk-edit path where the user reaches these counts without either event firing.
+        const goalCountBadges: BadgeKey[] = [];
+        if (profile.goals.length >= 2 && await appStore.unlockBadge(userId, 'rumbo_fijo')) {
+          goalCountBadges.push('rumbo_fijo');
+        }
+        if (profile.goals.length >= 3 && await appStore.unlockBadge(userId, 'vision_clara')) {
+          goalCountBadges.push('vision_clara');
+        }
+        if (goalCountBadges.length > 0) {
+          if (awards.length > 0) {
+            awards[0].newBadges.push(...goalCountBadges);
+          } else {
+            const snap = await appStore.getEfisystemSummary(userId);
+            awards.push({
+              pointsEarned: 0,
+              newTotal: snap.totalPoints,
+              newLevel: snap.currentLevel,
+              leveledUp: false,
+              newBadges: goalCountBadges,
+            });
           }
         }
       }
@@ -432,11 +437,9 @@ export function createV1Router(appStore: PostgresAppStore, pool: pg.Pool, gamifi
 
       let efisystem = null;
       if (body.accentColor) {
-        const firstChange = await gamification.processEvent(userId, 'config_first_accent_change');
         const award = await gamification.processEvent(userId, 'config_accent_change');
-        const merged = GamificationService.mergeAwards(firstChange, award);
         // Only surface the award when it actually earned points or unlocked a badge.
-        if (merged.pointsEarned > 0 || merged.newBadges.length > 0) efisystem = merged;
+        if (award.pointsEarned > 0 || award.newBadges.length > 0) efisystem = award;
       }
 
       res.json({ ...response, ...(efisystem ? { efisystem } : {}) });

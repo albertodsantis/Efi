@@ -207,8 +207,7 @@ export interface AppNotification {
 export type PointEventType =
   | 'daily_login'                  // once per calendar day on first bootstrap
   | 'daily_activity'               // once per day on first meaningful action; drives streak + pipeline zen + perfect weeks
-  | 'config_accent_change'         // every accent change; service awards points only on 2nd
-  | 'config_first_accent_change'   // fires once on the 1st accent change; unlocks identidad_propia
+  | 'config_accent_change'         // every accent change; service awards points only on 2nd; unlocks identidad_propia on 2nd
   | 'config_profile_complete'
   | 'config_first_goal'
   | 'goal_achieved'                // a strategic goal transitioned to 'Alcanzado'
@@ -226,10 +225,10 @@ export type BadgeKey =
   // ── Sección 1 — Primeros Pasos ─────────────────────────────
   | 'perfil_estelar'         // EfiLink Activado
   | 'primer_trazo'           // 1ª entrega creada
-  | 'red_inicial'            // 1º socio agregado
-  | 'rumbo_fijo'             // 1º objetivo definido
+  | 'red_inicial'            // 2 socios en la red
+  | 'rumbo_fijo'             // 2 objetivos definidos
   | 'vision_clara'           // 3 objetivos estratégicos
-  | 'identidad_propia'       // primer cambio de accent color
+  | 'identidad_propia'       // 2º cambio de accent color (el 1º es el del onboarding)
   // ── Sección 2 — Hitos de Volumen ───────────────────────────
   | 'motor_de_ideas'         // 5 entregas creadas
   | 'fabrica_de_proyectos'   // 25 entregas creadas

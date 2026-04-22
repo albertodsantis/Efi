@@ -170,14 +170,6 @@ export class GamificationService {
         break;
       }
 
-      case 'config_first_accent_change': {
-        const already = await this.appStore.hasTransaction(userId, eventType);
-        if (!already) {
-          await this.appStore.insertTransaction(userId, eventType, 0);
-        }
-        break;
-      }
-
       case 'goal_achieved': {
         // Every achievement logged; no point award here (badge-only).
         await this.appStore.insertTransaction(userId, eventType, 0);
@@ -368,18 +360,21 @@ export class GamificationService {
     if (eventType === 'pipeline_first_task') {
       await tryUnlock('primer_trazo', async () => true);
     }
-    if (eventType === 'network_first_partner') {
-      await tryUnlock('red_inicial', async () => true);
-    }
-    if (eventType === 'config_first_goal') {
-      await tryUnlock('rumbo_fijo', async () => true);
-    }
-    if (eventType === 'config_first_accent_change') {
-      await tryUnlock('identidad_propia', async () => true);
+    if (eventType === 'config_accent_change') {
+      // The onboarding picker counts as the 1st change. Unlock only once the user
+      // comes back to Ajustes and changes it again (2nd change onwards).
+      await tryUnlock('identidad_propia', async () => {
+        const c = await this.appStore.countAllTransactions(userId, 'config_accent_change');
+        return c >= 2;
+      });
     }
 
     // ── Sección 2 — Network (y vision_clara/visionario_cumplido por goals) ─
     if (eventType.startsWith('network_')) {
+      await tryUnlock('red_inicial', async () => {
+        const c = await this.appStore.countPartners(userId);
+        return c >= 2;
+      });
       await tryUnlock('circulo_intimo', async () => {
         const c = await this.appStore.countPartners(userId);
         return c >= 5;
@@ -398,6 +393,10 @@ export class GamificationService {
     }
 
     if (eventType === 'config_first_goal' || eventType === 'goal_achieved') {
+      await tryUnlock('rumbo_fijo', async () => {
+        const c = await this.appStore.countGoals(userId);
+        return c >= 2;
+      });
       await tryUnlock('vision_clara', async () => {
         const c = await this.appStore.countGoals(userId);
         return c >= 3;
