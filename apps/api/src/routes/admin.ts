@@ -117,6 +117,124 @@ interface AdminStats {
         objects: number;
       }
     | null;
+  scaling: ScalingAlert[];
+}
+
+type AlertLevel = 'ok' | 'warn' | 'danger';
+
+interface ScalingAlert {
+  service: string;
+  level: AlertLevel;
+  title: string;
+  detail: string;
+  action: string;
+  link?: string;
+}
+
+function evaluateScaling(s: Omit<AdminStats, 'scaling'>): ScalingAlert[] {
+  const alerts: ScalingAlert[] = [];
+
+  // Supabase DB — warn 60%, danger 70%
+  const dbPct = s.database.usagePct;
+  alerts.push({
+    service: 'Supabase DB',
+    level: dbPct >= 70 ? 'danger' : dbPct >= 60 ? 'warn' : 'ok',
+    title: `Base de datos ${s.database.sizeMb} MB / ${s.database.limitMb} MB`,
+    detail:
+      dbPct >= 70
+        ? `${dbPct}% usado — cerca del límite del plan Free`
+        : dbPct >= 60
+          ? `${dbPct}% usado — empezar a planificar upgrade`
+          : `${dbPct}% usado — holgura suficiente`,
+    action:
+      dbPct >= 70
+        ? 'Upgrade Supabase a Pro ($25/mes, 8 GB DB, 100 GB storage)'
+        : dbPct >= 60
+          ? 'Revisar tablas pesadas; considerar upgrade próximo'
+          : 'Sin acción',
+    link: dbPct >= 60 ? 'https://supabase.com/dashboard' : undefined,
+  });
+
+  // Supabase Storage — warn 60%, danger 70%. Doc dice que es el primero en agotarse.
+  if (s.storage) {
+    const stPct = s.storage.usagePct;
+    alerts.push({
+      service: 'Supabase Storage',
+      level: stPct >= 70 ? 'danger' : stPct >= 60 ? 'warn' : 'ok',
+      title: `Storage ${s.storage.sizeMb} MB / ${s.storage.limitMb} MB`,
+      detail:
+        stPct >= 70
+          ? `${stPct}% usado — este es el recurso que se agota primero`
+          : stPct >= 60
+            ? `${stPct}% usado — vigilar, crece con uploads`
+            : `${stPct}% usado — ${s.storage.objects} archivos`,
+      action:
+        stPct >= 70
+          ? 'Upgrade Supabase a Pro (100 GB storage) o limpiar archivos huérfanos'
+          : stPct >= 60
+            ? 'Auditar uploads antiguos; considerar límite por usuario'
+            : 'Sin acción',
+      link: stPct >= 60 ? 'https://supabase.com/dashboard' : undefined,
+    });
+  }
+
+  // Railway RAM — límite 500 MB en Free. Warn 350 (70%), danger 450 (90%).
+  const rssMb = s.memory.rssMb;
+  const ramLimit = 500;
+  const ramPct = Math.round((rssMb / ramLimit) * 100);
+  alerts.push({
+    service: 'Railway RAM',
+    level: rssMb >= 450 ? 'danger' : rssMb >= 350 ? 'warn' : 'ok',
+    title: `${rssMb} MB RSS / ${ramLimit} MB plan Free`,
+    detail:
+      rssMb >= 450
+        ? `${ramPct}% — riesgo de OOM kill`
+        : rssMb >= 350
+          ? `${ramPct}% — picos podrían saturar`
+          : `${ramPct}% — estable`,
+    action:
+      rssMb >= 450
+        ? 'Upgrade Railway a Hobby ($5/mes, 8 GB RAM) YA'
+        : rssMb >= 350
+          ? 'Vigilar logs por OOM; planificar upgrade a Hobby'
+          : 'Sin acción',
+    link: rssMb >= 350 ? 'https://railway.app' : undefined,
+  });
+
+  // Railway — escala con usuarios activos. Doc: "antes de 100-200 usuarios activos".
+  const mau = s.users.mau;
+  alerts.push({
+    service: 'Railway carga',
+    level: mau >= 200 ? 'danger' : mau >= 100 ? 'warn' : 'ok',
+    title: `${mau} usuarios activos (MAU)`,
+    detail:
+      mau >= 200
+        ? `>200 MAU — plan Free insuficiente bajo concurrencia`
+        : mau >= 100
+          ? `entre 100-200 MAU — umbral de upgrade recomendado`
+          : `<100 MAU — plan Free suficiente`,
+    action:
+      mau >= 200
+        ? 'Upgrade Railway a Hobby ($5/mes) YA'
+        : mau >= 100
+          ? 'Preparar upgrade a Railway Hobby'
+          : 'Sin acción',
+    link: mau >= 100 ? 'https://railway.app' : undefined,
+  });
+
+  // Resend — no tenemos contador interno. Recordatorio manual si hay >500 usuarios.
+  if (s.users.total >= 500) {
+    alerts.push({
+      service: 'Resend',
+      level: 'warn',
+      title: `${s.users.total} usuarios registrados`,
+      detail: 'Con 3 emails/usuario se acerca al límite de 3.000/mes',
+      action: 'Revisar contador en dashboard Resend; upgrade a Pro si >2.500/mes',
+      link: 'https://resend.com/emails',
+    });
+  }
+
+  return alerts;
 }
 
 async function computeStats(pool: pg.Pool): Promise<AdminStats> {
@@ -266,7 +384,7 @@ async function computeStats(pool: pg.Pool): Promise<AdminStats> {
   const newUsers7d = usersNew7d.rows[0].n;
   const retainedCount = retained7d.rows[0].n;
 
-  return {
+  const base: Omit<AdminStats, 'scaling'> = {
     timestamp: new Date().toISOString(),
     uptime: Math.round(process.uptime()),
     memory: {
@@ -330,6 +448,8 @@ async function computeStats(pool: pg.Pool): Promise<AdminStats> {
         }
       : null,
   };
+
+  return { ...base, scaling: evaluateScaling(base) };
 }
 
 function escapeHtml(str: string): string {
@@ -480,6 +600,20 @@ function renderHtml(s: AdminStats, key: string): string {
   .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; background: #f5f5f4; font-size: 11px; color: var(--muted); }
   footer { text-align: center; color: var(--muted); font-size: 12px; padding: 16px; }
   a { color: var(--accent); }
+  .alerts { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 10px; }
+  .alert { border-radius: 10px; border: 1px solid var(--border); background: var(--card); padding: 12px 14px; display: flex; gap: 12px; align-items: flex-start; }
+  .alert.ok { border-left: 4px solid var(--good); }
+  .alert.warn { border-left: 4px solid var(--warn); background: #fffbeb; }
+  .alert.danger { border-left: 4px solid var(--danger); background: #fef2f2; }
+  .alert-icon { font-size: 18px; line-height: 1; flex-shrink: 0; margin-top: 2px; }
+  .alert-body { flex: 1; min-width: 0; }
+  .alert-service { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+  .alert-title { font-size: 14px; font-weight: 600; margin-top: 1px; }
+  .alert-detail { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .alert-action { font-size: 12px; margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border); }
+  .alert.ok .alert-action { color: var(--muted); }
+  .alert.warn .alert-action { color: #92400e; font-weight: 500; }
+  .alert.danger .alert-action { color: #991b1b; font-weight: 600; }
 </style>
 </head>
 <body>
@@ -491,6 +625,32 @@ function renderHtml(s: AdminStats, key: string): string {
   </div>
 </header>
 <main>
+
+  <section>
+    <h2>Escalada · triggers de infra</h2>
+    <div class="alerts">
+      ${s.scaling
+        .map((a) => {
+          const icon = a.level === 'danger' ? '🔴' : a.level === 'warn' ? '🟡' : '🟢';
+          const actionHtml = a.link
+            ? `<a href="${escapeHtml(a.link)}" target="_blank" rel="noopener">${escapeHtml(a.action)} →</a>`
+            : escapeHtml(a.action);
+          return `<div class="alert ${a.level}">
+            <div class="alert-icon">${icon}</div>
+            <div class="alert-body">
+              <div class="alert-service">${escapeHtml(a.service)}</div>
+              <div class="alert-title">${escapeHtml(a.title)}</div>
+              <div class="alert-detail">${escapeHtml(a.detail)}</div>
+              <div class="alert-action">${actionHtml}</div>
+            </div>
+          </div>`;
+        })
+        .join('')}
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:var(--muted)">
+      Plan completo en <code>Documentation/INFRASTRUCTURE_SCALING.md</code>
+    </div>
+  </section>
 
   <section>
     <h2>Usuarios</h2>
