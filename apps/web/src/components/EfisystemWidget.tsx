@@ -1,4 +1,4 @@
-import { LightningIcon as Lightning, TrophyIcon as Trophy } from '@phosphor-icons/react';
+import { CaretRightIcon as CaretRight, LightningIcon as Lightning, LockIcon as Lock, MedalIcon as Medal } from '@phosphor-icons/react';
 import type { BadgeKey, EfisystemSnapshot } from '@shared';
 
 // ── Level config ──────────────────────────────────────────────
@@ -90,47 +90,59 @@ function getThresholds(level: number): { current: number; next: number } {
   return { current, next };
 }
 
-// ── Section preview config ────────────────────────────────────
-// With 30 placas, one dot per section is more legible than one per badge.
-// Each dot pulses when the user has ≥1 placa in that section.
+// ── Badge preview config ──────────────────────────────────────
+// Preview muestra la última placa desbloqueada con una medalla coloreada
+// según el tier. Mantenemos aquí sólo lo mínimo: label visible y tier color.
 
-interface SectionPreview {
-  id: string;
-  keys: BadgeKey[];
-  color: string;
-}
+type BadgeTier = 'bronce' | 'cobre' | 'plata' | 'oro' | 'oro_rosa' | 'platino' | 'titanio' | 'obsidiana' | 'diamante';
 
-const SECTION_PREVIEW: SectionPreview[] = [
-  {
-    id: 'primeros-pasos',
-    color: '#d49840',
-    keys: ['perfil_estelar', 'primer_trazo', 'red_inicial', 'rumbo_fijo', 'vision_clara', 'identidad_propia'],
-  },
-  {
-    id: 'hitos',
-    color: '#f8d040',
-    keys: ['motor_de_ideas', 'fabrica_de_proyectos', 'promesa_cumplida', 'creador_imparable',
-           'negocio_en_marcha', 'lluvia_de_billetes', 'circulo_intimo', 'directorio_dorado'],
-  },
-  {
-    id: 'habitos',
-    color: '#8b78ff',
-    keys: ['madrugador', 'noctambulo', 'cierre_limpio', 'cobrador_implacable',
-           'pipeline_zen', 'visionario_cumplido', 'conector'],
-  },
-  {
-    id: 'rachas',
-    color: '#ff6e48',
-    keys: ['en_la_zona', 'racha_de_hierro', 'inamovible', 'semana_perfecta', 'mes_de_oro'],
-  },
-  {
-    id: 'leyenda',
-    color: '#ffe44d',
-    keys: ['fundador', 'tres_en_un_dia', 'cobro_finde', 'icono_efi'],
-  },
-];
+const TIER_MEDAL_COLOR: Record<BadgeTier, string> = {
+  bronce:    '#d49840',
+  cobre:     '#c87848',
+  plata:     '#c8c8d8',
+  oro:       '#f8d040',
+  oro_rosa:  '#e0a898',
+  platino:   '#e8e8f8',
+  titanio:   '#747e90',
+  obsidiana: '#8b78ff',
+  diamante:  '#ffe44d',
+};
 
-const ALL_BADGE_KEYS: BadgeKey[] = SECTION_PREVIEW.flatMap(s => s.keys);
+// Label visible + tier por placa. Las placas secretas muestran su label real al desbloquearse.
+const BADGE_PREVIEW: Record<BadgeKey, { label: string; tier: BadgeTier }> = {
+  perfil_estelar:        { label: 'EfiLink Activado',     tier: 'bronce' },
+  primer_trazo:          { label: 'Primer Trazo',          tier: 'bronce' },
+  red_inicial:           { label: 'Red Inicial',           tier: 'bronce' },
+  rumbo_fijo:            { label: 'Rumbo Fijo',            tier: 'bronce' },
+  vision_clara:          { label: 'Visión Clara',          tier: 'cobre'  },
+  identidad_propia:      { label: 'Identidad Propia',      tier: 'bronce' },
+  motor_de_ideas:        { label: 'Motor de Ideas',        tier: 'plata'  },
+  fabrica_de_proyectos:  { label: 'Fábrica de Proyectos',  tier: 'oro'    },
+  promesa_cumplida:      { label: 'Promesa Cumplida',      tier: 'oro_rosa' },
+  creador_imparable:     { label: 'Creador Imparable',     tier: 'obsidiana' },
+  negocio_en_marcha:     { label: 'Negocio en Marcha',     tier: 'platino' },
+  lluvia_de_billetes:    { label: 'Lluvia de Billetes',    tier: 'diamante' },
+  circulo_intimo:        { label: 'Círculo Íntimo',        tier: 'oro'    },
+  directorio_dorado:     { label: 'Directorio Dorado',     tier: 'titanio' },
+  madrugador:            { label: 'Madrugador',            tier: 'cobre'  },
+  noctambulo:            { label: 'Noctámbulo',            tier: 'plata'  },
+  cierre_limpio:         { label: 'Cierre Limpio',         tier: 'plata'  },
+  cobrador_implacable:   { label: 'Cobrador Implacable',   tier: 'oro'    },
+  pipeline_zen:          { label: 'Pipeline Zen',          tier: 'platino' },
+  visionario_cumplido:   { label: 'Visionario Cumplido',   tier: 'oro_rosa' },
+  conector:              { label: 'Conector',              tier: 'titanio' },
+  en_la_zona:            { label: 'En la Zona',            tier: 'bronce' },
+  racha_de_hierro:       { label: 'Racha de Hierro',       tier: 'plata'  },
+  inamovible:            { label: 'Inamovible',            tier: 'obsidiana' },
+  semana_perfecta:       { label: 'Semana Perfecta',       tier: 'oro'    },
+  mes_de_oro:            { label: 'Mes de Oro',            tier: 'diamante' },
+  fundador:              { label: 'Fundador',              tier: 'diamante' },
+  tres_en_un_dia:        { label: 'Triple Jornada',        tier: 'obsidiana' },
+  cobro_finde:           { label: 'Fin de Semana',         tier: 'oro_rosa' },
+  icono_efi:             { label: 'Ícono Efi',             tier: 'diamante' },
+};
+
+const TOTAL_BADGES = Object.keys(BADGE_PREVIEW).length;
 
 // ── Component ─────────────────────────────────────────────────
 
@@ -153,9 +165,9 @@ export default function EfisystemWidget({ efisystem, accentHex, onOpenBadges, on
         ((totalPoints - currentThreshold) / (nextThreshold - currentThreshold)) * 100,
       );
 
-  const unlockedSet = new Set(unlockedBadges);
   const unlockedCount = unlockedBadges.length;
-  const totalBadges = ALL_BADGE_KEYS.length;
+  const lastBadge = unlockedCount > 0 ? unlockedBadges[unlockedCount - 1] : null;
+  const lastBadgePreview = lastBadge ? BADGE_PREVIEW[lastBadge] : null;
 
   const LevelBlock = (
     <>
@@ -208,51 +220,60 @@ export default function EfisystemWidget({ efisystem, accentHex, onOpenBadges, on
         LevelBlock
       )}
 
-      {/* Badge preview row */}
+      {/* Badge preview row — última placa desbloqueada */}
       {onOpenBadges && (
         <div className="mt-3">
           <button
             type="button"
             onClick={onOpenBadges}
-            className="w-full flex items-center gap-2.5 rounded-xl px-3 py-2 transition-all duration-200 hover:scale-[1.01] active:scale-[0.99]"
+            className="group w-full flex items-center gap-2.5 rounded-xl px-3 py-2 transition-all duration-200 hover:-translate-y-px active:scale-[0.99]"
             style={{
               background: `linear-gradient(135deg, ${accentHex}18 0%, ${accentHex}2a 100%)`,
               border: `1px solid ${accentHex}30`,
             }}
+            aria-label={lastBadgePreview ? `Ver sala de placas. Última: ${lastBadgePreview.label}` : 'Ver sala de placas'}
           >
-            {/* Section dots — one per section, filled if ≥1 placa desbloqueada */}
-            <div className="flex items-center gap-1.5 flex-1 min-w-0">
-              {SECTION_PREVIEW.map((section) => {
-                const hasAny = section.keys.some(k => unlockedSet.has(k));
-                return (
-                  <div
-                    key={section.id}
-                    className="h-3 w-3 rounded-full shrink-0 transition-all duration-300"
-                    style={
-                      hasAny
-                        ? {
-                            background: section.color,
-                            boxShadow: `0 0 5px ${section.color}cc`,
-                          }
-                        : {
-                            background: `${accentHex}20`,
-                            border: `1px solid ${accentHex}25`,
-                          }
-                    }
+            {/* Medallón + label de la última placa */}
+            <div className="flex items-center gap-2 flex-1 min-w-0">
+              {lastBadgePreview ? (
+                <>
+                  <Medal
+                    size={16}
+                    weight="fill"
+                    style={{
+                      color: TIER_MEDAL_COLOR[lastBadgePreview.tier],
+                      filter: `drop-shadow(0 0 4px ${TIER_MEDAL_COLOR[lastBadgePreview.tier]}80)`,
+                      flexShrink: 0,
+                    }}
                   />
-                );
-              })}
+                  <span className="text-[12px] font-semibold text-(--text-primary) truncate">
+                    {lastBadgePreview.label}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <Lock size={14} weight="fill" style={{ color: `${accentHex}80`, flexShrink: 0 }} />
+                  <span className="text-[12px] font-semibold text-(--text-secondary) truncate">
+                    Desbloqueá tu primera placa
+                  </span>
+                </>
+              )}
             </div>
 
-            {/* Label + trophy */}
+            {/* Contador + chevron */}
             <div className="flex items-center gap-1 shrink-0">
-              <Trophy size={12} weight="fill" style={{ color: accentHex }} />
               <span
                 className="text-[11px] font-bold"
                 style={{ color: accentHex }}
               >
-                {unlockedCount}/{totalBadges}
+                {unlockedCount}/{TOTAL_BADGES}
               </span>
+              <CaretRight
+                size={12}
+                weight="bold"
+                className="transition-transform duration-200 group-hover:translate-x-0.5"
+                style={{ color: accentHex }}
+              />
             </div>
           </button>
         </div>
