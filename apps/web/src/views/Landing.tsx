@@ -324,8 +324,8 @@ export default function Landing({
             </div>
 
             <p className="mt-5 max-w-lg text-base leading-7 text-[var(--text-secondary)] sm:text-lg sm:leading-8">
-              Workspace compacto diseñado para profesionales independientes. Organiza tareas,
-              clientes y crea tu página pública para compartir.
+              Workspace compacto diseñado para <strong className="font-semibold text-(--text-primary)">profesionales independientes</strong>. Organiza tareas,
+              clientes y crea tu perfil público para compartir tu trabajo.
             </p>
 
             {/* Feature grid - visible on desktop below hero */}
