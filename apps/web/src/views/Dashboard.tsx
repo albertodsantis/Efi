@@ -89,7 +89,7 @@ function GoalsMarquee({ goals, accentHex, accentGradient }: { goals: string[]; a
 
     let animationId: number;
     let scrollPos = el.scrollLeft;
-    const speed = 0.25;
+    const speed = 0.117;
 
     const scroll = () => {
       if (!isInteractingRef.current) {
@@ -134,7 +134,7 @@ function GoalsMarquee({ goals, accentHex, accentGradient }: { goals: string[]; a
     <div className="relative flex items-center overflow-hidden py-2 [mask-image:linear-gradient(to_right,transparent,black_5%,black_95%,transparent)]">
       <div
         ref={containerRef}
-        className="hide-scrollbar flex w-full cursor-grab select-none items-center gap-8 overflow-x-auto px-4 active:cursor-grabbing"
+        className="hide-scrollbar flex w-full cursor-grab select-none items-center gap-16 overflow-x-auto px-4 active:cursor-grabbing"
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
@@ -142,7 +142,7 @@ function GoalsMarquee({ goals, accentHex, accentGradient }: { goals: string[]; a
         onMouseEnter={() => (isInteractingRef.current = true)}
       >
         {displayGoals.map((goal, i) => (
-          <div key={i} className="flex shrink-0 items-center gap-8">
+          <div key={i} className="flex shrink-0 items-center gap-16">
             <div className="flex items-center gap-3 opacity-80 transition-opacity hover:opacity-100">
               <div
                 className="h-1 w-1 shrink-0 rounded-full"
