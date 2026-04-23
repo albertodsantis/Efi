@@ -512,21 +512,37 @@ export function createV1Router(appStore: PostgresAppStore, pool: pg.Pool, gamifi
       const threeDaysLater = new Date(today);
       threeDaysLater.setDate(threeDaysLater.getDate() + 3);
 
-      const [tasksResult, goalsResult, partnersResult, contactsResult, efisystem, settingsResult] =
-        await Promise.all([
-          pool.query(
-            `SELECT id, title, status, due_date, completed_at FROM tasks WHERE user_id = $1`,
-            [userId],
-          ),
-          pool.query(`SELECT id FROM goals WHERE user_id = $1`, [userId]),
-          pool.query(`SELECT id FROM partners WHERE user_id = $1`, [userId]),
-          pool.query(`SELECT id FROM contacts WHERE user_id = $1`, [userId]),
-          appStore.getEfisystemSnapshot(userId),
-          pool.query(
-            `SELECT last_seen_notifications_at FROM user_settings WHERE user_id = $1`,
-            [userId],
-          ),
-        ]);
+      const [
+        tasksResult,
+        goalsResult,
+        partnersResult,
+        contactsResult,
+        efisystem,
+        settingsResult,
+        goalsAchieved,
+        activePartners30d,
+        cleanClosures,
+        fastCollections,
+        streakState,
+      ] = await Promise.all([
+        pool.query(
+          `SELECT id, title, status, due_date, completed_at FROM tasks WHERE user_id = $1`,
+          [userId],
+        ),
+        pool.query(`SELECT id FROM goals WHERE user_id = $1`, [userId]),
+        pool.query(`SELECT id FROM partners WHERE user_id = $1`, [userId]),
+        pool.query(`SELECT id FROM contacts WHERE user_id = $1`, [userId]),
+        appStore.getEfisystemSnapshot(userId),
+        pool.query(
+          `SELECT last_seen_notifications_at FROM user_settings WHERE user_id = $1`,
+          [userId],
+        ),
+        appStore.countGoalsAchieved(userId),
+        appStore.countActivePartners(userId, 30),
+        appStore.countTasksCompletedOnOriginalDate(userId),
+        appStore.countTasksPaidWithinDays(userId, 7),
+        appStore.getStreakState(userId),
+      ]);
 
       const notifications: AppNotification[] = [];
 
@@ -608,78 +624,147 @@ export function createV1Router(appStore: PostgresAppStore, pool: pg.Pool, gamifi
 
       type GamificationNudge = AppNotification & { progress: number };
       const nudges: GamificationNudge[] = [];
+      const MIN_PROGRESS = 0.3;
+      const s = (n: number) => (n === 1 ? '' : 's');
+      const pushNudge = (
+        key: BadgeKey,
+        progress: number,
+        build: () => Omit<GamificationNudge, 'progress' | 'category'>,
+      ) => {
+        if (unlockedBadges.has(key)) return;
+        if (progress < MIN_PROGRESS || progress >= 1) return;
+        nudges.push({ ...build(), category: 'gamification', progress });
+      };
 
-      if (!unlockedBadges.has('vision_clara') && goalCount > 0 && goalCount < 3) {
-        const missing = 3 - goalCount;
-        nudges.push({
-          id: 'badge-vision-clara',
-          category: 'gamification',
-          title: 'Cerca de "Visión Clara"',
-          body: `Define ${missing} objetivo${missing > 1 ? 's' : ''} más para desbloquear esta placa.`,
-          actionTab: 'strategic',
-          progress: goalCount / 3,
-        });
-      }
-      if (!unlockedBadges.has('circulo_intimo') && partnerCount > 0 && partnerCount < 5) {
-        const missing = 5 - partnerCount;
-        nudges.push({
-          id: 'badge-circulo-intimo',
-          category: 'gamification',
-          title: 'Cerca de "Círculo Íntimo"',
-          body: `Agrega ${missing} socio${missing > 1 ? 's' : ''} más para desbloquear esta placa.`,
-          actionTab: 'directory',
-          progress: partnerCount / 5,
-        });
-      }
-      if (!unlockedBadges.has('directorio_dorado') && (partnerCount >= 7 || contactCount >= 7)) {
-        const p = Math.min(partnerCount, 10) / 10;
-        const c = Math.min(contactCount, 10) / 10;
-        nudges.push({
+      // ── Volumen: entregas creadas ──────────────────────────────
+      pushNudge('motor_de_ideas', totalTasks / 5, () => ({
+        id: 'badge-motor-de-ideas',
+        title: 'Cerca de "Motor de Ideas"',
+        body: `Crea ${5 - totalTasks} entrega${s(5 - totalTasks)} más para desbloquear esta placa.`,
+        actionTab: 'pipeline',
+      }));
+      pushNudge('fabrica_de_proyectos', totalTasks / 25, () => ({
+        id: 'badge-fabrica-de-proyectos',
+        title: 'Cerca de "Fábrica de Proyectos"',
+        body: `Te faltan ${25 - totalTasks} entrega${s(25 - totalTasks)} para desbloquear esta placa.`,
+        actionTab: 'pipeline',
+      }));
+
+      // ── Volumen: entregas completadas ──────────────────────────
+      pushNudge('promesa_cumplida', completedTasks / 10, () => ({
+        id: 'badge-promesa-cumplida',
+        title: 'Cerca de "Promesa Cumplida"',
+        body: `Completa ${10 - completedTasks} entrega${s(10 - completedTasks)} más para desbloquear esta placa.`,
+        actionTab: 'pipeline',
+      }));
+      pushNudge('creador_imparable', completedTasks / 25, () => ({
+        id: 'badge-creador-imparable',
+        title: 'Cerca de "Creador Imparable"',
+        body: `Te faltan ${25 - completedTasks} entrega${s(25 - completedTasks)} completadas para esta placa.`,
+        actionTab: 'pipeline',
+      }));
+
+      // ── Volumen: entregas cobradas ─────────────────────────────
+      pushNudge('negocio_en_marcha', paidTasks / 5, () => ({
+        id: 'badge-negocio-en-marcha',
+        title: 'Cerca de "Negocio en Marcha"',
+        body: `Cobra ${5 - paidTasks} entrega${s(5 - paidTasks)} más para desbloquear esta placa.`,
+        actionTab: 'pipeline',
+      }));
+      pushNudge('lluvia_de_billetes', paidTasks / 20, () => ({
+        id: 'badge-lluvia-de-billetes',
+        title: 'Cerca de "Lluvia de Billetes"',
+        body: `Te faltan ${20 - paidTasks} cobro${s(20 - paidTasks)} para esta placa.`,
+        actionTab: 'pipeline',
+      }));
+
+      // ── Red ────────────────────────────────────────────────────
+      pushNudge('circulo_intimo', partnerCount / 5, () => ({
+        id: 'badge-circulo-intimo',
+        title: 'Cerca de "Círculo Íntimo"',
+        body: `Agrega ${5 - partnerCount} socio${s(5 - partnerCount)} más para desbloquear esta placa.`,
+        actionTab: 'directory',
+      }));
+      {
+        const dirProgress = (Math.min(partnerCount, 10) + Math.min(contactCount, 10)) / 20;
+        pushNudge('directorio_dorado', dirProgress, () => ({
           id: 'badge-directorio-dorado',
-          category: 'gamification',
           title: 'Cerca de "Directorio Dorado"',
           body: `Necesitas ${Math.max(0, 10 - partnerCount)} socios y ${Math.max(0, 10 - contactCount)} contactos más.`,
           actionTab: 'directory',
-          progress: (p + c) / 2,
-        });
+        }));
       }
-      if (!unlockedBadges.has('motor_de_ideas') && totalTasks > 0 && totalTasks < 5) {
-        const missing = 5 - totalTasks;
-        nudges.push({
-          id: 'badge-motor-de-ideas',
-          category: 'gamification',
-          title: 'Cerca de "Motor de Ideas"',
-          body: `Crea ${missing} entrega${missing > 1 ? 's' : ''} más para desbloquear esta placa.`,
-          actionTab: 'pipeline',
-          progress: totalTasks / 5,
-        });
-      }
-      if (!unlockedBadges.has('promesa_cumplida') && completedTasks > 0 && completedTasks < 10) {
-        const missing = 10 - completedTasks;
-        nudges.push({
-          id: 'badge-promesa-cumplida',
-          category: 'gamification',
-          title: 'Cerca de "Promesa Cumplida"',
-          body: `Completa ${missing} entrega${missing > 1 ? 's' : ''} más para desbloquear esta placa.`,
-          actionTab: 'pipeline',
-          progress: completedTasks / 10,
-        });
-      }
-      if (!unlockedBadges.has('negocio_en_marcha') && paidTasks > 0 && paidTasks < 5) {
-        const missing = 5 - paidTasks;
-        nudges.push({
-          id: 'badge-negocio-en-marcha',
-          category: 'gamification',
-          title: 'Cerca de "Negocio en Marcha"',
-          body: `Cobra ${missing} entrega${missing > 1 ? 's' : ''} más para desbloquear esta placa.`,
-          actionTab: 'pipeline',
-          progress: paidTasks / 5,
-        });
-      }
+      pushNudge('conector', activePartners30d / 10, () => ({
+        id: 'badge-conector',
+        title: 'Cerca de "Conector"',
+        body: `Registra contacto con ${10 - activePartners30d} socio${s(10 - activePartners30d)} más en los últimos 30 días.`,
+        actionTab: 'directory',
+      }));
 
-      // Add top 2 gamification nudges sorted by proximity to goal
+      // ── Estrategia ─────────────────────────────────────────────
+      pushNudge('vision_clara', goalCount / 3, () => ({
+        id: 'badge-vision-clara',
+        title: 'Cerca de "Visión Clara"',
+        body: `Define ${3 - goalCount} objetivo${s(3 - goalCount)} más para desbloquear esta placa.`,
+        actionTab: 'strategic',
+      }));
+      pushNudge('visionario_cumplido', goalsAchieved / 3, () => ({
+        id: 'badge-visionario-cumplido',
+        title: 'Cerca de "Visionario Cumplido"',
+        body: `Marca ${3 - goalsAchieved} objetivo${s(3 - goalsAchieved)} como alcanzado para esta placa.`,
+        actionTab: 'strategic',
+      }));
+
+      // ── Hábitos ────────────────────────────────────────────────
+      pushNudge('cierre_limpio', cleanClosures / 5, () => ({
+        id: 'badge-cierre-limpio',
+        title: 'Cerca de "Cierre Limpio"',
+        body: `Completa ${5 - cleanClosures} entrega${s(5 - cleanClosures)} más en su fecha original.`,
+        actionTab: 'pipeline',
+      }));
+      pushNudge('cobrador_implacable', fastCollections / 5, () => ({
+        id: 'badge-cobrador-implacable',
+        title: 'Cerca de "Cobrador Implacable"',
+        body: `Cobra ${5 - fastCollections} entrega${s(5 - fastCollections)} más dentro de los 7 días de completarlas.`,
+        actionTab: 'pipeline',
+      }));
+
+      // ── Rachas / Pipeline Zen / Semana Perfecta ────────────────
+      const streakDays = streakState.currentStreakDays;
+      pushNudge('en_la_zona', streakDays / 3, () => ({
+        id: 'badge-en-la-zona',
+        title: 'Cerca de "En la Zona"',
+        body: `Abre Efi ${3 - streakDays} día${s(3 - streakDays)} más seguidos para esta placa.`,
+        actionTab: 'dashboard',
+      }));
+      pushNudge('racha_de_hierro', streakDays / 7, () => ({
+        id: 'badge-racha-de-hierro',
+        title: 'Cerca de "Racha de Hierro"',
+        body: `Tu racha va en ${streakDays} días — no la rompas, te faltan ${7 - streakDays}.`,
+        actionTab: 'dashboard',
+      }));
+      pushNudge('inamovible', streakDays / 30, () => ({
+        id: 'badge-inamovible',
+        title: 'Cerca de "Inamovible"',
+        body: `Llevas ${streakDays} días de racha. Te faltan ${30 - streakDays} para esta placa.`,
+        actionTab: 'dashboard',
+      }));
+      pushNudge('pipeline_zen', streakState.cleanPipelineDays / 7, () => ({
+        id: 'badge-pipeline-zen',
+        title: 'Cerca de "Pipeline Zen"',
+        body: `Llevas ${streakState.cleanPipelineDays} día${s(streakState.cleanPipelineDays)} sin entregas vencidas. Te faltan ${7 - streakState.cleanPipelineDays}.`,
+        actionTab: 'pipeline',
+      }));
+      pushNudge('mes_de_oro', streakState.perfectWeeksCount / 4, () => ({
+        id: 'badge-mes-de-oro',
+        title: 'Cerca de "Mes de Oro"',
+        body: `Llevas ${streakState.perfectWeeksCount} semana${s(streakState.perfectWeeksCount)} perfecta${s(streakState.perfectWeeksCount)} este mes. Te faltan ${4 - streakState.perfectWeeksCount}.`,
+        actionTab: 'dashboard',
+      }));
+
+      // Add top 3 gamification nudges sorted by proximity to goal
       nudges.sort((a, b) => b.progress - a.progress);
-      for (const { progress: _p, ...nudge } of nudges.slice(0, 2)) {
+      for (const { progress: _p, ...nudge } of nudges.slice(0, 3)) {
         notifications.push(nudge);
       }
 
