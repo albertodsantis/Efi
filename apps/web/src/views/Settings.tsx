@@ -356,6 +356,17 @@ export default function Settings() {
 
   return (
     <div className="space-y-5 p-4 pb-6 lg:space-y-6 lg:px-8 lg:pt-4 lg:pb-8">
+      <p className="px-1 text-sm text-[var(--text-secondary)]">
+        ¿Tienes comentarios o ideas? Escríbenos a{' '}
+        <a
+          href="mailto:hola@efidesk.com?subject=Feedback%20Efi"
+          className="font-semibold text-[var(--accent-solid)] hover:underline"
+        >
+          hola@efidesk.com
+        </a>
+        .
+      </p>
+
       <SurfaceCard className="overflow-hidden p-0">
         <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between lg:p-7">
           <div className="flex items-start gap-4">
