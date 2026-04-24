@@ -4,6 +4,7 @@ import type pg from 'pg';
 import { timingSafeEqual } from 'crypto';
 import { logger } from '../lib/logger';
 import { createClient } from '@supabase/supabase-js';
+import { redeemAllReferralCredits } from '../services/referrals';
 
 const TASK_STATUSES = ['Pendiente', 'En Progreso', 'En Revisión', 'Completada', 'Cobrado'] as const;
 const SUPABASE_DB_LIMIT_BYTES = 500 * 1024 * 1024; // Supabase free tier
@@ -885,6 +886,21 @@ export function createAdminRouter(pool: pg.Pool, adminKey: string | undefined) {
     } catch (err) {
       logger.error({ err }, 'Admin stats error');
       res.status(500).json({ error: 'Failed to compute stats' });
+    }
+  });
+
+  // One-shot endpoint to redeem all unredeemed referral credits into
+  // subscription time (extends users.subscribed_until). Idempotent — credits
+  // already redeemed are skipped. Call this right after flipping EARLY_ACCESS
+  // to false so users immediately see their earned months.
+  router.post('/referrals/redeem-all', async (_req, res) => {
+    try {
+      const summary = await redeemAllReferralCredits(pool);
+      logger.info({ summary }, 'Referral credits redeemed');
+      res.json({ ok: true, ...summary });
+    } catch (err) {
+      logger.error({ err }, 'Referral redeem-all failed');
+      res.status(500).json({ error: 'Failed to redeem credits' });
     }
   });
 

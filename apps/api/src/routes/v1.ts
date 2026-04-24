@@ -25,6 +25,7 @@ import type {
 } from '@shared';
 import type { PostgresAppStore } from '../db/repository';
 import { GamificationService, checkProfileComplete } from '../services/gamification';
+import { evaluateReferralQualification } from '../services/referrals';
 import { generateEfiLinkHtml } from '../lib/profileRenderer';
 import { createEmptySocialProfiles, createDefaultEfiProfile } from '@shared';
 
@@ -224,6 +225,11 @@ export function createV1Router(appStore: PostgresAppStore, pool: pg.Pool, gamifi
         if (award.pointsEarned > 0 || award.newBadges.length > 0) {
           efisystem = efisystem ? GamificationService.mergeAwards(efisystem, award) : award;
         }
+      }
+
+      // Evaluate referral qualification on status changes. Safe (never throws).
+      if (body.status !== undefined) {
+        evaluateReferralQualification(pool, userId).catch(() => {});
       }
 
       res.json({ ...task, ...(efisystem ? { efisystem } : {}) });

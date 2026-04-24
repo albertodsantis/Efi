@@ -24,6 +24,7 @@ import type {
   NotificationsResponse,
   Partner,
   PartnerWithAward,
+  ReferralStatsResponse,
   RegisterRequest,
   SettingsResponse,
   StrategicViewResponse,
@@ -91,14 +92,16 @@ export const authApi = {
     }),
   logout: () =>
     apiRequest<{ success: boolean }>('/api/auth/logout', { method: 'POST' }),
-  googleLoginUrl: () =>
-    apiRequest<GoogleAuthUrlResponse>('/api/auth/google/login-url'),
+  googleLoginUrl: (referralCode?: string) =>
+    apiRequest<GoogleAuthUrlResponse>(
+      `/api/auth/google/login-url${referralCode ? `?ref=${encodeURIComponent(referralCode)}` : ''}`,
+    ),
   deleteAccount: () =>
     apiRequest<DeleteAccountResponse>('/api/auth/account', { method: 'DELETE' }),
-  googleSupabase: (accessToken: string) =>
+  googleSupabase: (accessToken: string, referralCode?: string) =>
     apiRequest<MeResponse>('/api/auth/google/supabase', {
       method: 'POST',
-      body: JSON.stringify({ access_token: accessToken }),
+      body: JSON.stringify({ access_token: accessToken, referralCode }),
     }),
   changePassword: (payload: ChangePasswordRequest) =>
     apiRequest<ChangePasswordResponse>('/api/auth/password', {
@@ -216,6 +219,10 @@ export const appApi = {
   getNotifications: () => apiRequest<NotificationsResponse>('/api/v1/notifications'),
   markNotificationsSeen: () =>
     apiRequest<{ success: boolean }>('/api/v1/notifications/seen', { method: 'PATCH' }),
+};
+
+export const referralsApi = {
+  getMe: () => apiRequest<ReferralStatsResponse>('/api/referrals/me'),
 };
 
 export const calendarApi = {

@@ -38,6 +38,7 @@ import LegalModal from './components/LegalModal';
 import type { LegalPage } from './components/LegalModal';
 import { Avatar, LoadingMushroom, SurfaceCard, cx } from './components/ui';
 import { authApi } from './lib/api';
+import { captureReferralFromUrl, readReferralCode, clearReferralCode } from './lib/referral';
 import { supabase } from './lib/supabase';
 import { getAccentSecondary } from './lib/accent';
 import { registerAndroidBackHandler } from './lib/androidBack';
@@ -749,6 +750,10 @@ const AppShell = ({ isNewRegistration }: { isNewRegistration: boolean }) => {
 
 type AuthPhase = 'checking' | 'unauthenticated' | 'authenticated';
 
+// Capture ?ref= into sessionStorage at module load time, before any route /
+// auth logic runs. Also scrubs the ref param from the URL.
+captureReferralFromUrl();
+
 function AppInner() {
   const [authPhase, setAuthPhase] = useState<AuthPhase>('checking');
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
@@ -794,11 +799,15 @@ function AppInner() {
           const { data } = await supabase.auth.getSession();
           if (data.session?.access_token) {
             // Exchange Supabase token for express-session
-            const response = await authApi.googleSupabase(data.session.access_token);
+            const response = await authApi.googleSupabase(
+              data.session.access_token,
+              readReferralCode(),
+            );
             // Sign out of Supabase — we only needed it for identity
             await supabase.auth.signOut();
             if (response.user) {
               setIsNewRegistration(response.isNew === true);
+              if (response.isNew) clearReferralCode();
               setSessionUser(response.user);
               setAuthPhase('authenticated');
               return;

@@ -28,6 +28,7 @@ import {
 } from '../lib/localNotifications';
 import { useAppContext } from '../context/AppContext';
 import OverlayModal from '../components/OverlayModal';
+import ReferralsSection from '../components/ReferralsSection';
 import UpgradeModal from '../components/UpgradeModal';
 import {
   Button,
@@ -390,6 +391,8 @@ export default function Settings() {
       </SurfaceCard>
 
       {isUpgradeOpen ? <UpgradeModal onClose={() => setIsUpgradeOpen(false)} /> : null}
+
+      <ReferralsSection />
 
       <SurfaceCard className="overflow-hidden p-0">
         <div className="grid xl:grid-cols-[minmax(260px,0.72fr)_minmax(0,1.28fr)]">

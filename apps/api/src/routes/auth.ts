@@ -21,7 +21,15 @@ import type {
   SimpleSuccessResponse,
 } from '@shared';
 import { sendPasswordResetEmail, sendEmailChangeVerification, sendWelcomeEmail } from '../lib/email';
+import { ensureReferralCode, attachReferrer } from '../services/referrals';
 import type { GoogleCreds } from './calendar';
+
+/** Extract the client IP from the request, respecting proxy headers. Returns null for local/unknown. */
+function getClientIp(req: Express.Request): string | null {
+  const raw = (req as any).ip ?? null;
+  if (!raw || typeof raw !== 'string') return null;
+  return raw.slice(0, 64);
+}
 
 /** Create a fresh OAuth2 client — safe to mutate per-request. */
 function makeOAuth2Client(creds: GoogleCreds) {
@@ -154,7 +162,7 @@ export function createAuthRouter(
   // ── POST /register ────────────────────────────────────────────
 
   router.post('/register', async (req, res) => {
-    const { email, password, name } = req.body as RegisterRequest;
+    const { email, password, name, referralCode } = req.body as RegisterRequest;
 
     if (!email?.trim() || !password || !name?.trim()) {
       return res.status(400).json({ error: 'Nombre, email y contraseña son obligatorios.' });
@@ -188,6 +196,10 @@ export function createAuthRouter(
 
       await ensureUserData(pool, userId, trimmedName, trimmedEmail);
       await maybeAwardFundador(pool, userId);
+      await ensureReferralCode(pool, userId).catch((err) =>
+        console.error('Referral code generation error:', err),
+      );
+      await attachReferrer(pool, userId, referralCode, getClientIp(req));
       sendWelcomeEmail(trimmedEmail, trimmedName).catch((err) =>
         console.error('Welcome email error:', err),
       );
@@ -314,6 +326,10 @@ export function createAuthRouter(
     const state = randomUUID();
     (req.session as any).oauthState = state;
     (req.session as any).oauthIntent = 'login';
+    const refCode = typeof req.query.ref === 'string' ? req.query.ref.trim().slice(0, 32) : '';
+    if (refCode) {
+      (req.session as any).referralCode = refCode;
+    }
 
     const client = makeOAuth2Client(googleCreds);
     const url = client.generateAuthUrl({
@@ -406,12 +422,20 @@ export function createAuthRouter(
         }
 
         await ensureUserData(pool, userId, googleName, googleEmail, googleAvatar);
+        await ensureReferralCode(pool, userId).catch((err) =>
+          console.error('Referral code generation error:', err),
+        );
         if (isNewGoogleUser) {
           await maybeAwardFundador(pool, userId);
+          const pendingRef = (req.session as any).referralCode;
+          if (pendingRef) {
+            await attachReferrer(pool, userId, pendingRef, getClientIp(req));
+          }
           sendWelcomeEmail(googleEmail, googleName).catch((err) =>
             console.error('Welcome email error:', err),
           );
         }
+        delete (req.session as any).referralCode;
 
         const user = withPlan(
           {
@@ -486,7 +510,7 @@ export function createAuthRouter(
   // ── Google OAuth via Supabase ────────────────────────────────
 
   router.post('/google/supabase', async (req, res) => {
-    const { access_token } = req.body as { access_token?: string };
+    const { access_token, referralCode } = req.body as { access_token?: string; referralCode?: string };
 
     if (!access_token) {
       return res.status(400).json({ error: 'Token requerido.' });
@@ -545,8 +569,12 @@ export function createAuthRouter(
       }
 
       await ensureUserData(pool, userId, googleName, googleEmail, googleAvatar);
+      await ensureReferralCode(pool, userId).catch((err) =>
+        console.error('Referral code generation error:', err),
+      );
       if (isNewUser) {
         await maybeAwardFundador(pool, userId);
+        await attachReferrer(pool, userId, referralCode, getClientIp(req));
         sendWelcomeEmail(googleEmail, googleName).catch((err) =>
           console.error('Welcome email error:', err),
         );

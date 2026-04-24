@@ -22,6 +22,7 @@ import {
 } from '@phosphor-icons/react';
 import type { SessionUser } from '@shared';
 import { authApi, ApiError } from '../lib/api';
+import { readReferralCode, clearReferralCode } from '../lib/referral';
 import { supabase } from '../lib/supabase';
 import { cx } from '../components/ui';
 import LegalModal, { type LegalPage } from '../components/LegalModal';
@@ -236,8 +237,12 @@ export default function Landing({
           email: email.trim(),
           password,
           name: name.trim(),
+          referralCode: readReferralCode(),
         });
-        if (user) onLogin(user, true);
+        if (user) {
+          clearReferralCode();
+          onLogin(user, true);
+        }
       } else {
         const { user } = await authApi.login({
           email: email.trim(),
