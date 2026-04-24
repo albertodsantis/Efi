@@ -35,11 +35,33 @@ Estado y playbook para activar el modelo freemium de Efi. Mientras `EARLY_ACCESS
 - `apps/web/src/components/UpgradeModal.tsx` — modal de planes (toggle Mensual/Anual, comparativa Free vs Pro, CTA deshabilitado con aviso de acceso anticipado).
 - `apps/web/src/views/Settings.tsx` — sección "Plan" arriba con badge y botón "Ver planes".
 
-## Switch a modo pago
+## Sistema de referidos
 
-Cuando se decida activar la monetización:
+Implementado y activo desde el inicio de beta. Los usuarios acumulan créditos mientras `EARLY_ACCESS=true`; al apagar el flag se canjean en tiempo de suscripción.
 
-### 1. Backfill de trials para usuarios existentes
+### Reglas
+- Link de invitación: `https://efidesk.com/?ref=<code>` (code de 8 chars generado al registrarse).
+- Un referido **califica** cuando, dentro de 60 días desde su registro, hace ≥10 cambios de status en sus tareas a lo largo de ≥7 días distintos.
+- Al calificar: 1 mes para el referidor (tope 3) y 1 mes para el referido.
+- Anti-abuso: no self-referral, no misma IP que un referido previo del mismo referidor, un solo referidor por usuario.
+
+### Dónde vive
+- Reglas y tipos: `packages/shared/src/contracts/referrals.ts`.
+- Lógica backend: `apps/api/src/services/referrals.ts`.
+- Evaluador: corre inline en `PATCH /api/v1/tasks/:id` al cambiar status (no hay cron).
+- UI usuario: sección "Invita a un amigo" en Settings (`apps/web/src/components/ReferralsSection.tsx`).
+- Endpoint de canje: `POST /api/admin/referrals/redeem-all` (protegido con `ADMIN_API_KEY`).
+- Schema: migración `028_referrals.sql` (tablas `referrals`, `referral_credits`; columna `users.referral_code`).
+
+## Switch a modo pago — el día D
+
+Los 3 pasos se ejecutan el mismo día, en orden, sin pausas largas entre ellos. **No correr ninguno antes de decidir cerrar la beta** — los tres están acoplados y fuera de orden dejan a los usuarios en estados incorrectos.
+
+Orden correcto: **backfill de trials → canje de créditos → apagar flag**. Duración estimada: 3-5 minutos.
+
+### Paso 1 — Backfill de trials para usuarios existentes
+
+Corré este SQL en la consola de Supabase. Le da a todos los usuarios actuales 30 días de trial a partir de ese momento:
 
 ```sql
 UPDATE users
@@ -48,13 +70,29 @@ WHERE trial_ends_at IS NULL
   AND subscribed_until IS NULL;
 ```
 
-### 2. Apagar early access
+### Paso 2 — Canjear créditos de referidos
 
-Setear `EARLY_ACCESS=false` en el entorno de producción (Railway). A partir de ahí, `isPro()` respeta fechas reales.
+Convierte los créditos acumulados en `referral_credits` (redeemed_at=NULL) en meses extra sumados a `users.subscribed_until`. Es idempotente — si se corre dos veces, la segunda no hace nada.
 
-### 3. Nuevos usuarios
+```bash
+curl -X POST -H "Authorization: Bearer $ADMIN_API_KEY" \
+  https://efidesk.com/api/admin/referrals/redeem-all
+```
 
-Agregar en `auth.ts` (register + callbacks Google): al crear el `users` row, setear `trial_ends_at = NOW() + INTERVAL '30 days'`. Hoy esto no se hace porque con el flag prendido es irrelevante.
+Responde con el resumen: `{ usersAffected, creditsRedeemed, monthsGranted }`.
+
+### Paso 3 — Apagar early access
+
+En Railway, setear `EARLY_ACCESS=false` y redeployar. A partir de ahí, `isPro()` respeta fechas reales: `subscribed_until` (que ya incluye los meses de referidos) tiene prioridad, y cuando vence cae al `trial_ends_at` del Paso 1.
+
+### Por qué el orden importa
+- **Paso 1 antes del 3**: si apagás el flag sin trial, todos los usuarios pasan a Free de golpe.
+- **Paso 2 antes del 3**: si apagás el flag sin canjear, los meses ganados no aparecen todavía en `subscribed_until` y los usuarios ven paywall pese a haberlos ganado.
+- **Paso 2 después del 1**: el canje suma meses sobre `subscribed_until` directamente, así que no depende del trial. Pero si se invierte el orden (canje antes de backfill) el efecto neto es el mismo — lo dejamos en este orden para mantener el flujo "primero base, luego beneficios".
+
+### Paso 4 — Nuevos usuarios (cambio en código)
+
+Agregar en `auth.ts` (register + callbacks Google): al crear el `users` row, setear `trial_ends_at = NOW() + INTERVAL '30 days'`. Hoy esto no se hace porque con el flag prendido es irrelevante — pero una vez apagado, los usuarios nuevos nacen sin trial si no se agrega.
 
 ## TODOs antes de activar pagos
 
