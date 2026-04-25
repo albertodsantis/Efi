@@ -8,6 +8,7 @@
   --animate-shimmer: shimmer 3s infinite;
   --animate-check-pop: check-pop 0.22s ease-out;
   --animate-mushroom-wobble: mushroom-wobble 1.4s ease-in-out infinite;
+  --animate-mushroom-stroll: mushroom-stroll 7s ease-in-out infinite;
   --animate-pill-walk: pill-walk 0.85s cubic-bezier(0.45, 0, 0.55, 1) infinite;
 
   @keyframes shimmer {
@@ -25,6 +26,27 @@
   @keyframes mushroom-wobble {
     0%, 100% { transform: rotate(-8deg); }
     50%      { transform: rotate(8deg); }
+  }
+
+  @keyframes mushroom-stroll {
+    0%   { transform: translate(0, 0) rotate(0deg); }
+    /* dos saltitos a la derecha */
+    7%   { transform: translate(14px, -10px) rotate(6deg); }
+    14%  { transform: translate(28px, 0) rotate(0deg); }
+    21%  { transform: translate(42px, -10px) rotate(6deg); }
+    28%  { transform: translate(56px, 0) rotate(0deg); }
+    /* miradita */
+    36%  { transform: translate(56px, 0) rotate(-4deg); }
+    42%  { transform: translate(56px, 0) rotate(4deg); }
+    /* tres saltitos a la izquierda (vuelve y sigue de largo) */
+    49%  { transform: translate(42px, -10px) rotate(-6deg); }
+    56%  { transform: translate(28px, 0) rotate(0deg); }
+    63%  { transform: translate(14px, -10px) rotate(-6deg); }
+    70%  { transform: translate(0, 0) rotate(0deg); }
+    77%  { transform: translate(-14px, -10px) rotate(-6deg); }
+    84%  { transform: translate(-28px, 0) rotate(0deg); }
+    /* vuelta tranquila al centro */
+    100% { transform: translate(0, 0) rotate(0deg); }
   }
 
   @keyframes pill-walk {

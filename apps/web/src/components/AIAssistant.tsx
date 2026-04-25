@@ -1,19 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { GoogleGenAI, Type, FunctionDeclaration } from '@google/genai';
 import {
-  Bell,
-  CheckSquare,
   CircleNotch,
-  Lightning,
   Microphone,
   MicrophoneSlash,
   PaperPlaneRight,
-  Sparkle,
   X,
 } from '@phosphor-icons/react';
 import { TaskStatus } from '@shared/domain';
 import { useAppContext } from '../context/AppContext';
-import { toast } from '../lib/toast';
 import { StatusBadge, cx } from './ui';
 
 const geminiApiKey = process.env.GEMINI_API_KEY?.trim() || '';
@@ -306,11 +301,6 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
     }
   };
 
-  const handleNotifyMe = () => {
-    toast.success('Listo. Te avisaremos en cuanto Efi IA esté disponible.');
-    setIsOpen(false);
-  };
-
   const panelGradient =
     'bg-[radial-gradient(circle_at_top_left,rgba(201,111,91,0.16),transparent_42%),linear-gradient(180deg,rgba(255,255,255,0.98),rgba(250,247,243,0.96))]';
   const messageBase =
@@ -350,17 +340,6 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
               </p>
               <p className="text-sm font-bold text-[var(--text-primary)]">Efi</p>
             </div>
-          ) : null}
-          {!isAiAvailable ? (
-            isDesktop ? (
-              <span className="ml-1 rounded-full border border-[color:var(--line-soft)] bg-[var(--surface-muted)] px-2 py-0.5 text-[10px] font-bold tracking-[0.14em] text-[var(--text-secondary)] uppercase">
-                Pronto
-              </span>
-            ) : (
-              <span className="absolute -top-1 -right-1 flex h-5 items-center rounded-full border border-white bg-[var(--text-primary)] px-1.5 text-[9px] font-bold tracking-[0.12em] text-white uppercase shadow-[0_6px_14px_-8px_rgba(63,43,33,0.45)]">
-                Pronto
-              </span>
-            )
           ) : null}
         </button>
       </div>
@@ -407,9 +386,11 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className="text-sm font-bold tracking-wide text-[var(--text-primary)]">Efi</h3>
-                    <StatusBadge tone="accent" className="shrink-0">
-                      {isAiAvailable ? 'Workspace' : 'Beta pronto'}
-                    </StatusBadge>
+                    {isAiAvailable ? (
+                      <StatusBadge tone="accent" className="shrink-0">
+                        Workspace
+                      </StatusBadge>
+                    ) : null}
                   </div>
                   <p className="mt-1 text-[11px] text-[var(--text-secondary)]">
                     {isAiAvailable
@@ -429,65 +410,26 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
 
             {!isAiAvailable ? (
               <div className="relative flex-1 overflow-y-auto px-5 py-6">
-                <div className="space-y-5">
-                  <div className="flex flex-col items-center text-center">
+                <div className="flex h-full flex-col items-center justify-center text-center">
+                  <div className="flex h-20 w-full items-end justify-center overflow-hidden">
                     <img
                       src="/brand/isotipo.png?v=2"
                       alt=""
                       draggable={false}
                       width={64}
                       height={64}
-                      className="h-16 w-16 select-none"
+                      className="h-16 w-16 animate-mushroom-stroll select-none [will-change:transform]"
                     />
-                    <StatusBadge tone="accent" className="mt-4">
-                      Próximamente
-                    </StatusBadge>
-                    <h4 className="mt-3 text-lg font-bold text-[var(--text-primary)]">
-                      Efi IA está en camino
-                    </h4>
-                    <p className="mt-2 max-w-[22rem] text-sm leading-6 text-[var(--text-secondary)]">
-                      Tu asistente personal para mover tareas, crear marcas y responder al instante sin salir del workspace. Estamos puliendo los últimos detalles.
-                    </p>
                   </div>
-
-                  <ul className="space-y-2.5">
-                    {[
-                      {
-                        icon: <CheckSquare size={16} weight="bold" />,
-                        title: 'Crea y mueve tareas por voz',
-                        desc: 'Dicta una tarea y Efi la suma al pipeline con marca, valor y fecha.',
-                      },
-                      {
-                        icon: <Lightning size={16} weight="bold" />,
-                        title: 'Suma marcas y contactos al vuelo',
-                        desc: 'Pídele que registre una marca nueva o un contacto y listo.',
-                      },
-                      {
-                        icon: <Sparkle size={16} weight="bold" />,
-                        title: 'Respuestas con contexto real',
-                        desc: 'Consulta estados, plantillas o cifras de tu propio workspace.',
-                      },
-                    ].map((item) => (
-                      <li
-                        key={item.title}
-                        className="flex items-start gap-3 rounded-[1.1rem] border border-[color:var(--line-soft)] bg-white/80 px-4 py-3"
-                      >
-                        <div
-                          className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[0.85rem]"
-                          style={{
-                            background: accentGradient,
-                            color: 'var(--accent-foreground)',
-                          }}
-                        >
-                          {item.icon}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-bold text-[var(--text-primary)]">{item.title}</p>
-                          <p className="mt-0.5 text-xs leading-5 text-[var(--text-secondary)]">{item.desc}</p>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                  <StatusBadge tone="accent" className="mt-4">
+                    Próximamente
+                  </StatusBadge>
+                  <h4 className="mt-3 text-lg font-bold text-[var(--text-primary)]">
+                    Efi IA está en camino
+                  </h4>
+                  <p className="mt-2 max-w-[22rem] text-sm leading-6 text-[var(--text-secondary)]">
+                    Estamos trabajando en tu asistente personal. Te contaremos más cuando esté listo.
+                  </p>
                 </div>
               </div>
             ) : (
@@ -522,33 +464,22 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
             </div>
             )}
 
-            {!isAiAvailable ? (
-              <div className="relative border-t border-black/5 bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(248,244,239,0.98))] p-4">
-                <button
-                  type="button"
-                  onClick={handleNotifyMe}
-                  className="flex w-full items-center justify-center gap-2 rounded-[1.1rem] px-4 py-3 text-sm font-bold shadow-[0_16px_32px_-22px_var(--accent-glow)] transition-transform active:scale-[0.99]"
-                  style={{
-                    background: accentGradient,
-                    color: 'var(--accent-foreground)',
-                  }}
-                >
-                  <Bell size={16} weight="bold" />
-                  Avísame cuando esté listo
-                </button>
-                <p className="mt-2 text-center text-[11px] text-[var(--text-secondary)]">
-                  Te escribiremos en cuanto abramos el acceso.
-                </p>
-              </div>
-            ) : (
             <div className="relative border-t border-black/5 bg-[linear-gradient(180deg,rgba(255,255,255,0.9),rgba(248,244,239,0.98))] p-4">
-              <div className="flex items-center gap-2 rounded-[1.1rem] border border-[color:var(--line-soft)] bg-white/88 p-1.5 shadow-[0_16px_28px_-28px_rgba(63,43,33,0.2)] focus-within:border-[color:var(--accent-color)] focus-within:bg-white">
+              <div
+                className={cx(
+                  'flex items-center gap-2 rounded-[1.1rem] border border-[color:var(--line-soft)] bg-white/88 p-1.5 shadow-[0_16px_28px_-28px_rgba(63,43,33,0.2)]',
+                  isAiAvailable
+                    ? 'focus-within:border-[color:var(--accent-color)] focus-within:bg-white'
+                    : 'opacity-60',
+                )}
+              >
                 {'SpeechRecognition' in window || 'webkitSpeechRecognition' in window ? (
                   <button
                     type="button"
                     onClick={toggleListening}
+                    disabled={!isAiAvailable}
                     className={cx(
-                      'flex h-10 w-10 items-center justify-center rounded-[0.9rem] transition-colors',
+                      'flex h-10 w-10 items-center justify-center rounded-[0.9rem] transition-colors disabled:cursor-not-allowed',
                       isListening
                         ? 'bg-rose-100 text-rose-600'
                         : 'text-[var(--text-secondary)] hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]',
@@ -560,18 +491,19 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
 
                 <input
                   type="text"
-                  value={input}
+                  value={isAiAvailable ? input : ''}
                   onChange={(event) => setInput(event.target.value)}
                   onKeyDown={(event) => event.key === 'Enter' && void handlePaperPlaneRight()}
-                  placeholder="Escribe o habla con Efi..."
-                  className="flex-1 border-none bg-transparent px-2 text-base sm:text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none"
+                  placeholder={isAiAvailable ? 'Escribe o habla con Efi...' : ''}
+                  disabled={!isAiAvailable}
+                  className="flex-1 border-none bg-transparent px-2 text-base sm:text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none disabled:cursor-not-allowed"
                 />
 
                 <button
                   type="button"
                   onClick={() => void handlePaperPlaneRight()}
-                  disabled={!input.trim() || isProcessing}
-                  className="flex h-10 w-10 items-center justify-center rounded-[0.9rem] transition-transform active:scale-95 disabled:opacity-50"
+                  disabled={!isAiAvailable || !input.trim() || isProcessing}
+                  className="flex h-10 w-10 items-center justify-center rounded-[0.9rem] transition-transform active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
                   style={{
                     background: accentGradient,
                     color: 'var(--accent-foreground)',
@@ -581,7 +513,6 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
                 </button>
               </div>
             </div>
-            )}
           </div>
         </>
       ) : null}
