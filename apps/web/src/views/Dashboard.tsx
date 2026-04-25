@@ -1077,7 +1077,7 @@ export default function Dashboard() {
   /* ── render ───────────────────────────────────────────────── */
 
   return (
-    <div className="space-y-5 p-4 pb-6 animate-in fade-in slide-in-from-bottom-4 duration-500 lg:px-8 lg:pt-4 lg:pb-8">
+    <div className="space-y-5 p-4 pb-6 overflow-x-clip animate-in fade-in slide-in-from-bottom-4 duration-500 lg:px-8 lg:pt-4 lg:pb-8">
       {/* Goals Marquee */}
       {generalGoals.length > 0 && (
         <GoalsMarquee goals={generalGoals} accentHex={accentHex} accentGradient={accentGradient} />
@@ -1100,9 +1100,9 @@ export default function Dashboard() {
       )}
 
       {/* Main 2-col grid */}
-      <section className="grid gap-5 xl:grid-cols-[minmax(0,1.3fr)_minmax(300px,0.7fr)]">
+      <section className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1.3fr)_minmax(300px,0.7fr)]">
         {/* ── Left: stacked cards ────────────────────────── */}
-        <div className="order-2 space-y-5 xl:order-1">
+        <div className="order-2 min-w-0 space-y-5 xl:order-1">
           {/* Financial Flow */}
           <SurfaceCard className="relative overflow-hidden p-5 lg:p-6">
             <div
@@ -1173,58 +1173,58 @@ export default function Dashboard() {
               </div>
 
               {/* KPIs grid */}
-              <div className="mt-4 grid grid-cols-3 gap-x-4 gap-y-4">
-                <div>
-                  <p className="text-[10px] font-bold tracking-[0.14em] text-[var(--text-secondary)] uppercase">
+              <div className="mt-4 grid grid-cols-3 gap-x-3 gap-y-4 sm:gap-x-4">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold tracking-[0.14em] text-[var(--text-secondary)] uppercase truncate">
                     Abierto
                   </p>
-                  <p className="mt-1 text-xl font-black tracking-tight text-[var(--text-primary)]">
+                  <p className="mt-1 truncate text-lg font-black tracking-tight text-[var(--text-primary)] sm:text-xl">
                     {formatCurrency(periodSummary.activePipelineValue)}
                   </p>
                 </div>
-                <div>
-                  <p className="text-[10px] font-bold tracking-[0.14em] text-[var(--text-secondary)] uppercase">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold tracking-[0.14em] text-[var(--text-secondary)] uppercase truncate">
                     Cobrado
                   </p>
                   <p
-                    className="mt-1 text-xl font-black tracking-tight"
+                    className="mt-1 truncate text-lg font-black tracking-tight sm:text-xl"
                     style={{ color: accentHex }}
                   >
                     {formatCurrency(periodSummary.closedPipelineValue)}
                   </p>
                 </div>
-                <div>
-                  <p className="text-[10px] font-bold tracking-[0.14em] text-[var(--text-secondary)] uppercase">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold tracking-[0.14em] text-[var(--text-secondary)] uppercase truncate">
                     Por cobrar
                   </p>
-                  <p className="mt-1 text-xl font-black tracking-tight text-amber-600 dark:text-amber-400">
+                  <p className="mt-1 truncate text-lg font-black tracking-tight text-amber-600 dark:text-amber-400 sm:text-xl">
                     {formatCurrency(periodSummary.pendingPaymentValue)}
                   </p>
                 </div>
-                <div>
-                  <p className="text-[10px] font-bold tracking-[0.14em] text-[var(--text-secondary)] uppercase">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold tracking-[0.14em] text-[var(--text-secondary)] uppercase truncate">
                     Entregas
                   </p>
-                  <p className="mt-1 text-xl font-black tracking-tight text-[var(--text-primary)]">
+                  <p className="mt-1 truncate text-lg font-black tracking-tight text-[var(--text-primary)] sm:text-xl">
                     {periodSummary.deliveriesCount}
                   </p>
                 </div>
-                <div>
-                  <p className="text-[10px] font-bold tracking-[0.14em] text-[var(--text-secondary)] uppercase">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold tracking-[0.14em] text-[var(--text-secondary)] uppercase truncate">
                     Clientes
                   </p>
-                  <p className="mt-1 text-xl font-black tracking-tight text-[var(--text-primary)]">
+                  <p className="mt-1 truncate text-lg font-black tracking-tight text-[var(--text-primary)] sm:text-xl">
                     {periodSummary.activePartners}
                     <span className="text-sm font-medium text-[var(--text-secondary)]">
                       {' '}/ {periodSummary.totalPartners}
                     </span>
                   </p>
                 </div>
-                <div>
-                  <p className="text-[10px] font-bold tracking-[0.14em] text-[var(--text-secondary)] uppercase">
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold tracking-[0.14em] text-[var(--text-secondary)] uppercase truncate">
                     Contactos
                   </p>
-                  <p className="mt-1 text-xl font-black tracking-tight text-[var(--text-primary)]">
+                  <p className="mt-1 truncate text-lg font-black tracking-tight text-[var(--text-primary)] sm:text-xl">
                     {periodSummary.totalContacts}
                   </p>
                 </div>
@@ -1294,13 +1294,13 @@ export default function Dashboard() {
               {breakdown.map((item) => (
                 <div
                   key={item.status}
-                  className="flex items-center justify-between text-[11px]"
+                  className="flex items-center justify-between gap-3 text-[11px]"
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex min-w-0 items-center gap-2">
                     <StatusBadge tone={statusToneMap[item.status]}>{item.count}</StatusBadge>
-                    <span className="font-medium text-[var(--text-primary)]">{item.status}</span>
+                    <span className="truncate font-medium text-[var(--text-primary)]">{item.status}</span>
                   </div>
-                  <span className="font-bold text-[var(--text-secondary)]">
+                  <span className="shrink-0 font-bold text-[var(--text-secondary)]">
                     {formatCurrency(item.value)}
                   </span>
                 </div>
@@ -1320,7 +1320,7 @@ export default function Dashboard() {
         </div>
 
         {/* ── Right: Agenda ──────────────────────────────── */}
-        <SurfaceCard className="order-1 p-5 lg:p-6 xl:order-2">
+        <SurfaceCard className="order-1 min-w-0 p-5 lg:p-6 xl:order-2">
           <p className="text-[11px] font-bold tracking-[0.18em] text-[var(--text-secondary)] uppercase">
             Agenda
           </p>
