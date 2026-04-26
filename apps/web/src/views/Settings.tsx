@@ -118,6 +118,72 @@ export default function Settings() {
   const [gcalLoading, setGcalLoading] = useState(true);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
 
+  const SECTIONS = useMemo(
+    () => [
+      { id: 'plan', label: 'Plan' },
+      { id: 'referrals', label: 'Referidos' },
+      { id: 'templates', label: 'Plantillas' },
+      { id: 'appearance', label: 'Apariencia' },
+      { id: 'onboarding', label: 'Onboarding' },
+      { id: 'preferences', label: 'Preferencias' },
+      { id: 'account', label: 'Cuenta' },
+    ],
+    [],
+  );
+  const [activeSection, setActiveSection] = useState<string>(SECTIONS[0].id);
+  const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
+  const tabsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const elements = SECTIONS
+      .map((s) => sectionRefs.current[s.id])
+      .filter((el): el is HTMLElement => el != null);
+    if (elements.length === 0) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        if (visible[0]) {
+          setActiveSection(visible[0].target.id);
+        }
+      },
+      { rootMargin: '-90px 0px -55% 0px', threshold: [0, 0.25, 0.5, 1] },
+    );
+
+    elements.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [SECTIONS]);
+
+  useEffect(() => {
+    const tabsEl = tabsRef.current;
+    if (!tabsEl) return;
+    const activeBtn = tabsEl.querySelector<HTMLButtonElement>(
+      `button[data-section-id="${activeSection}"]`,
+    );
+    if (activeBtn) {
+      activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, [activeSection]);
+
+  const scrollToSection = (id: string) => {
+    const el = sectionRefs.current[id];
+    if (!el) return;
+    const top = el.getBoundingClientRect().top + window.scrollY - 72;
+    const scroller = el.closest('main');
+    if (scroller) {
+      const offset = el.getBoundingClientRect().top - scroller.getBoundingClientRect().top;
+      scroller.scrollTo({ top: scroller.scrollTop + offset - 64, behavior: 'smooth' });
+    } else {
+      window.scrollTo({ top, behavior: 'smooth' });
+    }
+  };
+
+  const setSectionRef = (id: string) => (el: HTMLElement | null) => {
+    sectionRefs.current[id] = el;
+  };
+
   useEffect(() => {
     setAccountName(profile.name);
   }, [profile.name]);
@@ -356,7 +422,42 @@ export default function Settings() {
   };
 
   return (
-    <div className="space-y-5 p-4 pb-6 lg:space-y-6 lg:px-8 lg:pt-4 lg:pb-8">
+    <div className="p-4 pb-6 lg:px-8 lg:pt-4 lg:pb-8">
+      <div
+        className="sticky top-0 z-20 -mx-4 mb-5 border-b border-[color:var(--line-soft)] bg-[var(--surface-card)]/85 px-4 backdrop-blur-md lg:-mx-8 lg:mb-6 lg:px-8"
+        style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
+      >
+        <div
+          ref={tabsRef}
+          className="hide-scrollbar -mb-px flex gap-1 overflow-x-auto py-2"
+          role="tablist"
+          aria-label="Secciones de ajustes"
+        >
+          {SECTIONS.map((section) => {
+            const isActive = activeSection === section.id;
+            return (
+              <button
+                key={section.id}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                data-section-id={section.id}
+                onClick={() => scrollToSection(section.id)}
+                className={cx(
+                  'shrink-0 rounded-full px-3.5 py-1.5 text-xs font-bold tracking-tight transition-colors',
+                  isActive
+                    ? 'bg-[var(--accent-soft-strong)] text-[var(--accent-solid)]'
+                    : 'text-[var(--text-secondary)] hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]',
+                )}
+              >
+                {section.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="space-y-5 lg:space-y-6">
       <p className="px-1 text-sm text-[var(--text-secondary)]">
         ¿Tienes comentarios o ideas? Escríbenos a{' '}
         <a
@@ -368,6 +469,7 @@ export default function Settings() {
         .
       </p>
 
+      <section id="plan" ref={setSectionRef('plan')} className="scroll-mt-24">
       <SurfaceCard className="overflow-hidden p-0">
         <div className="flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between lg:p-7">
           <div className="flex items-start gap-4">
@@ -389,11 +491,15 @@ export default function Settings() {
           </Button>
         </div>
       </SurfaceCard>
+      </section>
 
       {isUpgradeOpen ? <UpgradeModal onClose={() => setIsUpgradeOpen(false)} /> : null}
 
-      <ReferralsSection />
+      <section id="referrals" ref={setSectionRef('referrals')} className="scroll-mt-24">
+        <ReferralsSection />
+      </section>
 
+      <section id="templates" ref={setSectionRef('templates')} className="scroll-mt-24">
       <SurfaceCard className="overflow-hidden p-0">
         <div className="grid xl:grid-cols-[minmax(260px,0.72fr)_minmax(0,1.28fr)]">
           <div className="p-6 lg:p-7">
@@ -504,7 +610,9 @@ export default function Settings() {
           </div>
         </div>
       </SurfaceCard>
+      </section>
 
+      <section id="appearance" ref={setSectionRef('appearance')} className="scroll-mt-24">
       <SurfaceCard className="overflow-hidden p-0">
         <div className="p-6 lg:p-7">
           <button
@@ -584,7 +692,9 @@ export default function Settings() {
           </div>
         </div>
       </SurfaceCard>
+      </section>
 
+      <section id="onboarding" ref={setSectionRef('onboarding')} className="scroll-mt-24">
       <SettingRow
         icon={ArrowCounterClockwise}
         title="Reiniciar onboarding"
@@ -597,7 +707,9 @@ export default function Settings() {
         }
         className="px-2 py-3"
       />
+      </section>
 
+      <section id="preferences" ref={setSectionRef('preferences')} className="scroll-mt-24">
       <SurfaceCard className="overflow-hidden p-0">
         <div className="p-6 lg:p-7">
           <h2 className="mb-5 text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
@@ -639,7 +751,9 @@ export default function Settings() {
           </div>
         </div>
       </SurfaceCard>
+      </section>
 
+      <section id="account" ref={setSectionRef('account')} className="scroll-mt-24">
       <SurfaceCard className="overflow-hidden p-0">
         <div className="p-6 lg:p-7">
           <h2 className="mb-5 text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
@@ -765,6 +879,8 @@ export default function Settings() {
           </div>
         </div>
       </SurfaceCard>
+      </section>
+      </div>
 
       {isAddingTemplate ? (
         <OverlayModal onClose={() => {
