@@ -13,15 +13,10 @@ import { ApiError } from '../lib/api';
 import { toast } from '../lib/toast';
 import { StatusBadge, cx } from './ui';
 
-const WELCOME: AiMessage = {
-  role: 'model',
-  text: 'Hola. Soy Efi, tu asistente integrada. Puedo ayudarte a mover tareas, marcas, contactos y plantillas — y a analizar tu pipeline.',
-};
-
 export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean }) {
   const { refreshAppData, accentGradient } = useAppContext();
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<AiMessage[]>([WELCOME]);
+  const [messages, setMessages] = useState<AiMessage[]>([]);
   const [input, setInput] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [isListening, setIsListening] = useState(false);
@@ -193,7 +188,7 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
             className={`z-[110] flex flex-col overflow-hidden border border-[color:var(--line-soft)] shadow-[0_30px_90px_-34px_rgba(63,43,33,0.42)] animate-in fade-in slide-in-from-bottom-8 duration-300 ${panelGradient} ${
               isDesktop
                 ? 'fixed right-6 bottom-24 h-[min(560px,calc(100dvh-8rem))] w-[min(420px,calc(100vw-2rem))] rounded-[1.45rem]'
-                : 'fixed inset-x-3 top-[max(env(safe-area-inset-top,0px)+0.75rem,0.75rem)] bottom-[calc(env(safe-area-inset-bottom,0px)+5.25rem)] rounded-[1.55rem]'
+                : 'fixed inset-x-3 top-[calc(env(safe-area-inset-top,0px)+3.5rem)] bottom-[calc(env(safe-area-inset-bottom,0px)+4.5rem)] rounded-[1.55rem]'
             }`}
           >
             <div className="absolute inset-0 pointer-events-none">
