@@ -1,4 +1,7 @@
 import type {
+  AiChatRequest,
+  AiChatResponse,
+  AiQuotaResponse,
   AppBootstrapResponse,
   AppSettingsResponse,
   CalendarStatusResponse,
@@ -41,9 +44,11 @@ import type {
 
 export class ApiError extends Error {
   code?: string;
-  constructor(message: string, code?: string) {
+  data?: unknown;
+  constructor(message: string, code?: string, data?: unknown) {
     super(message);
     this.code = code;
+    this.data = data;
   }
 }
 
@@ -63,16 +68,18 @@ async function apiRequest<T>(path: string, init?: RequestInit): Promise<T> {
 
     let message = 'Request failed';
     let code: string | undefined;
+    let data: unknown;
 
     try {
       const errorBody = await response.json();
       message = errorBody.error || message;
       code = errorBody.code;
+      data = errorBody;
     } catch {
       message = response.statusText || message;
     }
 
-    throw new ApiError(message, code);
+    throw new ApiError(message, code, data);
   }
 
   return response.json() as Promise<T>;
@@ -219,6 +226,15 @@ export const appApi = {
   getNotifications: () => apiRequest<NotificationsResponse>('/api/v1/notifications'),
   markNotificationsSeen: () =>
     apiRequest<{ success: boolean }>('/api/v1/notifications/seen', { method: 'PATCH' }),
+};
+
+export const aiApi = {
+  getQuota: () => apiRequest<AiQuotaResponse>('/api/v1/ai/quota'),
+  chat: (payload: AiChatRequest) =>
+    apiRequest<AiChatResponse>('/api/v1/ai/chat', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
 };
 
 export const referralsApi = {

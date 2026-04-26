@@ -23,6 +23,7 @@ import { createV1Router } from './routes/v1';
 import { createMediaKitRouter } from './routes/mediakit';
 import { createAdminRouter } from './routes/admin';
 import { createReferralsRouter } from './routes/referrals';
+import { createAiRouter } from './routes/ai';
 import { initPool, closePool } from './db/connection';
 import { runMigrations } from './db/migrate';
 import { PostgresAppStore } from './db/repository';
@@ -222,6 +223,7 @@ export async function createApp(): Promise<{
 
   const gamification = new GamificationService(appStore);
   app.use('/api/v1', createV1Router(appStore, pool, gamification));
+  app.use('/api/v1/ai', createAiRouter(appStore, pool, env.GEMINI_API_KEY));
   app.use('/api/auth', authLimiter, createAuthRouter(googleCreds, env.APP_URL, pool, env.EARLY_ACCESS));
   app.use('/api/calendar', createCalendarRouter(googleCreds, pool));
   app.use('/api/admin', createAdminRouter(pool, env.ADMIN_API_KEY));
