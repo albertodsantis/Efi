@@ -165,10 +165,7 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
           />
           {isDesktop ? (
             <div className="text-left">
-              <p className="text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)] uppercase">
-                Asistente
-              </p>
-              <p className="text-sm font-bold text-[var(--text-primary)]">Efi</p>
+              <p className="text-sm font-bold text-[var(--text-primary)]">Habla con Efi</p>
             </div>
           ) : null}
         </button>
@@ -178,7 +175,7 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
         <>
           <button
             type="button"
-            aria-label="Cerrar asistente"
+            aria-label="Cerrar Efi"
             onClick={() => setIsOpen(false)}
             className="fixed inset-0 z-[100] bg-[rgba(41,31,24,0.24)] backdrop-blur-[3px]"
           />
@@ -224,8 +221,8 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
                   </div>
                   <p className="mt-1 text-[11px] text-[var(--text-secondary)]">
                     {isAvailable === false
-                      ? 'Tu asistente IA llegará en una próxima actualización'
-                      : 'Asistencia contextual para tareas, marcas y contactos'}
+                      ? 'Efi llegará en una próxima actualización'
+                      : 'Tu copiloto para tareas, marcas y contactos'}
                   </p>
                 </div>
               </div>
@@ -258,7 +255,7 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
                     Efi IA está en camino
                   </h4>
                   <p className="mt-2 max-w-[22rem] text-sm leading-6 text-[var(--text-secondary)]">
-                    Estamos trabajando en tu asistente personal. Te contaremos más cuando esté listo.
+                    Estamos terminando los últimos detalles. Te avisamos cuando esté lista.
                   </p>
                 </div>
               </div>
