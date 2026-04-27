@@ -8,8 +8,10 @@
   --animate-shimmer: shimmer 3s infinite;
   --animate-check-pop: check-pop 0.22s ease-out;
   --animate-mushroom-wobble: mushroom-wobble 1.4s ease-in-out infinite;
-  --animate-mushroom-idle: mushroom-idle 4.5s ease-in-out infinite;
+  --animate-mushroom-idle: mushroom-idle 6s ease-in-out infinite;
   --animate-mushroom-attention: mushroom-attention 1s ease-in-out 3;
+  --animate-mushroom-ground-idle: mushroom-ground-idle 6s ease-in-out infinite;
+  --animate-mushroom-ground-attention: mushroom-ground-attention 1s ease-in-out 3;
   --animate-mushroom-stroll: mushroom-stroll 7s ease-in-out infinite;
   --animate-pill-walk: pill-walk 0.85s cubic-bezier(0.45, 0, 0.55, 1) infinite;
 
@@ -31,16 +33,49 @@
   }
 
   @keyframes mushroom-idle {
-    0%, 100% { transform: translateY(0) rotate(-2deg); }
-    50%      { transform: translateY(-3px) rotate(2deg); }
+    /* reposo (plantado en el suelo) */
+    0%   { transform: translateY(3px) scale(1, 1); }
+    /* primer salto: anticipación, vuelo, aterrizaje */
+    3%   { transform: translateY(4px) scale(1.05, 0.92); }
+    8%   { transform: translateY(-4px) scale(0.98, 1.04) rotate(-2deg); }
+    13%  { transform: translateY(3px) scale(1.05, 0.94); }
+    /* segundo salto */
+    16%  { transform: translateY(4px) scale(1.05, 0.92); }
+    21%  { transform: translateY(-4px) scale(0.98, 1.04) rotate(2deg); }
+    26%  { transform: translateY(3px) scale(1.05, 0.94); }
+    /* vuelta a reposo y quietud */
+    30%, 100% { transform: translateY(3px) scale(1, 1); }
   }
 
   @keyframes mushroom-attention {
-    0%, 100% { transform: translateY(0) rotate(0deg); }
-    20%      { transform: translateY(-5px) rotate(-10deg); }
-    40%      { transform: translateY(-2px) rotate(8deg); }
-    60%      { transform: translateY(-4px) rotate(-6deg); }
-    80%      { transform: translateY(-1px) rotate(4deg); }
+    0%, 100% { transform: translateY(3px) rotate(0deg); }
+    20%      { transform: translateY(-2px) rotate(-10deg); }
+    40%      { transform: translateY(1px)  rotate(8deg); }
+    60%      { transform: translateY(-1px) rotate(-6deg); }
+    80%      { transform: translateY(2px)  rotate(4deg); }
+  }
+
+  @keyframes mushroom-ground-idle {
+    /* sombra grande/oscura cuando está plantado */
+    0%        { transform: scaleX(1);    opacity: 0.55; }
+    3%        { transform: scaleX(1.05); opacity: 0.6; }
+    /* primer salto: el hongo sube, la sombra se encoge y aclara */
+    8%        { transform: scaleX(0.7);  opacity: 0.3; }
+    13%       { transform: scaleX(1.05); opacity: 0.6; }
+    /* segundo salto */
+    16%       { transform: scaleX(1.05); opacity: 0.6; }
+    21%       { transform: scaleX(0.7);  opacity: 0.3; }
+    26%       { transform: scaleX(1.05); opacity: 0.6; }
+    /* reposo */
+    30%, 100% { transform: scaleX(1);    opacity: 0.55; }
+  }
+
+  @keyframes mushroom-ground-attention {
+    0%, 100% { transform: scaleX(1);    opacity: 0.55; }
+    20%      { transform: scaleX(0.75); opacity: 0.32; }
+    40%      { transform: scaleX(0.9);  opacity: 0.45; }
+    60%      { transform: scaleX(0.78); opacity: 0.35; }
+    80%      { transform: scaleX(0.95); opacity: 0.5; }
   }
 
   @keyframes mushroom-stroll {
@@ -81,13 +116,6 @@
   .hide-scrollbar {
     -ms-overflow-style: none;
     scrollbar-width: none;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .animate-mushroom-idle,
-  .animate-mushroom-attention {
-    animation: none !important;
   }
 }
 

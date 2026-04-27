@@ -163,27 +163,33 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
           onClick={() => setIsOpen(true)}
           className={
             isDesktop
-              ? 'group relative flex items-center gap-3 transition-transform hover:-translate-y-0.5 active:scale-95'
+              ? 'group relative flex h-20 w-20 items-center justify-center transition-transform hover:-translate-y-0.5 active:scale-95'
               : 'group relative flex h-14 w-14 items-center justify-center transition-transform hover:scale-[1.04] active:scale-95'
           }
         >
+          <span
+            aria-hidden="true"
+            className={cx(
+              'pointer-events-none absolute left-1/2 -translate-x-1/2 rounded-[50%]',
+              'bg-[radial-gradient(ellipse_at_center,rgba(63,43,33,0.55),rgba(63,43,33,0)_70%)]',
+              isDesktop ? '-bottom-1 h-3 w-16' : '-bottom-0.5 h-2 w-11',
+              'group-hover:[animation-play-state:paused] group-active:[animation-play-state:paused]',
+              showAttention ? 'animate-mushroom-ground-attention' : 'animate-mushroom-ground-idle',
+            )}
+          />
           <img
             src="/brand/isotipo.png?v=2"
             alt=""
             draggable={false}
-            width={56}
-            height={56}
+            width={isDesktop ? 80 : 56}
+            height={isDesktop ? 80 : 56}
             className={cx(
-              'h-14 w-14 select-none origin-bottom drop-shadow-[0_8px_18px_rgba(63,43,33,0.32)]',
+              'relative select-none origin-bottom drop-shadow-[0_8px_18px_rgba(63,43,33,0.32)]',
+              isDesktop ? 'h-20 w-20' : 'h-14 w-14',
               'group-hover:[animation-play-state:paused] group-active:[animation-play-state:paused]',
               showAttention ? 'animate-mushroom-attention' : 'animate-mushroom-idle',
             )}
           />
-          {isDesktop ? (
-            <p className="text-sm font-bold text-[var(--text-primary)] drop-shadow-[0_2px_8px_rgba(255,255,255,0.6)]">
-              Habla con Efi
-            </p>
-          ) : null}
         </button>
       </div>
 
@@ -222,9 +228,9 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
                   src="/brand/isotipo.png?v=2"
                   alt=""
                   draggable={false}
-                  width={40}
-                  height={40}
-                  className="h-10 w-10 select-none"
+                  width={48}
+                  height={48}
+                  className="h-12 w-12 select-none"
                 />
                 <div className="min-w-0">
                   <div className="flex items-center gap-2">
@@ -279,14 +285,6 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
               <div ref={messagesScrollRef} className="relative flex-1 min-h-0 overflow-y-auto overscroll-contain px-5 py-5">
                 {messages.length === 0 && !isProcessing ? (
                   <div className="flex h-full flex-col items-center justify-center gap-2 text-center">
-                    <img
-                      src="/brand/isotipo.png?v=2"
-                      alt=""
-                      draggable={false}
-                      width={48}
-                      height={48}
-                      className="h-12 w-12 select-none opacity-80"
-                    />
                     <p className="text-sm font-medium text-[var(--text-primary)]">¿En qué te ayudo?</p>
                     <p className="max-w-[18rem] text-xs leading-5 text-[var(--text-secondary)]">
                       Pregúntame por tus tareas, mueve algo en tu pipeline o pídeme una plantilla.
