@@ -88,7 +88,7 @@ interface AppContextType extends AppState {
   onLogout: () => void;
   pendingNewTaskPartner: string | null;
   setPendingNewTaskPartner: (partnerName: string | null) => void;
-  refreshAppData: () => Promise<void>;
+  refreshAppData: (options?: { silent?: boolean }) => Promise<void>;
   dismissActionError: () => void;
   reportActionError: (message: string) => void;
   addTask: (task: Omit<Task, 'id' | 'createdAt'>) => Promise<Task>;
@@ -208,15 +208,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     throw error;
   }, []);
 
-  const refreshAppData = useCallback(async () => {
-    setIsBootstrapping(true);
-    setBootstrapError(null);
+  const refreshAppData = useCallback(async (options?: { silent?: boolean }) => {
+    const silent = options?.silent === true;
+    if (!silent) {
+      setIsBootstrapping(true);
+      setBootstrapError(null);
+    }
 
     try {
       const { appState, efisystem: efisystemData, dailyLoginAward } = await appApi.getBootstrap();
       setState(normalizeAppState(appState));
       setEfisystem(efisystemData ?? emptyEfisystem);
-      applyAward(dailyLoginAward, '¡Bienvenido de vuelta!');
+      if (!silent) {
+        applyAward(dailyLoginAward, '¡Bienvenido de vuelta!');
+      }
 
       // Hide the native splash screen once app data is ready, on first load only.
       if (!splashHiddenRef.current) {
@@ -235,7 +240,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'No se pudo cargar la app.';
-      setBootstrapError(message);
+      if (!silent) {
+        setBootstrapError(message);
+      }
 
       // Hide splash on error too so the user is not stuck on the splash screen.
       if (!splashHiddenRef.current) {
@@ -245,7 +252,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
 
       throw error;
     } finally {
-      setIsBootstrapping(false);
+      if (!silent) {
+        setIsBootstrapping(false);
+      }
     }
   }, []);
 

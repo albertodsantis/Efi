@@ -109,7 +109,7 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
       // Surface mutations as toasts and refresh app state once if anything changed.
       if (result.mutations.length > 0) {
         result.mutations.forEach((m) => toast.success(m.summary));
-        await refreshAppData();
+        await refreshAppData({ silent: true });
       }
     } catch (error) {
       if (error instanceof ApiError && error.code === 'quota_exhausted') {
