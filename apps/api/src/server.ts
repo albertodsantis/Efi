@@ -36,8 +36,28 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    app.use(express.static(webDistPath));
-    app.get('*', (_req, res) => {
+    // Hashed assets (Vite emits content-hashed filenames) can be cached forever.
+    // index.html must NOT be cached — otherwise stale tabs after a deploy keep
+    // requesting hashed assets that no longer exist.
+    app.use(
+      express.static(webDistPath, {
+        setHeaders: (res, filePath) => {
+          if (filePath.endsWith('index.html')) {
+            res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+          } else if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+            res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          }
+        },
+      }),
+    );
+    app.get('*', (req, res, next) => {
+      // Don't fall back to index.html for asset requests — return 404 instead.
+      // Otherwise stale clients requesting deleted hashed assets get HTML back
+      // and the browser throws "'text/html' is not a valid JavaScript MIME type".
+      if (req.path.startsWith('/assets/') || /\.[a-zA-Z0-9]+$/.test(req.path)) {
+        return next();
+      }
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
       res.sendFile(path.join(webDistPath, 'index.html'));
     });
   }
