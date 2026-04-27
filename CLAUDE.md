@@ -14,7 +14,7 @@
 
 ## Project
 
-Efi is a compact CRM for independent professionals — content creators, podcasters, streamers, photographers, copywriters, DJs, speakers, coaches, and more. It provides a personal operational workspace to manage partnerships, track deliverables, and maintain a professional profile — all from a single responsive web app. Each user has their own isolated data (tasks, partners, profile, settings, templates). No collaborative workspaces — each account is a personal workspace.
+Efi is a compact CRM for independent professionals — content creators, podcasters, streamers, photographers, copywriters, musicians, speakers, coaches, and more. It provides a personal operational workspace to manage partnerships, track deliverables, and maintain a professional profile — all from a single responsive web app. Each user has their own isolated data (tasks, partners, profile, settings, templates). No collaborative workspaces — each account is a personal workspace.
 
 Features: Dashboard (Inicio), Pipeline (Kanban/List/Calendar + Google Calendar sync), Directory (Directorio), Strategy (Estrategia), Public Profile (EfiLink — linktree-style hub at `/@handle`), Settings (Ajustes), AI Assistant (Gemini), Onboarding.
 

@@ -28,7 +28,7 @@ Precedence order:
 
 ## 3. Product Context
 
-Efi is a Spanish-first compact CRM for independent professionals — content creators, podcasters, streamers, photographers, copywriters, DJs, speakers, coaches, and more.
+Efi is a Spanish-first compact CRM for independent professionals — content creators, podcasters, streamers, photographers, copywriters, musicians, speakers, coaches, and more.
 
 The product must feel:
 

@@ -6,7 +6,7 @@ This document defines the target product for the current production version of E
 
 ## 2. Product Vision
 
-Efi is a micro SaaS CRM for independent professionals — content creators, podcasters, streamers, photographers, copywriters, DJs, speakers, coaches, and more — who need to manage deliverables, brand relationships, contacts, finances, templates, professional profiles, and goals without relying on scattered spreadsheets, notes, reminders, and inbox threads.
+Efi is a micro SaaS CRM for independent professionals — content creators, podcasters, streamers, photographers, copywriters, musicians, speakers, coaches, and more — who need to manage deliverables, brand relationships, contacts, finances, templates, professional profiles, and goals without relying on scattered spreadsheets, notes, reminders, and inbox threads.
 
 The delivery sequence is:
 

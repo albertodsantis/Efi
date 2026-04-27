@@ -1,6 +1,6 @@
 # Efi
 
-Efi is a compact CRM for independent professionals — content creators, podcasters, streamers, photographers, copywriters, DJs, speakers, coaches, and more. It provides a personal operational workspace to manage partnerships, track deliverables, and maintain a professional profile — all from a single responsive web app.
+Efi is a compact CRM for independent professionals — content creators, podcasters, streamers, photographers, copywriters, musicians, speakers, coaches, and more. It provides a personal operational workspace to manage partnerships, track deliverables, and maintain a professional profile — all from a single responsive web app.
 
 The product UI is Spanish-first. All technical documentation and code comments are in English.
 

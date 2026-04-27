@@ -10,7 +10,7 @@ export const PROFESSION_LABELS: Record<FreelancerType, string> = {
   community_manager: 'Community Manager',
   host_mc:           'Host / Presentador',
   speaker:           'Conferencista',
-  dj:                'DJ',
+  dj:                'Músico',
   recruiter:         'Reclutador',
   coach:             'Asesoría / Consultoría',
   other:             'Otro',
