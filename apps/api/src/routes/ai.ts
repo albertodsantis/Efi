@@ -53,11 +53,12 @@ La app Efi tiene 6 vistas principales que conoces por nombre:
 - **Ajustes**: configuración, plantillas, integraciones.
 
 Conceptos del dominio:
-- **Tareas**: trabajos con estado, fecha, valor monetario y partner asociado. Estados válidos: Pendiente, En Progreso, En Revisión, Completada, Cobrado.
+- **Tareas**: trabajos con estado, fecha, valor monetario y partner asociado. Estados válidos: Pendiente, En Progreso, En Revisión, Completada, Cobrado. Cada tarea puede tener una **lista de subtareas** internas (en la app aparecen como "checklist" dentro del detalle de la tarea) — pequeños pasos para desglosar el trabajo. Se gestionan abriendo la tarea en Pipeline.
 - **Clientes** (en la BD se llaman "partners"; también algunos usuarios dicen "marcas"): empresas/personas con quien colabora el usuario. Estados: Prospecto, En Negociación, Activo, Inactivo, On Hold, Relación Culminada. AL HABLAR CON EL USUARIO: usa siempre "cliente" / "clientes".
 - **Contactos**: personas dentro de un cliente.
 - **Plantillas**: snippets de mensajes reutilizables (propuestas, follow-ups, etc.).
 - **EfiLink**: el perfil público del usuario.
+- **Efisystem (gamificación)**: la app premia el uso con puntos, niveles y badges. El usuario gana puntos al crear tareas, moverlas en el pipeline, cobrarlas, mantener racha diaria, completar el perfil, añadir clientes, etc. Los puntos suman para subir de nivel y desbloquear badges. La progresión se ve en Inicio (resumen) y los detalles en la vista del perfil/Efisystem. Tú no puedes consultar el nivel actual del usuario con tools — si te preguntan, oriéntalos a esa vista en lugar de inventar números.
 
 Vocabulario: refiérete a las vistas con sus nombres reales ("revisa tu Pipeline", "en Directorio") cuando sea útil orientar.
 
@@ -78,10 +79,14 @@ Mapeo pregunta → tool:
 - "¿Cuánto facturé / cobré este mes?" → \`revenue_summary\` con period adecuado
 - "¿Cómo voy con [cliente X]?" → \`get_partner_detail\`
 - "Búscame el cliente del [descripción]" → \`search_partners\` con query
+- "¿Qué subtareas tengo pendientes?" / "¿qué me falta dentro de [tarea X]?" / "muéstrame mi checklist" → \`list_open_subtasks\` (con onlyTaskTitle si pregunta por una tarea concreta)
 - Lista corta de clientes → \`get_app_data\` con entity=partners
 - Lista de tareas → \`get_app_data\` con entity=tasks (filtra por taskStatus si aplica)
 - "¿Con quién no he hablado?" → \`get_app_data\` con entity=partners, razona sobre lastContactedAt
 - Antes de crear una tarea, si no conoces el cliente exacto → \`search_partners\` (más eficiente que get_app_data)
+
+NOTA SOBRE CHECKLIST EN RESPUESTAS DE TOOLS:
+Las tareas devueltas por summarize_pipeline y get_partner_detail incluyen un campo \`checklist\` opcional con \`{done, total}\`. Si la tarea tiene este campo, menciónalo cuando aporte: "Brief Pepsi (3/5 subtareas hechas)". Si no aparece, esa tarea no tiene subtareas — no inventes.
 
 Tras CUALQUIER tool call, SIEMPRE cierras con un mensaje en lenguaje natural al usuario. Nunca termines un turno en silencio. Si encadenas varias tools (ej. crear cliente + crear tarea), al final un mensaje único que las confirme ambas.
 
@@ -155,6 +160,13 @@ Cuando crees una plantilla y el usuario no especifique tipo, ofrece uno de estos
 - Agradecimiento de cierre (gracias por la colaboración + apertura a futuro).
 - Brief para nueva colaboración (objetivo + alcance + entregables + timing).
 Adapta el tono al tipo de cliente si tienes contexto (corporativo vs casual vs creativo). Cuando rediactes el body, usa placeholders entre llaves para los datos variables: {nombre}, {fecha}, {valor}, etc.
+
+# NUNCA INVENTES SOBRE LA APP
+Si te preguntan por una feature de Efi y NO está descrita arriba en CONOCIMIENTO DEL PRODUCTO, NO digas que "no existe" ni que "no se maneja eso aquí". Eso es desinformación. En su lugar:
+1. Considera si puede estar en otra vista que no recuerdes con precisión.
+2. Reconoce humildemente que no estás segura: "No estoy 100% segura de cómo se gestiona eso, pero revisa Ajustes / Pipeline / Estrategia — suele estar ahí."
+3. Si el usuario insiste, sugiérele que lo busque en la vista correspondiente o que pregunte por ayuda específica.
+Decir "Efi no tiene X" cuando en realidad sí lo tiene es peor que decir "no estoy segura". Sé humilde antes que confiada.
 
 # LO QUE NO PUEDES HACER (por ahora)
 Si te lo piden, redirige sin disculparte:
@@ -295,6 +307,16 @@ const TOOLS: { functionDeclarations: FunctionDeclaration[] }[] = [
             partnerName: { type: Type.STRING, description: 'Nombre del cliente. Acepta coincidencia parcial case-insensitive.' },
           },
           required: ['partnerName'],
+        },
+      },
+      {
+        name: 'list_open_subtasks',
+        description: 'Lista las subtareas (checklist items) pendientes en todo el workspace, agrupadas por tarea. Usa esta tool cuando el usuario pregunte "¿qué subtareas tengo pendientes?", "¿qué me falta dentro de la tarea X?", "muéstrame el checklist". Devuelve solo subtareas no completadas, hasta 10 tareas con subtareas abiertas, ordenadas por tareas que vencen antes. Si onlyTaskTitle se pasa, filtra a esa tarea.',
+        parameters: {
+          type: Type.OBJECT,
+          properties: {
+            onlyTaskTitle: { type: Type.STRING, description: 'Opcional. Si quieres las subtareas de UNA tarea específica, pasa parte del título y filtramos por coincidencia parcial case-insensitive.' },
+          },
         },
       },
       {
@@ -497,11 +519,16 @@ async function runToolInner(ctx: ToolCtx, name: string, args: Record<string, any
       const stale = tasks.filter((t) => t.createdAt < days14ago && (t.status === 'Pendiente' || t.status === 'En Progreso'));
       const byStatus: Record<string, number> = {};
       tasks.forEach((t) => { byStatus[t.status] = (byStatus[t.status] ?? 0) + 1; });
+      const checklistSummary = (t: typeof tasks[number]) => {
+        const items = Array.isArray(t.checklistItems) ? t.checklistItems : [];
+        if (items.length === 0) return undefined;
+        return { done: items.filter((c) => c.done).length, total: items.length };
+      };
       const summary = {
-        today: today_tasks.map((t) => ({ id: t.id, title: t.title, dueDate: t.dueDate, value: t.value, status: t.status })),
-        overdue: overdue.map((t) => ({ id: t.id, title: t.title, dueDate: t.dueDate, value: t.value })),
-        upcoming: upcoming.map((t) => ({ id: t.id, title: t.title, dueDate: t.dueDate, value: t.value })),
-        stale: stale.map((t) => ({ id: t.id, title: t.title, status: t.status, createdAt: t.createdAt })),
+        today: today_tasks.map((t) => ({ id: t.id, title: t.title, dueDate: t.dueDate, value: t.value, status: t.status, checklist: checklistSummary(t) })),
+        overdue: overdue.map((t) => ({ id: t.id, title: t.title, dueDate: t.dueDate, value: t.value, checklist: checklistSummary(t) })),
+        upcoming: upcoming.map((t) => ({ id: t.id, title: t.title, dueDate: t.dueDate, value: t.value, checklist: checklistSummary(t) })),
+        stale: stale.map((t) => ({ id: t.id, title: t.title, status: t.status, createdAt: t.createdAt, checklist: checklistSummary(t) })),
         countsByStatus: byStatus,
       };
       summaryCache.set(userId, { data: summary, expiresAt: Date.now() + SUMMARY_TTL_MS });
@@ -615,9 +642,42 @@ async function runToolInner(ctx: ToolCtx, name: string, args: Record<string, any
           totalValue,
           cobradoCount: cobrados.length,
           cobradoTotal,
-          open: open.map((t) => ({ id: t.id, title: t.title, status: t.status, dueDate: t.dueDate, value: t.value })),
+          open: open.map((t) => {
+            const items = Array.isArray(t.checklistItems) ? t.checklistItems : [];
+            const checklist = items.length > 0
+              ? { done: items.filter((c) => c.done).length, total: items.length }
+              : undefined;
+            return { id: t.id, title: t.title, status: t.status, dueDate: t.dueDate, value: t.value, checklist };
+          }),
         },
       };
+      trackRead(result);
+      return result;
+    }
+
+    case 'list_open_subtasks': {
+      const tasks = await appStore.listTasks(userId);
+      const filterTitle = String(args.onlyTaskTitle ?? '').trim().toLowerCase();
+      const partners = await appStore.listPartners(userId);
+      const partnerMap = new Map(partners.map((p) => [p.id, p.name]));
+
+      // Only consider tasks that are not closed and have at least one open subtask.
+      const open = tasks
+        .filter((t) => t.status !== 'Completada' && t.status !== 'Cobrado')
+        .filter((t) => Array.isArray(t.checklistItems) && t.checklistItems.some((c) => !c.done))
+        .filter((t) => filterTitle === '' || t.title.toLowerCase().includes(filterTitle))
+        .sort((a, b) => (a.dueDate < b.dueDate ? -1 : 1))
+        .slice(0, 10)
+        .map((t) => ({
+          taskId: t.id,
+          taskTitle: t.title,
+          partnerName: partnerMap.get(t.partnerId) ?? 'Sin cliente',
+          dueDate: t.dueDate,
+          status: t.status,
+          subtasks: t.checklistItems.filter((c) => !c.done).map((c) => ({ id: c.id, text: c.text })),
+        }));
+      const totalOpen = open.reduce((sum, t) => sum + t.subtasks.length, 0);
+      const result = { totalOpen, taskCount: open.length, tasks: open };
       trackRead(result);
       return result;
     }
