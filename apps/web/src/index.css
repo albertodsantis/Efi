@@ -34,25 +34,25 @@
 
   @keyframes mushroom-idle {
     /* reposo (plantado en el suelo) */
-    0%   { transform: translateY(3px) scale(1, 1); }
+    0%   { transform: translateY(10px) scale(1, 1); }
     /* primer salto: anticipación, vuelo, aterrizaje */
-    3%   { transform: translateY(4px) scale(1.05, 0.92); }
-    8%   { transform: translateY(-4px) scale(0.98, 1.04) rotate(-2deg); }
-    13%  { transform: translateY(3px) scale(1.05, 0.94); }
+    3%   { transform: translateY(11px) scale(1.05, 0.92); }
+    8%   { transform: translateY(3px)  scale(0.98, 1.04) rotate(-2deg); }
+    13%  { transform: translateY(10px) scale(1.05, 0.94); }
     /* segundo salto */
-    16%  { transform: translateY(4px) scale(1.05, 0.92); }
-    21%  { transform: translateY(-4px) scale(0.98, 1.04) rotate(2deg); }
-    26%  { transform: translateY(3px) scale(1.05, 0.94); }
+    16%  { transform: translateY(11px) scale(1.05, 0.92); }
+    21%  { transform: translateY(3px)  scale(0.98, 1.04) rotate(2deg); }
+    26%  { transform: translateY(10px) scale(1.05, 0.94); }
     /* vuelta a reposo y quietud */
-    30%, 100% { transform: translateY(3px) scale(1, 1); }
+    30%, 100% { transform: translateY(10px) scale(1, 1); }
   }
 
   @keyframes mushroom-attention {
-    0%, 100% { transform: translateY(3px) rotate(0deg); }
-    20%      { transform: translateY(-2px) rotate(-10deg); }
-    40%      { transform: translateY(1px)  rotate(8deg); }
-    60%      { transform: translateY(-1px) rotate(-6deg); }
-    80%      { transform: translateY(2px)  rotate(4deg); }
+    0%, 100% { transform: translateY(10px) rotate(0deg); }
+    20%      { transform: translateY(5px)  rotate(-10deg); }
+    40%      { transform: translateY(8px)  rotate(8deg); }
+    60%      { transform: translateY(6px)  rotate(-6deg); }
+    80%      { transform: translateY(9px)  rotate(4deg); }
   }
 
   @keyframes mushroom-ground-idle {
