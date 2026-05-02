@@ -188,7 +188,20 @@ export default function Landing({
         {/* Nav */}
         <nav className="flex items-center justify-between py-0">
           <div className="flex items-center gap-0">
-            <img src="/brand/isotipo.png?v=2" alt="" width={90} height={90} className="select-none" draggable={false} />
+            <span className="relative inline-flex h-22.5 w-22.5 items-center justify-center">
+              <span
+                aria-hidden="true"
+                className="pointer-events-none absolute left-1/2 bottom-2 h-2.5 w-14 -translate-x-1/2 rounded-[50%] bg-[radial-gradient(ellipse_at_center,rgba(63,43,33,0.55),rgba(63,43,33,0)_70%)] animate-mushroom-ground-idle"
+              />
+              <img
+                src="/brand/isotipo.png?v=2"
+                alt=""
+                width={90}
+                height={90}
+                draggable={false}
+                className="relative origin-bottom select-none animate-mushroom-idle"
+              />
+            </span>
             <picture>
               <source srcSet="/brand/wordmark-light.png" media="(prefers-color-scheme: dark)" />
               <img src="/brand/wordmark.png" alt="Efi" width={26} height={32} className="select-none" draggable={false} />
@@ -222,14 +235,14 @@ export default function Landing({
           {/* Left: Hero */}
           <div className="max-w-2xl">
             <h1 className="mt-2 text-[clamp(2.2rem,5.5vw,3.8rem)] font-black leading-[1.08] tracking-tight text-[var(--text-primary)]">
-              El lado fácil de{' '}
+              La forma fácil de{' '}
               <span
                 className="bg-clip-text text-transparent"
                 style={{
                   backgroundImage: `linear-gradient(135deg, ${BRAND_ORANGE}, ${BRAND_PINK}, ${BRAND_PURPLE})`,
                 }}
               >
-                gestionar tu trabajo.
+                organizar tu trabajo.
               </span>
             </h1>
 
