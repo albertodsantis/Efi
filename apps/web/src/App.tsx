@@ -423,6 +423,15 @@ const MainLayout = () => {
     }
   }, [pendingNewTaskPartner]);
 
+  useEffect(() => {
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent<{ tab?: TabId }>).detail;
+      if (detail?.tab) setActiveTab(detail.tab);
+    };
+    window.addEventListener('efi:navigate', handler);
+    return () => window.removeEventListener('efi:navigate', handler);
+  }, []);
+
   const accentSecondary = getAccentSecondary(accentColor);
 
   const activeTabConfig = tabs.find((tab) => tab.id === activeTab) || tabs[0];

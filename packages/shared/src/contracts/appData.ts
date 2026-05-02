@@ -104,6 +104,7 @@ export interface UpdateSettingsRequest {
   theme?: AppTheme;
   profileAccentColor?: string;
   profileForceDark?: boolean;
+  pipelineHasCobrado?: boolean;
 }
 
 export interface AppSettingsResponse {
@@ -111,6 +112,7 @@ export interface AppSettingsResponse {
   theme: AppTheme;
   profileAccentColor: string;
   profileForceDark: boolean;
+  pipelineHasCobrado: boolean;
 }
 
 export interface CreateTemplateRequest {

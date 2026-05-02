@@ -21,6 +21,7 @@ import {
   TextT,
   X,
   Funnel,
+  Gear,
 } from '@phosphor-icons/react';
 import {
   DndContext,
@@ -55,7 +56,7 @@ import { calendarApi } from '../lib/api';
 import { hapticLight, hapticMedium, hapticWarning } from '../lib/haptics';
 
 const REVIEW_STATUS = 'En Revisión' as TaskStatus;
-const STATUSES: TaskStatus[] = ['Pendiente', 'En Progreso', REVIEW_STATUS, 'Completada', 'Cobrado'];
+const ALL_STATUSES: TaskStatus[] = ['Pendiente', 'En Progreso', REVIEW_STATUS, 'Completada', 'Cobrado'];
 const WEEKDAY_LABELS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
 const EMPTY_FORM = {
   title: '',
@@ -258,11 +259,13 @@ function SwipeableTaskCard({
   task,
   onSwipe,
   accentColor,
+  statuses,
   children,
 }: {
   task: Task;
   onSwipe: (taskId: string, direction: 'left' | 'right') => void;
   accentColor: string;
+  statuses: TaskStatus[];
   children: React.ReactNode;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -270,11 +273,11 @@ function SwipeableTaskCard({
   const [offset, setOffset] = useState(0);
   const [released, setReleased] = useState(false);
 
-  const statusIdx = STATUSES.indexOf(task.status);
-  const canSwipeRight = statusIdx < STATUSES.length - 1;
+  const statusIdx = statuses.indexOf(task.status);
+  const canSwipeRight = statusIdx >= 0 && statusIdx < statuses.length - 1;
   const canSwipeLeft = statusIdx > 0;
-  const nextStatus = canSwipeRight ? STATUSES[statusIdx + 1] : null;
-  const prevStatus = canSwipeLeft ? STATUSES[statusIdx - 1] : null;
+  const nextStatus = canSwipeRight ? statuses[statusIdx + 1] : null;
+  const prevStatus = canSwipeLeft ? statuses[statusIdx - 1] : null;
 
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
     const touch = e.touches[0];
@@ -940,7 +943,12 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
     deleteTask,
     reportActionError,
     profile,
+    pipelineHasCobrado,
   } = useAppContext();
+  const STATUSES = useMemo<TaskStatus[]>(
+    () => (pipelineHasCobrado ? ALL_STATUSES : ALL_STATUSES.filter((s) => s !== 'Cobrado')),
+    [pipelineHasCobrado],
+  );
   const [view, setView] = useState<'kanban' | 'list' | 'calendar'>('kanban');
   const [calendarMode, setCalendarMode] = useState<'week' | 'month'>('week');
   const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => startOfWeek(new Date()));
@@ -1794,6 +1802,18 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                 <span className="hidden sm:inline">{tab.label}</span>
               </button>
             ))}
+            <button
+              type="button"
+              onClick={() => {
+                sessionStorage.setItem('efi:settings_initial_section', 'pipeline');
+                window.dispatchEvent(new CustomEvent('efi:navigate', { detail: { tab: 'settings' } }));
+              }}
+              aria-label="Ajustes del pipeline"
+              title="Ajustes del pipeline"
+              className="flex h-full w-12 items-center justify-center rounded-[1rem] border border-transparent text-[var(--text-secondary)] transition-all hover:bg-[var(--surface-muted)]/50 hover:text-[var(--text-primary)]"
+            >
+              <Gear size={18} />
+            </button>
           </div>
 
           <div className="relative flex-1 lg:max-w-sm">
@@ -1963,7 +1983,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
               {visibleTasks.length > 0 ? (
                 visibleTasks.map((task) => (
                   <React.Fragment key={task.id}>
-                    <SwipeableTaskCard task={task} onSwipe={handleSwipe} accentColor={accentHex}>
+                    <SwipeableTaskCard task={task} onSwipe={handleSwipe} accentColor={accentHex} statuses={STATUSES}>
                       {renderTaskCard(task)}
                     </SwipeableTaskCard>
                   </React.Fragment>

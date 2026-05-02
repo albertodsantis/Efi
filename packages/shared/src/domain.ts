@@ -184,6 +184,7 @@ export interface AppState {
   theme: AppTheme;
   profileAccentColor: string;
   profileForceDark: boolean;
+  pipelineHasCobrado: boolean;
 }
 
 // ────────────────────────────────────────────────────────────

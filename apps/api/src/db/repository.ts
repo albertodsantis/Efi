@@ -273,6 +273,7 @@ export class PostgresAppStore {
       theme: settings.theme,
       profileAccentColor: settings.profileAccentColor,
       profileForceDark: settings.profileForceDark,
+      pipelineHasCobrado: settings.pipelineHasCobrado,
     };
   }
 
@@ -1097,17 +1098,18 @@ export class PostgresAppStore {
 
   async getSettings(userId: string): Promise<SettingsResponse> {
     const { rows } = await this.pool.query(
-      'SELECT accent_color, theme, profile_accent_color, profile_force_dark FROM user_settings WHERE user_id = $1',
+      'SELECT accent_color, theme, profile_accent_color, profile_force_dark, pipeline_has_cobrado FROM user_settings WHERE user_id = $1',
       [userId],
     );
     if (rows.length === 0) {
-      return { accentColor: 'gradient:instagram', theme: 'light', profileAccentColor: 'gradient:instagram', profileForceDark: false };
+      return { accentColor: 'gradient:instagram', theme: 'light', profileAccentColor: 'gradient:instagram', profileForceDark: false, pipelineHasCobrado: true };
     }
     return {
       accentColor: rows[0].accent_color,
       theme: rows[0].theme as any,
       profileAccentColor: rows[0].profile_accent_color ?? rows[0].accent_color,
       profileForceDark: rows[0].profile_force_dark ?? false,
+      pipelineHasCobrado: rows[0].pipeline_has_cobrado ?? true,
     };
   }
 
@@ -1134,6 +1136,10 @@ export class PostgresAppStore {
     if (updates.profileForceDark !== undefined) {
       setClauses.push(`profile_force_dark = $${idx++}`);
       values.push(updates.profileForceDark);
+    }
+    if (updates.pipelineHasCobrado !== undefined) {
+      setClauses.push(`pipeline_has_cobrado = $${idx++}`);
+      values.push(updates.pipelineHasCobrado);
     }
 
     if (setClauses.length > 0) {

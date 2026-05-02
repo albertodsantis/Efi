@@ -108,6 +108,7 @@ interface AppContextType extends AppState {
   setTheme: (theme: AppTheme) => Promise<void>;
   setProfileAccentColor: (color: string) => Promise<void>;
   setProfileForceDark: (force: boolean) => Promise<void>;
+  setPipelineHasCobrado: (enabled: boolean) => Promise<void>;
   addTemplate: (template: Omit<Template, 'id'>) => Promise<void>;
   deleteTemplate: (templateId: string) => Promise<void>;
 }
@@ -130,6 +131,7 @@ const emptyState: AppState = {
   templates: [],
   profileAccentColor: 'gradient:instagram',
   profileForceDark: false,
+  pipelineHasCobrado: true,
 };
 
 function normalizeProfile(profile: UserProfile): UserProfile {
@@ -727,6 +729,36 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     }
   }, [trackError]);
 
+  const setPipelineHasCobrado = useCallback(async (enabled: boolean) => {
+    setActionError(null);
+    // Disabling: migrate any existing 'Cobrado' tasks into 'Completada'
+    // before flipping the toggle so they are never orphaned in a hidden stage.
+    if (!enabled) {
+      const cobradoTasks = state.tasks.filter((t) => t.status === 'Cobrado');
+      try {
+        const updated = await Promise.all(
+          cobradoTasks.map((t) => appApi.updateTask(t.id, { status: 'Completada' })),
+        );
+        if (updated.length > 0) {
+          const byId = new Map(updated.map((t) => [t.id, t]));
+          setState((current) => ({
+            ...current,
+            tasks: current.tasks.map((t) => byId.get(t.id) ?? t),
+          }));
+        }
+      } catch (error) {
+        trackError(error);
+        return;
+      }
+    }
+    try {
+      const settings = await appApi.updateSettings({ pipelineHasCobrado: enabled });
+      setState((current) => ({ ...current, pipelineHasCobrado: settings.pipelineHasCobrado }));
+    } catch (error) {
+      trackError(error);
+    }
+  }, [state.tasks, trackError]);
+
   const addTemplate = useCallback(async (template: Omit<Template, 'id'>) => {
     setActionError(null);
 
@@ -793,6 +825,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     setTheme,
     setProfileAccentColor,
     setProfileForceDark,
+    setPipelineHasCobrado,
     addTemplate,
     deleteTemplate,
     pendingNewTaskPartner,
@@ -830,6 +863,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     setTheme,
     setProfileAccentColor,
     setProfileForceDark,
+    setPipelineHasCobrado,
     addTemplate,
     deleteTemplate,
     pendingNewTaskPartner,

@@ -47,7 +47,7 @@ import { hapticSuccess } from '../lib/haptics';
 
 /* ── constants ──────────────────────────────────────────────── */
 
-const PIPELINE_STATUSES: TaskStatus[] = [
+const ALL_PIPELINE_STATUSES: TaskStatus[] = [
   'Pendiente',
   'En Progreso',
   'En Revisión',
@@ -320,10 +320,21 @@ function GoalEffortWidget({
 
 /* ── RevenueChart ───────────────────────────────────────────── */
 
-function RevenueChart({ tasks, accentHex, accentGradient }: { tasks: Task[]; accentHex: string; accentGradient: string }) {
+function RevenueChart({
+  tasks,
+  accentHex,
+  accentGradient,
+  pipelineHasCobrado,
+}: {
+  tasks: Task[];
+  accentHex: string;
+  accentGradient: string;
+  pipelineHasCobrado: boolean;
+}) {
   const [hoveredMonth, setHoveredMonth] = useState<number | null>(null);
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth();
+  const collectedLabel = pipelineHasCobrado ? 'Cobrado' : 'Ingresos';
 
   const monthlyData = useMemo(() => {
     const months = Array.from({ length: 12 }, (_, i) => ({
@@ -339,16 +350,25 @@ function RevenueChart({ tasks, accentHex, accentGradient }: { tasks: Task[]; acc
         months[dueDate.getMonth()].projected += task.value;
       }
 
-      if (task.status === 'Cobrado' && task.cobradoAt) {
-        const cobradoDate = new Date(task.cobradoAt);
-        if (cobradoDate.getFullYear() === currentYear) {
-          months[cobradoDate.getMonth()].collected += task.actualPayment ?? task.value;
+      if (pipelineHasCobrado) {
+        if (task.status === 'Cobrado' && task.cobradoAt) {
+          const cobradoDate = new Date(task.cobradoAt);
+          if (cobradoDate.getFullYear() === currentYear) {
+            months[cobradoDate.getMonth()].collected += task.actualPayment ?? task.value;
+          }
+        }
+      } else {
+        if (task.status === 'Completada' && task.completedAt) {
+          const completedDate = new Date(task.completedAt);
+          if (completedDate.getFullYear() === currentYear) {
+            months[completedDate.getMonth()].collected += task.actualPayment ?? task.value;
+          }
         }
       }
     });
 
     return months;
-  }, [tasks, currentYear]);
+  }, [tasks, currentYear, pipelineHasCobrado]);
 
   const maxValue = Math.max(...monthlyData.flatMap((m) => [m.projected, m.collected]), 1);
   const BAR_HEIGHT = 140;
@@ -375,7 +395,7 @@ function RevenueChart({ tasks, accentHex, accentGradient }: { tasks: Task[]; acc
                 className="inline-block h-2.5 w-2.5 rounded-[3px]"
                 style={{ background: accentGradient }}
               />
-              Cobrado
+              {collectedLabel}
             </span>
           </div>
         </div>
@@ -390,7 +410,7 @@ function RevenueChart({ tasks, accentHex, accentGradient }: { tasks: Task[]; acc
           </div>
           <div>
             <p className="text-[10px] font-bold tracking-[0.12em] text-[var(--text-secondary)] uppercase">
-              Cobrado
+              {collectedLabel}
             </p>
             <p className="text-lg font-black" style={{ color: accentHex }}>
               {formatCurrency(yearCollected)}
@@ -436,7 +456,7 @@ function RevenueChart({ tasks, accentHex, accentGradient }: { tasks: Task[]; acc
                     className="whitespace-nowrap text-[11px] font-bold"
                     style={{ color: accentHex }}
                   >
-                    {formatCurrency(month.collected)} cobr.
+                    {formatCurrency(month.collected)} {pipelineHasCobrado ? 'cobr.' : 'ingr.'}
                   </p>
                 </div>
               )}
@@ -907,7 +927,7 @@ function BadgesDrawer({ unlockedBadges, onClose, accentHex }: { unlockedBadges: 
 /* ── Dashboard ──────────────────────────────────────────────── */
 
 export default function Dashboard() {
-  const { tasks, partners, accentColor, accentHex, accentGradient, updateTaskStatus, profile, efisystem } = useAppContext();
+  const { tasks, partners, accentColor, accentHex, accentGradient, updateTaskStatus, profile, efisystem, pipelineHasCobrado } = useAppContext();
   const today = new Date();
   const todayIso = formatLocalDateISO(today);
   const startOfToday = startOfLocalDay(today);
@@ -1036,6 +1056,15 @@ export default function Dashboard() {
     };
   }, [partners, periodFilteredTasks]);
 
+  // When the Cobrado stage is disabled, the chart sources its "collected" series
+  // from completion timestamps instead of payment timestamps.
+  const annualRevenue = useMemo(() => {
+    if (pipelineHasCobrado) return periodSummary.closedPipelineValue;
+    return periodFilteredTasks
+      .filter((t) => t.status === 'Completada')
+      .reduce((s, t) => s + (t.actualPayment ?? t.value), 0);
+  }, [pipelineHasCobrado, periodSummary.closedPipelineValue, periodFilteredTasks]);
+
   const groupedAgenda = useMemo(() => {
     const overdue: Task[] = [];
     const todayTasks: Task[] = [];
@@ -1063,13 +1092,18 @@ export default function Dashboard() {
     groupedAgenda.tomorrowTasks.length > 0 ||
     groupedAgenda.thisWeekTasks.length > 0;
 
+  const pipelineStatuses = useMemo<TaskStatus[]>(
+    () => (pipelineHasCobrado ? ALL_PIPELINE_STATUSES : ALL_PIPELINE_STATUSES.filter((s) => s !== 'Cobrado')),
+    [pipelineHasCobrado],
+  );
+
   const breakdown = useMemo(
     () =>
-      PIPELINE_STATUSES.map((status) => {
+      pipelineStatuses.map((status) => {
         const sts = periodFilteredTasks.filter((t) => t.status === status);
         return { status, count: sts.length, value: sts.reduce((s, t) => s + t.value, 0) };
       }),
-    [periodFilteredTasks],
+    [periodFilteredTasks, pipelineStatuses],
   );
 
   const totalBreakdownCount = breakdown.reduce((s, b) => s + b.count, 0);
@@ -1182,17 +1216,19 @@ export default function Dashboard() {
                     {formatCurrency(periodSummary.activePipelineValue)}
                   </p>
                 </div>
-                <div className="min-w-0">
-                  <p className="text-[10px] font-bold tracking-[0.14em] text-[var(--text-secondary)] uppercase truncate">
-                    Cobrado
-                  </p>
-                  <p
-                    className="mt-1 truncate text-lg font-black tracking-tight sm:text-xl"
-                    style={{ color: accentHex }}
-                  >
-                    {formatCurrency(periodSummary.closedPipelineValue)}
-                  </p>
-                </div>
+                {pipelineHasCobrado ? (
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-bold tracking-[0.14em] text-[var(--text-secondary)] uppercase truncate">
+                      Cobrado
+                    </p>
+                    <p
+                      className="mt-1 truncate text-lg font-black tracking-tight sm:text-xl"
+                      style={{ color: accentHex }}
+                    >
+                      {formatCurrency(periodSummary.closedPipelineValue)}
+                    </p>
+                  </div>
+                ) : null}
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold tracking-[0.14em] text-[var(--text-secondary)] uppercase truncate">
                     Por cobrar
@@ -1238,7 +1274,7 @@ export default function Dashboard() {
                       Meta anual
                     </p>
                     <p className="text-[11px] font-bold text-[var(--text-secondary)]">
-                      {formatCurrency(periodSummary.closedPipelineValue)} /{' '}
+                      {formatCurrency(annualRevenue)} /{' '}
                       {formatCurrency(estimatedRevenue)}
                     </p>
                   </div>
@@ -1246,13 +1282,13 @@ export default function Dashboard() {
                     <div
                       className="h-full rounded-full transition-all duration-500"
                       style={{
-                        width: `${Math.min((periodSummary.closedPipelineValue / estimatedRevenue) * 100, 100)}%`,
+                        width: `${Math.min((annualRevenue / estimatedRevenue) * 100, 100)}%`,
                         background: accentGradient,
                       }}
                     />
                   </div>
                   <p className="mt-1.5 text-[10px] font-medium text-[var(--text-secondary)]">
-                    {Math.round((periodSummary.closedPipelineValue / estimatedRevenue) * 100)}% alcanzado
+                    {Math.round((annualRevenue / estimatedRevenue) * 100)}% alcanzado
                   </p>
                 </div>
               )}
@@ -1385,7 +1421,7 @@ export default function Dashboard() {
       </section>
 
       {/* Revenue Chart – full width */}
-      <RevenueChart tasks={tasks} accentHex={accentHex} accentGradient={accentGradient} />
+      <RevenueChart tasks={tasks} accentHex={accentHex} accentGradient={accentGradient} pipelineHasCobrado={pipelineHasCobrado} />
     </div>
   );
 }

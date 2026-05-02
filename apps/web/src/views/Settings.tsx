@@ -19,6 +19,7 @@ import {
   TextT,
   UserMinus,
   Alarm,
+  CurrencyCircleDollar,
 } from '@phosphor-icons/react';
 import { isPro, trialDaysRemaining } from '@shared';
 import {
@@ -28,6 +29,7 @@ import {
 } from '../lib/localNotifications';
 import { useAppContext } from '../context/AppContext';
 import OverlayModal from '../components/OverlayModal';
+import ConfirmDialog from '../components/ConfirmDialog';
 import ReferralsSection from '../components/ReferralsSection';
 import UpgradeModal from '../components/UpgradeModal';
 import {
@@ -79,6 +81,8 @@ export default function Settings() {
     profileAccentColor,
     profileForceDark,
     planState,
+    pipelineHasCobrado,
+    setPipelineHasCobrado,
   } = useAppContext();
   const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
   const planIsPro = useMemo(() => isPro(planState), [planState]);
@@ -105,6 +109,12 @@ export default function Settings() {
   const [savingTemplate, setSavingTemplate] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [accountName, setAccountName] = useState(profile.name);
+  const [showCobradoConfirm, setShowCobradoConfirm] = useState(false);
+  const [togglingCobrado, setTogglingCobrado] = useState(false);
+  const cobradoTaskCount = useMemo(
+    () => tasks.filter((t) => t.status === 'Cobrado').length,
+    [tasks],
+  );
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
@@ -123,6 +133,7 @@ export default function Settings() {
       { id: 'plan', label: 'Plan' },
       { id: 'referrals', label: 'Referidos' },
       { id: 'templates', label: 'Plantillas' },
+      { id: 'pipeline', label: 'Pipeline' },
       { id: 'appearance', label: 'Apariencia' },
       { id: 'onboarding', label: 'Onboarding' },
       { id: 'preferences', label: 'Preferencias' },
@@ -225,6 +236,16 @@ export default function Settings() {
   useEffect(() => {
     setAccountName(profile.name);
   }, [profile.name]);
+
+  useEffect(() => {
+    const target = sessionStorage.getItem('efi:settings_initial_section');
+    if (!target) return;
+    sessionStorage.removeItem('efi:settings_initial_section');
+    // Defer until section refs are mounted.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => scrollToSection(target));
+    });
+  }, []);
 
   useEffect(() => {
     calendarApi.getStatus().then((res) => setGcalConnected(res.connected)).catch(() => {}).finally(() => setGcalLoading(false));
@@ -432,6 +453,39 @@ export default function Settings() {
     window.location.reload();
   };
 
+  const handleTogglePipelineCobrado = () => {
+    if (pipelineHasCobrado) {
+      // Turning off: confirm so the user knows tasks will move to Completada.
+      setShowCobradoConfirm(true);
+      return;
+    }
+    void (async () => {
+      try {
+        await setPipelineHasCobrado(true);
+        toast.success('Stage Cobrado activado');
+      } catch (err) {
+        toast.error(err instanceof Error ? err.message : 'No se pudo actualizar el pipeline.');
+      }
+    })();
+  };
+
+  const confirmDisableCobrado = async () => {
+    setTogglingCobrado(true);
+    try {
+      await setPipelineHasCobrado(false);
+      setShowCobradoConfirm(false);
+      toast.success(
+        cobradoTaskCount > 0
+          ? `Stage Cobrado desactivado. ${cobradoTaskCount} entrega${cobradoTaskCount === 1 ? '' : 's'} pasaron a Completada.`
+          : 'Stage Cobrado desactivado.',
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'No se pudo desactivar el stage.');
+    } finally {
+      setTogglingCobrado(false);
+    }
+  };
+
   const handleExport = async () => {
     try {
       await exportUserData({
@@ -443,6 +497,7 @@ export default function Settings() {
         theme,
         profileAccentColor,
         profileForceDark,
+        pipelineHasCobrado,
       });
       toast.success('Datos exportados correctamente');
     } catch (err) {
@@ -647,6 +702,33 @@ export default function Settings() {
               />
             </div>
           )}
+          </div>
+        </div>
+      </SurfaceCard>
+      </section>
+
+      <section id="pipeline" ref={setSectionRef('pipeline')} className="scroll-mt-24">
+      <SurfaceCard className="overflow-hidden p-0">
+        <div className="p-6 lg:p-7">
+          <h2 className="mb-1 text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
+            Pipeline
+          </h2>
+          <p className="mb-5 text-sm text-[var(--text-secondary)]">
+            Ajusta cómo funciona el pipeline para que se adapte a tu forma de trabajar.
+          </p>
+          <div className="space-y-1">
+            <SettingRow
+              icon={CurrencyCircleDollar}
+              title="Usar stage de Cobrado"
+              description={
+                pipelineHasCobrado
+                  ? 'Las entregas pasan por Cobrado como último estado, ideal si haces seguimiento de pagos.'
+                  : 'Completada es el último estado del pipeline. Actívalo si quieres separar los pagos cobrados.'
+              }
+              onClick={handleTogglePipelineCobrado}
+              trailing={<ToggleSwitch checked={pipelineHasCobrado} accentColor={accentGradient} />}
+              className="px-0 py-3"
+            />
           </div>
         </div>
       </SurfaceCard>
@@ -1183,6 +1265,21 @@ export default function Settings() {
             </form>
           </ModalPanel>
         </OverlayModal>
+      ) : null}
+
+      {showCobradoConfirm ? (
+        <ConfirmDialog
+          title="¿Desactivar el stage de Cobrado?"
+          description={
+            cobradoTaskCount > 0
+              ? `Hay ${cobradoTaskCount} entrega${cobradoTaskCount === 1 ? '' : 's'} en Cobrado. Pasarán automáticamente a Completada y el stage dejará de mostrarse en el pipeline.`
+              : 'Completada pasará a ser el último estado del pipeline. Puedes volver a activar Cobrado cuando quieras.'
+          }
+          confirmLabel="Desactivar"
+          onConfirm={() => void confirmDisableCobrado()}
+          onClose={() => setShowCobradoConfirm(false)}
+          isConfirming={togglingCobrado}
+        />
       ) : null}
     </div>
   );
