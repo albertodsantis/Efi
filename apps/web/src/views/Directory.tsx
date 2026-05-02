@@ -188,7 +188,7 @@ export default function Directory() {
       .sort((a, b) => parseLocalDate(a.dueDate).getTime() - parseLocalDate(b.dueDate).getTime());
   }, [activePartner, tasks]);
 
-  const openTasks = activePartnerTasks.filter((task) => task.status !== 'Cobrado');
+  const openTasks = activePartnerTasks.filter((task) => task.status !== 'Cobrado' && task.status !== 'Completada');
   const activePartnerOpenValue = openTasks.reduce((sum, task) => sum + task.value, 0);
   const nextDueTask = openTasks[0] ?? activePartnerTasks[0] ?? null;
   const totalContacts = partners.reduce((sum, partner) => sum + partner.contacts.length, 0);

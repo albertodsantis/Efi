@@ -1072,12 +1072,12 @@ export default function Dashboard() {
     const thisWeekTasks: Task[] = [];
 
     const sorted = [...tasks]
-      .filter((t) => t.status !== 'Cobrado')
+      .filter((t) => t.status !== 'Cobrado' && t.status !== 'Completada')
       .sort((a, b) => parseLocalDate(a.dueDate).getTime() - parseLocalDate(b.dueDate).getTime());
 
     sorted.forEach((task) => {
       const d = startOfLocalDay(parseLocalDate(task.dueDate));
-      if (d < startOfToday && task.status !== 'Completada') overdue.push(task);
+      if (d < startOfToday) overdue.push(task);
       else if (task.dueDate === todayIso) todayTasks.push(task);
       else if (task.dueDate === tomorrowIso) tomorrowTasks.push(task);
       else if (d <= weekEnd) thisWeekTasks.push(task);
@@ -1091,6 +1091,18 @@ export default function Dashboard() {
     groupedAgenda.todayTasks.length > 0 ||
     groupedAgenda.tomorrowTasks.length > 0 ||
     groupedAgenda.thisWeekTasks.length > 0;
+
+  const toCollect = useMemo(() => {
+    if (!pipelineHasCobrado) return [];
+    return [...tasks]
+      .filter((t) => t.status === 'Completada')
+      .sort((a, b) => parseLocalDate(a.dueDate).getTime() - parseLocalDate(b.dueDate).getTime());
+  }, [tasks, pipelineHasCobrado]);
+
+  const toCollectTotal = useMemo(
+    () => toCollect.reduce((sum, t) => sum + (t.actualPayment ?? t.value), 0),
+    [toCollect],
+  );
 
   const pipelineStatuses = useMemo<TaskStatus[]>(
     () => (pipelineHasCobrado ? ALL_PIPELINE_STATUSES : ALL_PIPELINE_STATUSES.filter((s) => s !== 'Cobrado')),
@@ -1355,8 +1367,9 @@ export default function Dashboard() {
 
         </div>
 
-        {/* ── Right: Agenda ──────────────────────────────── */}
-        <SurfaceCard className="order-1 min-w-0 p-5 lg:p-6 xl:order-2">
+        {/* ── Right: Agenda + Por cobrar ──────────────────── */}
+        <div className="order-1 min-w-0 space-y-5 xl:order-2">
+        <SurfaceCard className="p-5 lg:p-6">
           <p className="text-[11px] font-bold tracking-[0.18em] text-[var(--text-secondary)] uppercase">
             Agenda
           </p>
@@ -1418,6 +1431,37 @@ export default function Dashboard() {
             />
           )}
         </SurfaceCard>
+
+        {pipelineHasCobrado && toCollect.length > 0 && (
+          <SurfaceCard className="p-5 lg:p-6">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <Money size={16} className="text-emerald-500" />
+                <p className="text-[11px] font-bold tracking-[0.18em] text-[var(--text-secondary)] uppercase">
+                  Por cobrar
+                </p>
+              </div>
+              <p className="text-[13px] font-black text-[var(--text-primary)]">
+                {formatCurrency(toCollectTotal)}
+              </p>
+            </div>
+            <div className="mt-4 space-y-2">
+              {toCollect.map((task) => {
+                const partner = partners.find((p) => p.id === task.partnerId);
+                return (
+                  <TaskCard
+                    key={task.id}
+                    task={task}
+                    partner={partner}
+                    accentHex={accentHex}
+                    onComplete={handleCompleteTask}
+                  />
+                );
+              })}
+            </div>
+          </SurfaceCard>
+        )}
+        </div>
       </section>
 
       {/* Revenue Chart – full width */}
