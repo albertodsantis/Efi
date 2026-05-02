@@ -188,10 +188,10 @@ export default function Landing({
         {/* Nav */}
         <nav className="flex items-center justify-between py-0">
           <div className="flex items-center gap-0">
-            <span className="relative inline-flex h-22.5 w-22.5 items-center justify-center">
+            <span className="group relative inline-flex h-22.5 w-22.5 items-center justify-center">
               <span
                 aria-hidden="true"
-                className="pointer-events-none absolute left-1/2 bottom-2 h-2.5 w-14 -translate-x-1/2 rounded-[50%] bg-[radial-gradient(ellipse_at_center,rgba(63,43,33,0.55),rgba(63,43,33,0)_70%)] animate-mushroom-ground-idle"
+                className="pointer-events-none absolute left-1/2 bottom-2 h-2.5 w-14 -translate-x-1/2 rounded-[50%] bg-[radial-gradient(ellipse_at_center,rgba(63,43,33,0.55),rgba(63,43,33,0)_70%)] animate-mushroom-ground-idle group-hover:[animation-play-state:paused]"
               />
               <img
                 src="/brand/isotipo.png?v=2"
@@ -199,7 +199,7 @@ export default function Landing({
                 width={90}
                 height={90}
                 draggable={false}
-                className="relative origin-bottom select-none animate-mushroom-idle"
+                className="relative origin-bottom select-none drop-shadow-[0_8px_18px_rgba(63,43,33,0.32)] animate-mushroom-idle group-hover:[animation-play-state:paused]"
               />
             </span>
             <picture>
