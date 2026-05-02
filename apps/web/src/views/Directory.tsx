@@ -390,7 +390,7 @@ export default function Directory() {
             <MagnifyingGlass className="pointer-events-none absolute left-5 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" size={20} />
             <input
               type="text"
-              placeholder="Buscar partners o contactos"
+              placeholder="Buscar clientes o contactos"
               value={search}
               onChange={(event) => setMagnifyingGlass(event.target.value)}
               className={cx(fieldClass, 'py-4 pl-14 pr-5 text-base sm:text-[15px]')}
@@ -450,7 +450,7 @@ export default function Directory() {
                 <EmptyState
                   icon={Buildings}
                   title="No hay resultados"
-                  description="Prueba con otro termino o crea un nuevo partner para empezar."
+                  description="Prueba con otro termino o crea un nuevo cliente para empezar."
                   className="border-dashed"
                   action={
                     <Button accentColor={accentGradient} onClick={() => setIsAddingPartner(true)}>
@@ -583,7 +583,7 @@ export default function Directory() {
                   <EmptyState
                     icon={CalendarDots}
                     title="Sin tareas abiertas"
-                    description="Este partner no tiene entregables activos ahora mismo."
+                    description="Este cliente no tiene entregables activos ahora mismo."
                     className="py-10"
                   />
                 )}
@@ -593,7 +593,7 @@ export default function Directory() {
               <div className="border-t border-[color:var(--line-soft)] p-5 sm:p-6">
               <div className="mb-5 flex items-center justify-between gap-3">
                 <div className="flex items-baseline gap-3">
-                  <h3 className="text-lg font-bold text-[var(--text-primary)]">Red del partner</h3>
+                  <h3 className="text-lg font-bold text-[var(--text-primary)]">Red del cliente</h3>
                   <span className="hidden text-[10px] font-bold uppercase tracking-[0.24em] text-[var(--text-secondary)]/70 sm:inline-block">Contactos</span>
                 </div>
                 <Button accentColor={accentGradient} onClick={() => setAddingContactTo(activePartner.id)}>
@@ -674,7 +674,7 @@ export default function Directory() {
             </SurfaceCard>
           ) : (
             <SurfaceCard className="p-5 sm:p-6">
-              <EmptyState icon={Buildings} title="Selecciona un partner" description="Usa la lista de la izquierda para abrir el detalle de un partner." />
+              <EmptyState icon={Buildings} title="Selecciona un cliente" description="Usa la lista de la izquierda para abrir el detalle de un cliente." />
             </SurfaceCard>
           )}
         </div>
@@ -683,7 +683,7 @@ export default function Directory() {
       {contactPendingDeletion ? (
         <ConfirmDialog
           title="Eliminar contacto"
-          description={`Se eliminará a ${contactPendingDeletion.contact.name} del directorio de ${activePartner?.name || 'este partner'}.`}
+          description={`Se eliminará a ${contactPendingDeletion.contact.name} del directorio de ${activePartner?.name || 'este cliente'}.`}
           confirmLabel="Eliminar"
           onConfirm={() => void handleDeleteContact()}
           onClose={() => setContactPendingDeletion(null)}
@@ -692,7 +692,7 @@ export default function Directory() {
 
       {editingPartner && (
         <OverlayModal tone="slate" onClose={() => setEditingPartner(null)}>
-          <ModalPanel title="Editar partner" description="Modifica los detalles del acuerdo comercial de este partner." onClose={() => setEditingPartner(null)} size="lg">
+          <ModalPanel title="Editar cliente" description="Modifica los detalles del acuerdo comercial de este cliente." onClose={() => setEditingPartner(null)} size="lg">
             <form onSubmit={handleEditPartner} className="space-y-6">
               <div className="grid gap-6 sm:grid-cols-2">
                 <div className="space-y-4">
@@ -779,7 +779,7 @@ export default function Directory() {
 
       {isAddingPartner && (
         <OverlayModal tone="slate" onClose={() => setIsAddingPartner(false)}>
-          <ModalPanel title="Nuevo partner" description="Añade un partner e ingresa su acuerdo comercial." onClose={() => setIsAddingPartner(false)} size="lg">
+          <ModalPanel title="Nuevo cliente" description="Añade un cliente e ingresa su acuerdo comercial." onClose={() => setIsAddingPartner(false)} size="lg">
             <form onSubmit={handleAddPartner} className="space-y-6">
               <div className="grid gap-6 sm:grid-cols-2">
                 <div className="space-y-4">
@@ -861,7 +861,7 @@ export default function Directory() {
                   </div>
                 </div>
               </div>
-              <Button type="submit" accentColor={accentGradient} className="w-full" disabled={saving}>Crear partner</Button>
+              <Button type="submit" accentColor={accentGradient} className="w-full" disabled={saving}>Crear cliente</Button>
             </form>
           </ModalPanel>
         </OverlayModal>
@@ -921,7 +921,7 @@ export default function Directory() {
 
       {addingContactTo && (
         <OverlayModal tone="slate" onClose={() => setAddingContactTo(null)}>
-          <ModalPanel title="Nuevo contacto" description="Guarda la persona clave para este partner." onClose={() => setAddingContactTo(null)} size="sm">
+          <ModalPanel title="Nuevo contacto" description="Guarda la persona clave para este cliente." onClose={() => setAddingContactTo(null)} size="sm">
             <form onSubmit={handleAddContact} className="space-y-6">
               <div className="space-y-4">
                 <div>

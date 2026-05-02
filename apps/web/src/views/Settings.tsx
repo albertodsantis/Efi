@@ -855,7 +855,7 @@ export default function Settings() {
             <SettingRow
               icon={DownloadSimple}
               title="Exportar mis datos"
-              description="Descarga un respaldo de tus tareas, partners y contactos."
+              description="Descarga un respaldo de tus tareas, clientes y contactos."
               onClick={() => void handleExport()}
               trailing={
                 <span className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">

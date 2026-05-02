@@ -41,7 +41,7 @@ function PrivacyContent() {
         <p>Usamos tus datos exclusivamente para:</p>
         <ul className="mt-1 list-disc space-y-1 pl-5">
           <li>Identificarte y gestionar tu sesión de forma segura.</li>
-          <li>Almacenar tus contactos (partners), tareas y configuración de CRM.</li>
+          <li>Almacenar tus contactos (clientes), tareas y configuración de CRM.</li>
           <li>Enviarte comunicaciones relacionadas con el servicio cuando sea necesario.</li>
         </ul>
       </Section>
@@ -210,8 +210,8 @@ function FaqContent() {
       a: 'Efi es un CRM personal para profesionales que gestionan su propio trabajo. Te ayuda con tus proyectos, hacer seguimiento de entregas y mantener tus contactos organizados en un solo lugar.',
     },
     {
-      q: '¿Cómo agrego un nuevo partner o colaboración?',
-      a: 'Ve a la sección "Directorio" o "Pipeline" y pulsa el botón de añadir. Puedes registrar datos del partner (cliente, contacto, red social) y crear una colaboración con su estado y fechas.',
+      q: '¿Cómo agrego un nuevo cliente o colaboración?',
+      a: 'Ve a la sección "Directorio" o "Pipeline" y pulsa el botón de añadir. Puedes registrar datos del cliente (contacto, red social) y crear una colaboración con su estado y fechas.',
     },
     {
       q: '¿Qué significan los estados del pipeline?',

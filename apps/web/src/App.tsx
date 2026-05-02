@@ -56,7 +56,7 @@ const tabs: Array<{
     id: 'dashboard',
     label: 'Inicio',
     shortLabel: 'Inicio',
-    description: 'Resumen general del pipeline, partners y entregables.',
+    description: 'Resumen general del pipeline, clientes y entregables.',
     icon: HouseLine,
   },
   {

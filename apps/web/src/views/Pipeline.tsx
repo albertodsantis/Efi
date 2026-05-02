@@ -2347,7 +2347,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
               <div className="sm:col-span-2">
                 <label className="mb-2 flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
                   <Buildings size={14} />
-                  Partner o cliente
+                  Cliente
                 </label>
                 <div className="relative">
                   <input
