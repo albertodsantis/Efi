@@ -117,8 +117,9 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
   const messageBase =
     'max-w-[88%] rounded-[1rem] px-4 py-3.5 text-sm leading-6 shadow-[0_12px_24px_-22px_rgba(63,43,33,0.25)]';
 
+  const isUnlimited = quota ? quota.limit > 100000 : false;
   const remaining = quota ? Math.max(0, quota.limit - quota.used) : null;
-  const quotaExhausted = quota ? quota.used >= quota.limit : false;
+  const quotaExhausted = quota ? !isUnlimited && quota.used >= quota.limit : false;
   const inputDisabled = !isAvailable || quotaExhausted || isProcessing;
 
   return (
@@ -214,7 +215,7 @@ export default function AIAssistant({ isDesktop = false }: { isDesktop?: boolean
                     </span>
                     {isAvailable && remaining !== null ? (
                       <StatusBadge tone="accent" className="shrink-0">
-                        {remaining}/{quota!.limit}
+                        {isUnlimited ? '∞' : `${remaining}/${quota!.limit}`}
                       </StatusBadge>
                     ) : null}
                   </div>
