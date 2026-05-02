@@ -14,7 +14,6 @@ import {
   Buildings,
   Camera,
   ChatsCircle,
-  Check,
   Compass,
   DotsThreeCircle,
   Headphones,
@@ -592,21 +591,23 @@ function ProfessionEditModal({
   onClose: () => void;
   onSave: (primary: FreelancerType, secondaries: FreelancerType[], custom: string) => void;
 }) {
-  const [primary, setPrimary] = useState<FreelancerType | null>(initial.primary);
-  const [secondaries, setSecondaries] = useState<FreelancerType[]>(initial.secondaries);
+  const [selected, setSelected] = useState<FreelancerType[]>(
+    initial.primary ? [initial.primary, ...initial.secondaries] : [],
+  );
   const [custom, setCustom] = useState(initial.custom);
 
-  const needsCustom = primary === 'other' || secondaries.includes('other');
-  const canSave = !!primary && (!needsCustom || custom.trim());
+  const needsCustom = selected.includes('other');
+  const canSave = selected.length > 0 && (!needsCustom || custom.trim());
 
-  const toggleSecondary = (value: FreelancerType) => {
-    setSecondaries((prev) =>
+  const toggleProfession = (value: FreelancerType) => {
+    setSelected((prev) =>
       prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value],
     );
   };
 
   const handleSave = () => {
-    if (!primary || !canSave) return;
+    if (!canSave) return;
+    const [primary, ...secondaries] = selected;
     onSave(primary, secondaries, needsCustom ? custom.trim() : '');
   };
 
@@ -634,67 +635,50 @@ function ProfessionEditModal({
         }
       >
         <div className="space-y-5">
-          {/* Primary */}
+          {/* Profession picker — ordered list; first selected is primary */}
           <div>
-            <p className={labelClass}>Actividad principal</p>
+            <p className={labelClass}>
+              ¿Qué actividades te definen?
+            </p>
+            <p className="mb-3 text-xs text-(--text-secondary)">
+              Toca las que practiques. La primera será tu actividad principal.
+            </p>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
               {PROFESSIONS.map(({ value, Icon }) => {
-                const selected = primary === value;
+                const order = selected.indexOf(value);
+                const isSelected = order >= 0;
+                const isPrimary = order === 0;
                 return (
                   <button
                     key={value}
                     type="button"
-                    onClick={() => setPrimary(value)}
-                    className="flex items-center gap-2.5 rounded-2xl border px-3 py-2.5 text-left text-xs font-semibold transition-all"
+                    onClick={() => toggleProfession(value)}
+                    className="relative flex items-center gap-2.5 rounded-2xl border px-3 py-2.5 text-left text-xs font-semibold transition-all"
                     style={{
-                      borderColor: selected ? accentHex : 'var(--line-soft)',
-                      backgroundColor: selected ? `color-mix(in srgb, ${accentHex} 10%, transparent)` : 'var(--surface-muted)',
-                      color: selected ? accentHex : 'var(--text-primary)',
+                      borderColor: isSelected ? accentHex : 'var(--line-soft)',
+                      backgroundColor: isSelected ? `color-mix(in srgb, ${accentHex} 10%, transparent)` : 'var(--surface-muted)',
+                      color: isSelected ? accentHex : 'var(--text-primary)',
                     }}
                   >
-                    <Icon size={16} weight="duotone" style={{ color: selected ? accentHex : 'var(--text-secondary)', flexShrink: 0 }} />
+                    <Icon size={16} weight="duotone" style={{ color: isSelected ? accentHex : 'var(--text-secondary)', flexShrink: 0 }} />
                     {PROFESSION_LABELS[value]}
-                    {selected && <Check size={12} weight="bold" className="ml-auto shrink-0" />}
+                    {isSelected && (
+                      <span
+                        className="absolute -top-1.5 -right-1.5 flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold leading-none shadow-sm"
+                        style={{
+                          background: accentGradient,
+                          color: 'var(--accent-foreground)',
+                          minHeight: '18px',
+                        }}
+                      >
+                        {isPrimary ? <>Principal</> : order + 1}
+                      </span>
+                    )}
                   </button>
                 );
               })}
             </div>
           </div>
-
-          {/* Secondary */}
-          {primary && (
-            <div>
-              <p className={labelClass}>
-                También hago{' '}
-                <span className="normal-case font-normal tracking-normal text-(--text-secondary)">
-                  (opcional)
-                </span>
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {PROFESSIONS.map(({ value }) => {
-                  const isPrimary = value === primary;
-                  const active = secondaries.includes(value);
-                  return (
-                    <button
-                      key={value}
-                      type="button"
-                      onClick={() => !isPrimary && toggleSecondary(value)}
-                      disabled={isPrimary}
-                      className="rounded-full border px-3 py-1 text-xs font-medium transition-all disabled:cursor-not-allowed"
-                      style={{
-                        borderColor: isPrimary || active ? accentHex : 'var(--line-soft)',
-                        backgroundColor: isPrimary || active ? `color-mix(in srgb, ${accentHex} 10%, transparent)` : 'transparent',
-                        color: isPrimary || active ? accentHex : 'var(--text-secondary)',
-                        opacity: isPrimary ? 0.4 : 1,
-                      }}
-                    >
-                      {PROFESSION_LABELS[value]}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
 
           {/* Custom label */}
           {needsCustom && (
