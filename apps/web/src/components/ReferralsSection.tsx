@@ -20,7 +20,7 @@ function formatDate(iso: string): string {
 
 function buildShareUrl(code: string): string {
   const origin = typeof window !== 'undefined' ? window.location.origin : 'https://efidesk.com';
-  return `${origin}/?ref=${encodeURIComponent(code)}`;
+  return `${origin}/?ref=${encodeURIComponent(code)}&utm_source=referral&utm_medium=user&utm_campaign=referral_program`;
 }
 
 export default function ReferralsSection() {

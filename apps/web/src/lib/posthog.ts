@@ -20,12 +20,22 @@ export function initPostHog() {
 
 export function identifyUser(user: { id: string; email?: string; name?: string; provider?: string; plan?: string }) {
   if (!initialized) return;
-  posthog.identify(user.id, {
-    email: user.email,
-    name: user.name,
-    provider: user.provider,
-    plan: user.plan,
-  });
+  const setOnce = {
+    initial_utm_source: posthog.get_property('$initial_utm_source'),
+    initial_utm_medium: posthog.get_property('$initial_utm_medium'),
+    initial_utm_campaign: posthog.get_property('$initial_utm_campaign'),
+    initial_referrer: posthog.get_property('$initial_referrer'),
+  };
+  posthog.identify(
+    user.id,
+    {
+      email: user.email,
+      name: user.name,
+      provider: user.provider,
+      plan: user.plan,
+    },
+    setOnce,
+  );
 }
 
 export function resetPostHog() {

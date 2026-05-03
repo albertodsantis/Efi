@@ -41,7 +41,7 @@ export async function copyToClipboard(text: string): Promise<CopyResult> {
 export async function shareEfiLink(handle: string): Promise<CopyResult> {
   const cleanHandle = handle.replace(/^@/, '');
   const baseUrl = 'https://efidesk.com';
-  const url = `${baseUrl}/@${cleanHandle}`;
+  const url = `${baseUrl}/@${cleanHandle}?utm_source=efilink&utm_medium=user_share&utm_campaign=user_profile`;
   const isNative = Capacitor.isNativePlatform();
 
   if (isNative) {
