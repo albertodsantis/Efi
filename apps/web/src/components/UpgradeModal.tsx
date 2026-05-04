@@ -10,7 +10,7 @@ export default function UpgradeModal({ onClose }: { onClose: () => void }) {
 
   const displayPrice =
     period === 'monthly'
-      ? `US$${PLAN_PRICING.monthly.toFixed(0)}`
+      ? `US$${PLAN_PRICING.monthly.toFixed(2)}`
       : `US$${PLAN_PRICING.annualMonthlyEquivalent.toFixed(2)}`;
   const periodLabel = period === 'monthly' ? '/ mes' : '/ mes, facturado anual';
   const annualTotal = `US$${PLAN_PRICING.annual.toFixed(0)} por año`;

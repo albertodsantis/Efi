@@ -190,8 +190,8 @@ export function createAuthRouter(
       const userId = randomUUID();
 
       await pool.query(
-        `INSERT INTO users (id, email, password_hash, name, provider)
-         VALUES ($1, $2, $3, $4, 'email')`,
+        `INSERT INTO users (id, email, password_hash, name, provider, trial_ends_at)
+         VALUES ($1, $2, $3, $4, 'email', NOW() + INTERVAL '30 days')`,
         [userId, trimmedEmail, passwordHash, trimmedName],
       );
 
@@ -432,8 +432,8 @@ export function createAuthRouter(
           isNewGoogleUser = true;
           userId = randomUUID();
           await pool.query(
-            `INSERT INTO users (id, email, password_hash, name, avatar, provider)
-             VALUES ($1, $2, '', $3, $4, 'google')`,
+            `INSERT INTO users (id, email, password_hash, name, avatar, provider, trial_ends_at)
+             VALUES ($1, $2, '', $3, $4, 'google', NOW() + INTERVAL '30 days')`,
             [userId, googleEmail, googleName, googleAvatar],
           );
         } else {
@@ -590,8 +590,8 @@ export function createAuthRouter(
       if (isNewUser) {
         userId = randomUUID();
         await pool.query(
-          `INSERT INTO users (id, email, password_hash, name, avatar, provider)
-           VALUES ($1, $2, '', $3, $4, 'google')`,
+          `INSERT INTO users (id, email, password_hash, name, avatar, provider, trial_ends_at)
+           VALUES ($1, $2, '', $3, $4, 'google', NOW() + INTERVAL '30 days')`,
           [userId, googleEmail, googleName, googleAvatar],
         );
       } else {

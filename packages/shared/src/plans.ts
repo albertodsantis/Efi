@@ -7,16 +7,18 @@ export interface PlanLimits {
   maxActiveTasks: number | null;
   aiAssistant: boolean;
   googleCalendarSync: boolean;
+  efiLink: boolean;
   customBranding: boolean;
   exportData: boolean;
 }
 
 export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
   free: {
-    maxPartners: 10,
-    maxActiveTasks: 20,
+    maxPartners: 2,
+    maxActiveTasks: 3,
     aiAssistant: false,
     googleCalendarSync: false,
+    efiLink: false,
     customBranding: false,
     exportData: false,
   },
@@ -25,6 +27,7 @@ export const PLAN_LIMITS: Record<PlanId, PlanLimits> = {
     maxActiveTasks: null,
     aiAssistant: true,
     googleCalendarSync: true,
+    efiLink: true,
     customBranding: true,
     exportData: true,
   },
@@ -40,9 +43,9 @@ export interface PlanPricing {
 
 export const PLAN_PRICING: PlanPricing = {
   currency: 'USD',
-  monthly: 9,
-  annual: 86,
-  annualMonthlyEquivalent: 7.17,
+  monthly: 5.99,
+  annual: 57,
+  annualMonthlyEquivalent: 4.75,
   annualDiscountPct: 20,
 };
 
@@ -53,11 +56,11 @@ export interface PlanFeatureRow {
 }
 
 export const PLAN_FEATURES: PlanFeatureRow[] = [
-  { label: 'Socios en Directorio', free: '10', pro: 'Ilimitados' },
-  { label: 'Entregas activas en Pipeline', free: '20', pro: 'Ilimitadas' },
+  { label: 'Socios en Directorio', free: '2', pro: 'Ilimitados' },
+  { label: 'Entregas activas en Pipeline', free: '3', pro: 'Ilimitadas' },
   { label: 'Asistente IA (Gemini)', free: false, pro: true },
   { label: 'Sincronización con Google Calendar', free: false, pro: true },
-  { label: 'EfiLink personalizable', free: true, pro: true },
+  { label: 'EfiLink (perfil público)', free: false, pro: true },
   { label: 'Estrategia y Objetivos', free: true, pro: true },
   { label: 'Branding personalizado', free: false, pro: true },
   { label: 'Exportar datos', free: false, pro: true },

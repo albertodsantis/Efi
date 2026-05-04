@@ -24,7 +24,7 @@ Estado y playbook para activar el modelo freemium de Efi. Mientras `EARLY_ACCESS
 ### Shared
 - `packages/shared/src/plans.ts` — fuente única de verdad:
   - `PLAN_LIMITS` — límites Free vs Pro (partners, tasks, IA, GCal sync, branding, export)
-  - `PLAN_PRICING` — US$9/mes, US$86/año, 20% descuento anual
+  - `PLAN_PRICING` — US$5.99/mes, US$57/año (~US$4.75/mes equivalente), 20% descuento anual
   - `PLAN_FEATURES` — filas de la tabla comparativa del modal
   - `isPro(state)` — helper puro; respeta `earlyAccess`, `subscribedUntil`, `trialEndsAt`
   - `trialDaysRemaining(state)` — días restantes de trial (o `null`)
@@ -90,9 +90,9 @@ En Railway, setear `EARLY_ACCESS=false` y redeployar. A partir de ahí, `isPro()
 - **Paso 2 antes del 3**: si apagás el flag sin canjear, los meses ganados no aparecen todavía en `subscribed_until` y los usuarios ven paywall pese a haberlos ganado.
 - **Paso 2 después del 1**: el canje suma meses sobre `subscribed_until` directamente, así que no depende del trial. Pero si se invierte el orden (canje antes de backfill) el efecto neto es el mismo — lo dejamos en este orden para mantener el flujo "primero base, luego beneficios".
 
-### Paso 4 — Nuevos usuarios (cambio en código)
+### Paso 4 — Nuevos usuarios (ya cableado)
 
-Agregar en `auth.ts` (register + callbacks Google): al crear el `users` row, setear `trial_ends_at = NOW() + INTERVAL '30 days'`. Hoy esto no se hace porque con el flag prendido es irrelevante — pero una vez apagado, los usuarios nuevos nacen sin trial si no se agrega.
+Cada `INSERT INTO users` en `auth.ts` (registro email + 2 callbacks de Google) ya setea `trial_ends_at = NOW() + INTERVAL '30 days'`. Mientras `EARLY_ACCESS=true` el campo es irrelevante (el flag bypasea todo); cuando se apague, los usuarios nuevos nacen con 30 días de trial automáticos. Sin tarjeta requerida — al expirar caen a Free.
 
 ## TODOs antes de activar pagos
 
@@ -105,12 +105,13 @@ Agregar en `auth.ts` (register + callbacks Google): al crear el `users` row, set
 
 ### Gating en la app
 Aplicar `isPro(planState)` en estos puntos (límites en `PLAN_LIMITS`):
-- [ ] **Directory**: bloquear crear partner #11+ en Free → mostrar paywall inline.
-- [ ] **Pipeline**: bloquear crear task #21+ activa → mismo patrón.
+- [ ] **Directory**: bloquear crear partner #3+ en Free → mostrar paywall inline.
+- [ ] **Pipeline**: bloquear crear task #4+ activa → mismo patrón.
 - [ ] **AIAssistant**: si no es Pro, esconder widget o mostrar CTA al modal.
 - [ ] **Google Calendar**: en Settings, deshabilitar el toggle para Free con nota "Disponible en Pro".
 - [ ] **Export de datos**: botón de Settings solo para Pro.
-- [ ] **Branding** (EfiLink sin marca Efi): chequear Pro al renderizar.
+- [ ] **EfiLink**: el perfil público `/@handle` solo se sirve si el usuario es Pro. Free → 404 o landing con CTA al modal. Verificar en `apps/api/src/routes/mediakit.ts`.
+- [ ] **Branding** (EfiLink sin marca Efi): chequear Pro al renderizar (relevante solo si EfiLink es Pro).
 
 ### UX del trial expirando
 - [ ] Banner en dashboard cuando `trialDaysRemaining <= 7`.
@@ -119,7 +120,7 @@ Aplicar `isPro(planState)` en estos puntos (límites en `PLAN_LIMITS`):
 - [ ] Estado "grace period" opcional (ej. 7 días después del vencimiento antes de aplicar límites duros).
 
 ### Modal y pricing
-- [ ] Confirmar precios finales (hoy placeholders: US$9/mes, US$86/año).
+- [ ] Confirmar precios finales (hoy: US$5.99/mes, US$57/año).
 - [ ] Decidir monedas: ¿mostrar ARS local? ¿conversión automática?
 - [ ] Quitar el "Próximamente" del CTA en `UpgradeModal.tsx` y cablear al checkout real.
 - [ ] Agregar testimonios/social proof al modal (opcional).
