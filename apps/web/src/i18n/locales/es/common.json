@@ -1,0 +1,18 @@
+{
+  "settings": {
+    "language": {
+      "title": "Idioma",
+      "description": "Elige el idioma de la interfaz.",
+      "options": {
+        "es": "Español",
+        "en": "English"
+      },
+      "savingError": "No pudimos guardar el idioma. Inténtalo de nuevo."
+    }
+  },
+  "landing": {
+    "languageToggle": {
+      "label": "Idioma"
+    }
+  }
+}

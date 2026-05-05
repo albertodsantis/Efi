@@ -1,0 +1,228 @@
+{
+  "tabsAriaLabel": "Secciones de ajustes",
+  "sections": {
+    "plan": "Plan",
+    "referrals": "Referidos",
+    "templates": "Plantillas",
+    "pipeline": "Pipeline",
+    "appearance": "Apariencia",
+    "onboarding": "Onboarding",
+    "preferences": "Preferencias",
+    "account": "Cuenta"
+  },
+  "feedback": {
+    "prefix": "¿Tienes comentarios o ideas? Escríbenos a"
+  },
+  "plan": {
+    "title": "Plan",
+    "badges": {
+      "earlyAccess": "Pro · Acceso anticipado",
+      "pro": "Pro",
+      "free": "Free"
+    },
+    "description": {
+      "earlyAccess": "Disfruta todas las funciones Pro gratis mientras dure el early access.",
+      "subscribed": "Suscripción activa hasta {{date}}.",
+      "trial": "Te quedan {{days}} días de prueba Pro.",
+      "free": "Estás en el plan Free. Cambia a Pro para desbloquear todo."
+    },
+    "viewPlans": "Ver planes"
+  },
+  "templates": {
+    "title": "Plantillas de mensajes",
+    "eyebrow": "Plantillas",
+    "newButton": "Nueva plantilla",
+    "variablesEyebrow": "Variables disponibles",
+    "variableLabels": {
+      "brandName": "Cliente",
+      "contactName": "Contacto",
+      "creatorName": "Yo",
+      "deliverable": "Entregable",
+      "mediaKitLink": "EfiLink"
+    },
+    "editAriaLabel": "Editar plantilla {{name}}",
+    "empty": {
+      "title": "Aún no hay plantillas",
+      "description": "Crea una plantilla para acelerar respuestas, follow-ups y primeros contactos.",
+      "create": "Crear plantilla"
+    },
+    "modal": {
+      "titleNew": "Nueva plantilla",
+      "titleEdit": "Editar plantilla",
+      "descriptionNew": "Guarda un mensaje base para reutilizarlo después con variables dinámicas.",
+      "descriptionEdit": "Ajusta los detalles de tu mensaje reutilizable.",
+      "saveNew": "Guardar plantilla",
+      "saveEdit": "Guardar cambios",
+      "deleteAriaLabel": "Eliminar plantilla",
+      "nameLabel": "Nombre de la plantilla",
+      "namePlaceholder": "Ej. Primer contacto",
+      "contentTitle": "Contenido del mensaje",
+      "bodyLabel": "Cuerpo del mensaje",
+      "bodyPlaceholder": "Hola {{contactName}}, me encantaría...",
+      "insertVariable": "Insertar variable"
+    },
+    "toasts": {
+      "saved": "Plantilla guardada correctamente",
+      "updated": "Plantilla actualizada correctamente",
+      "deleted": "Plantilla eliminada",
+      "saveError": "No se pudo guardar la plantilla."
+    }
+  },
+  "pipeline": {
+    "title": "Pipeline",
+    "description": "Ajusta cómo funciona el pipeline para que se adapte a tu forma de trabajar.",
+    "cobrado": {
+      "title": "Usar stage de Cobrado",
+      "descriptionEnabled": "Las entregas pasan por Cobrado como último estado, ideal si haces seguimiento de pagos.",
+      "descriptionDisabled": "Completada es el último estado del pipeline. Actívalo si quieres separar los pagos cobrados.",
+      "enabledToast": "Stage Cobrado activado",
+      "disabledToastWithMoves_one": "Stage Cobrado desactivado. {{count}} entrega pasó a Completada.",
+      "disabledToastWithMoves_other": "Stage Cobrado desactivado. {{count}} entregas pasaron a Completada.",
+      "disabledToast": "Stage Cobrado desactivado.",
+      "enableError": "No se pudo actualizar el pipeline.",
+      "disableError": "No se pudo desactivar el stage."
+    },
+    "confirm": {
+      "title": "¿Desactivar el stage de Cobrado?",
+      "descriptionWithTasks_one": "Hay {{count}} entrega en Cobrado. Pasará automáticamente a Completada y el stage dejará de mostrarse en el pipeline.",
+      "descriptionWithTasks_other": "Hay {{count}} entregas en Cobrado. Pasarán automáticamente a Completada y el stage dejará de mostrarse en el pipeline.",
+      "descriptionEmpty": "Completada pasará a ser el último estado del pipeline. Puedes volver a activar Cobrado cuando quieras.",
+      "confirmLabel": "Desactivar"
+    }
+  },
+  "appearance": {
+    "themeTitle": "Tema",
+    "themeCurrent": "Tema actual: {{name}}.",
+    "currentAccentName": "Actual",
+    "show": "Cambiar",
+    "hide": "Ocultar",
+    "selectAccentAriaLabel": "Seleccionar {{name}}",
+    "darkMode": {
+      "title": "Modo oscuro",
+      "description": "Cambia la iluminación general del workspace."
+    }
+  },
+  "onboarding": {
+    "title": "Reiniciar onboarding",
+    "description": "Vuelve a mostrar el tour guiado la próxima vez que cargue la app.",
+    "action": "Reiniciar"
+  },
+  "preferences": {
+    "title": "Ajustes",
+    "language": {
+      "title": "Idioma",
+      "description": "Elige el idioma de la interfaz.",
+      "options": {
+        "es": "Español",
+        "en": "English"
+      },
+      "savingError": "No pudimos guardar el idioma. Inténtalo de nuevo."
+    },
+    "notifications": {
+      "title": "Notificaciones push",
+      "description": "Recibe avisos cuando haya entregas cercanas o cambios relevantes.",
+      "enabledToast": "Notificaciones activadas",
+      "disabledToast": "Notificaciones desactivadas",
+      "permissionRequired": "Debes permitir las notificaciones del navegador para activarlas.",
+      "unsupported": "Tu navegador no soporta notificaciones push."
+    },
+    "taskReminders": {
+      "title": "Recordatorios de tareas",
+      "description": "Recibe avisos nativos un día antes y el día que vence cada entrega.",
+      "enabledToast": "Recordatorios de tareas activados",
+      "disabledToast": "Recordatorios de tareas desactivados",
+      "permissionRequired": "Activa los permisos de notificaciones en los ajustes del dispositivo."
+    },
+    "googleCalendar": {
+      "title": "Google Calendar",
+      "descriptionConnected": "Conectado · tus entregas se sincronizan con Google Calendar.",
+      "descriptionDisconnected": "Sincroniza entregas y fechas con tu calendario.",
+      "connected": "Conectado",
+      "connect": "Conectar",
+      "connectedToast": "Google Calendar conectado.",
+      "disconnectedToast": "Google Calendar desconectado.",
+      "connectError": "No se pudo iniciar la conexión con Google Calendar.",
+      "disconnectError": "No se pudo desconectar Google Calendar."
+    }
+  },
+  "account": {
+    "title": "Cuenta",
+    "fields": {
+      "nameLabel": "Nombre completo",
+      "namePlaceholder": "Tu nombre",
+      "emailLabel": "Correo electrónico",
+      "emailFallback": "—",
+      "nameUpdateError": "No se pudo actualizar el nombre."
+    },
+    "changeEmail": {
+      "title": "Cambiar correo electrónico",
+      "description": "Actualiza el correo asociado a tu cuenta.",
+      "action": "Cambiar"
+    },
+    "changePassword": {
+      "addTitle": "Agregar contraseña",
+      "changeTitle": "Cambiar contraseña",
+      "addDescription": "Agrega una contraseña para iniciar sesión también con tu email.",
+      "changeDescription": "Actualiza la contraseña de tu cuenta.",
+      "add": "Agregar",
+      "change": "Cambiar"
+    },
+    "export": {
+      "title": "Exportar mis datos",
+      "description": "Descarga un respaldo de tus tareas, clientes y contactos.",
+      "action": "Exportar",
+      "successToast": "Datos exportados correctamente",
+      "error": "No se pudo exportar los datos."
+    },
+    "logout": {
+      "title": "Cerrar sesión",
+      "description": "Cierra tu sesión actual en este dispositivo.",
+      "action": "Salir"
+    },
+    "delete": {
+      "title": "Eliminar cuenta",
+      "description": "Elimina tu cuenta y todos los datos asociados de forma permanente.",
+      "action": "Eliminar",
+      "confirmTitle": "¿Estás seguro?",
+      "confirmDescription": "Esta acción cerrará tu sesión y eliminará tus datos. No se puede deshacer.",
+      "confirm": "Sí, eliminar cuenta",
+      "cancel": "Cancelar",
+      "error": "No pudimos eliminar la cuenta. Intenta de nuevo."
+    },
+    "emailModal": {
+      "title": "Cambiar correo electrónico",
+      "description": "Te enviaremos un enlace de confirmación al nuevo correo.",
+      "close": "Cerrar",
+      "submit": "Enviar confirmación",
+      "newEmailLabel": "Nuevo correo",
+      "newEmailPlaceholder": "nuevo@email.com",
+      "currentPasswordLabel": "Confirmar con contraseña actual",
+      "currentPasswordPlaceholder": "Tu contraseña actual",
+      "successPrefix": "Enviamos un enlace de confirmación a",
+      "successSuffix": "Haz clic en él para completar el cambio.",
+      "genericError": "No se pudo solicitar el cambio de correo."
+    },
+    "passwordModal": {
+      "addTitle": "Agregar contraseña",
+      "changeTitle": "Cambiar contraseña",
+      "addDescription": "Crea una contraseña para iniciar sesión con tu correo electrónico.",
+      "changeDescription": "Introduce tu contraseña actual y define la nueva.",
+      "addSubmit": "Agregar contraseña",
+      "changeSubmit": "Guardar contraseña",
+      "googleNotice": "Al agregar una contraseña podrás iniciar sesión con tu correo y esta contraseña, además de seguir usando Google.",
+      "currentPasswordLabel": "Contraseña actual",
+      "currentPasswordPlaceholder": "Tu contraseña actual",
+      "newPasswordLabel": "Nueva contraseña",
+      "newPasswordPlaceholder": "Mínimo 8 caracteres",
+      "confirmPasswordLabel": "Confirmar contraseña",
+      "confirmPasswordPlaceholder": "Repite la nueva contraseña",
+      "errors": {
+        "tooShort": "La contraseña debe tener al menos 8 caracteres.",
+        "mismatch": "Las contraseñas no coinciden.",
+        "generic": "No se pudo cambiar la contraseña."
+      },
+      "successAdd": "Contraseña agregada correctamente",
+      "successChange": "Contraseña actualizada correctamente"
+    }
+  }
+}

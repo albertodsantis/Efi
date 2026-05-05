@@ -892,6 +892,8 @@ function AppInner() {
           subscribedUntil: sessionUser?.subscribedUntil ?? null,
           earlyAccess: sessionUser?.earlyAccess ?? true,
         }}
+        initialLocale={sessionUser?.locale ?? 'es'}
+        onLocaleChange={(loc) => setSessionUser((u: SessionUser | null) => u ? { ...u, locale: loc } : u)}
       >
         <AppShell isNewRegistration={isNewRegistration} />
       </AppProvider>

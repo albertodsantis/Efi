@@ -20,8 +20,11 @@ import {
   UserMinus,
   Alarm,
   CurrencyCircleDollar,
+  Translate,
 } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { isPro, trialDaysRemaining } from '@shared';
+import type { Locale } from '@shared';
 import {
   requestNotificationPermission,
   scheduleDueDateReminders,
@@ -47,12 +50,12 @@ import { toast } from '../lib/toast';
 import { ACCENT_OPTIONS, getSwatchCss } from '../lib/accent';
 import { exportUserData } from '../lib/exportData';
 
-const TEMPLATE_VARIABLES = [
-  { key: 'brandName', label: 'Cliente' },
-  { key: 'contactName', label: 'Contacto' },
-  { key: 'creatorName', label: 'Yo' },
-  { key: 'deliverable', label: 'Entregable' },
-  { key: 'mediaKitLink', label: 'EfiLink' },
+const TEMPLATE_VARIABLE_KEYS = [
+  'brandName',
+  'contactName',
+  'creatorName',
+  'deliverable',
+  'mediaKitLink',
 ] as const;
 
 const fieldClass =
@@ -83,22 +86,42 @@ export default function Settings() {
     planState,
     pipelineHasCobrado,
     setPipelineHasCobrado,
+    locale,
+    setLocale,
   } = useAppContext();
+  const { t } = useTranslation('settings');
+  const [savingLocale, setSavingLocale] = useState(false);
+
+  const handleLocaleChange = async (next: Locale) => {
+    if (next === locale || savingLocale) return;
+    setSavingLocale(true);
+    try {
+      await setLocale(next);
+    } catch {
+      reportActionError(t('preferences.language.savingError'));
+    } finally {
+      setSavingLocale(false);
+    }
+  };
   const [isUpgradeOpen, setIsUpgradeOpen] = useState(false);
   const planIsPro = useMemo(() => isPro(planState), [planState]);
   const trialDays = useMemo(() => trialDaysRemaining(planState), [planState]);
   const planBadgeLabel = planState.earlyAccess
-    ? 'Pro - Acceso anticipado'
+    ? t('plan.badges.earlyAccess')
     : planIsPro
-      ? 'Pro'
-      : 'Free';
+      ? t('plan.badges.pro')
+      : t('plan.badges.free');
   const planDescription = planState.earlyAccess
-    ? 'Disfruta todas las funciones Pro gratis mientras dure el early access.'
+    ? t('plan.description.earlyAccess')
     : planState.subscribedUntil
-      ? `Suscripción activa hasta ${new Date(planState.subscribedUntil).toLocaleDateString('es-AR')}.`
+      ? t('plan.description.subscribed', {
+          date: new Date(planState.subscribedUntil).toLocaleDateString(
+            locale === 'en' ? 'en-US' : 'es-AR',
+          ),
+        })
       : trialDays !== null && trialDays > 0
-        ? `Te quedan ${trialDays} días de prueba Pro.`
-        : 'Estás en el plan Free. Cambia a Pro para desbloquear todo.';
+        ? t('plan.description.trial', { days: trialDays })
+        : t('plan.description.free');
   const [isAddingTemplate, setIsAddingTemplate] = useState(false);
   const [taskRemindersEnabled, setTaskRemindersEnabled] = useState(
     () => localStorage.getItem('efi_task_reminders_enabled') !== 'false',
@@ -130,16 +153,16 @@ export default function Settings() {
 
   const SECTIONS = useMemo(
     () => [
-      { id: 'plan', label: 'Plan' },
-      { id: 'referrals', label: 'Referidos' },
-      { id: 'templates', label: 'Plantillas' },
-      { id: 'pipeline', label: 'Pipeline' },
-      { id: 'appearance', label: 'Apariencia' },
-      { id: 'onboarding', label: 'Onboarding' },
-      { id: 'preferences', label: 'Preferencias' },
-      { id: 'account', label: 'Cuenta' },
+      { id: 'plan', label: t('sections.plan') },
+      { id: 'referrals', label: t('sections.referrals') },
+      { id: 'templates', label: t('sections.templates') },
+      { id: 'pipeline', label: t('sections.pipeline') },
+      { id: 'appearance', label: t('sections.appearance') },
+      { id: 'onboarding', label: t('sections.onboarding') },
+      { id: 'preferences', label: t('sections.preferences') },
+      { id: 'account', label: t('sections.account') },
     ],
-    [],
+    [t],
   );
   const [activeSection, setActiveSection] = useState<string>(SECTIONS[0].id);
   const sectionRefs = useRef<Record<string, HTMLElement | null>>({});
@@ -260,7 +283,7 @@ export default function Settings() {
         if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
           window.removeEventListener('message', onMessage);
           setGcalConnected(true);
-          toast.success('Google Calendar conectado.');
+          toast.success(t('preferences.googleCalendar.connectedToast'));
         }
       };
       window.addEventListener('message', onMessage);
@@ -272,7 +295,7 @@ export default function Settings() {
         }
       }, 500);
     } catch {
-      toast.error('No se pudo iniciar la conexión con Google Calendar.');
+      toast.error(t('preferences.googleCalendar.connectError'));
     }
   };
 
@@ -280,9 +303,9 @@ export default function Settings() {
     try {
       await calendarApi.disconnect();
       setGcalConnected(false);
-      toast.info('Google Calendar desconectado.');
+      toast.info(t('preferences.googleCalendar.disconnectedToast'));
     } catch {
-      toast.error('No se pudo desconectar Google Calendar.');
+      toast.error(t('preferences.googleCalendar.disconnectError'));
     }
   };
 
@@ -292,7 +315,7 @@ export default function Settings() {
       try {
         await updateProfile({ name: trimmed });
       } catch (err: unknown) {
-        toast.error(err instanceof Error ? err.message : 'No se pudo actualizar el nombre.');
+        toast.error(err instanceof Error ? err.message : t('account.fields.nameUpdateError'));
         setAccountName(profile.name);
       }
     }
@@ -322,7 +345,7 @@ export default function Settings() {
       });
       setEmailSent(true);
     } catch (error) {
-      setEmailError(error instanceof Error ? error.message : 'No se pudo solicitar el cambio de correo.');
+      setEmailError(error instanceof Error ? error.message : t('account.emailModal.genericError'));
     } finally {
       setSavingEmail(false);
     }
@@ -332,11 +355,11 @@ export default function Settings() {
     event.preventDefault();
     setPasswordError(null);
     if (passwordForm.newPassword.length < 8) {
-      setPasswordError('La contraseña debe tener al menos 8 caracteres.');
+      setPasswordError(t('account.passwordModal.errors.tooShort'));
       return;
     }
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setPasswordError('Las contraseñas no coinciden.');
+      setPasswordError(t('account.passwordModal.errors.mismatch'));
       return;
     }
     setSavingPassword(true);
@@ -347,9 +370,11 @@ export default function Settings() {
       });
       onProviderChange(result.updatedProvider);
       closePasswordModal();
-      toast.success(provider === 'google' ? 'Contraseña agregada correctamente' : 'Contraseña actualizada correctamente');
+      toast.success(provider === 'google'
+        ? t('account.passwordModal.successAdd')
+        : t('account.passwordModal.successChange'));
     } catch (error) {
-      setPasswordError(error instanceof Error ? error.message : 'No se pudo cambiar la contraseña.');
+      setPasswordError(error instanceof Error ? error.message : t('account.passwordModal.errors.generic'));
     } finally {
       setSavingPassword(false);
     }
@@ -380,7 +405,7 @@ export default function Settings() {
 
   const activeAccent =
     ACCENT_OPTIONS.find((option) => option.value.toLowerCase() === accentColor.toLowerCase()) ?? {
-      name: 'Actual',
+      name: t('appearance.currentAccentName'),
       value: accentColor,
     };
 
@@ -390,18 +415,18 @@ export default function Settings() {
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
           await updateProfile({ notificationsEnabled: true });
-          toast.success('Notificaciones activadas');
+          toast.success(t('preferences.notifications.enabledToast'));
         } else {
-          reportActionError('Debes permitir las notificaciones del navegador para activarlas.');
+          reportActionError(t('preferences.notifications.permissionRequired'));
         }
       } else {
-        reportActionError('Tu navegador no soporta notificaciones push.');
+        reportActionError(t('preferences.notifications.unsupported'));
       }
       return;
     }
 
     await updateProfile({ notificationsEnabled: false });
-    toast.info('Notificaciones desactivadas');
+    toast.info(t('preferences.notifications.disabledToast'));
   };
 
   const toggleTaskReminders = async () => {
@@ -409,17 +434,17 @@ export default function Settings() {
       await cancelAllReminders();
       localStorage.setItem('efi_task_reminders_enabled', 'false');
       setTaskRemindersEnabled(false);
-      toast.info('Recordatorios de tareas desactivados');
+      toast.info(t('preferences.taskReminders.disabledToast'));
     } else {
       const granted = await requestNotificationPermission();
       if (!granted) {
-        reportActionError('Activa los permisos de notificaciones en los ajustes del dispositivo.');
+        reportActionError(t('preferences.taskReminders.permissionRequired'));
         return;
       }
       localStorage.setItem('efi_task_reminders_enabled', 'true');
       setTaskRemindersEnabled(true);
       await scheduleDueDateReminders(tasks);
-      toast.success('Recordatorios de tareas activados');
+      toast.success(t('preferences.taskReminders.enabledToast'));
     }
   };
 
@@ -434,15 +459,15 @@ export default function Settings() {
         setIsAddingTemplate(false);
         setNewTemplate({ name: '', body: '' });
         setEditingTemplateId(null);
-        toast.success('Plantilla actualizada correctamente');
+        toast.success(t('templates.toasts.updated'));
       } else {
         await addTemplate(newTemplate);
         setIsAddingTemplate(false);
         setNewTemplate({ name: '', body: '' });
-        toast.success('Plantilla guardada correctamente');
+        toast.success(t('templates.toasts.saved'));
       }
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : 'No se pudo guardar la plantilla.');
+      toast.error(err instanceof Error ? err.message : t('templates.toasts.saveError'));
     } finally {
       setSavingTemplate(false);
     }
@@ -462,9 +487,9 @@ export default function Settings() {
     void (async () => {
       try {
         await setPipelineHasCobrado(true);
-        toast.success('Stage Cobrado activado');
+        toast.success(t('pipeline.cobrado.enabledToast'));
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : 'No se pudo actualizar el pipeline.');
+        toast.error(err instanceof Error ? err.message : t('pipeline.cobrado.enableError'));
       }
     })();
   };
@@ -476,11 +501,11 @@ export default function Settings() {
       setShowCobradoConfirm(false);
       toast.success(
         cobradoTaskCount > 0
-          ? `Stage Cobrado desactivado. ${cobradoTaskCount} entrega${cobradoTaskCount === 1 ? '' : 's'} pasaron a Completada.`
-          : 'Stage Cobrado desactivado.',
+          ? t('pipeline.cobrado.disabledToastWithMoves', { count: cobradoTaskCount })
+          : t('pipeline.cobrado.disabledToast'),
       );
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'No se pudo desactivar el stage.');
+      toast.error(err instanceof Error ? err.message : t('pipeline.cobrado.disableError'));
     } finally {
       setTogglingCobrado(false);
     }
@@ -499,9 +524,9 @@ export default function Settings() {
         profileForceDark,
         pipelineHasCobrado,
       });
-      toast.success('Datos exportados correctamente');
+      toast.success(t('account.export.successToast'));
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'No se pudo exportar los datos.');
+      toast.error(err instanceof Error ? err.message : t('account.export.error'));
     }
   };
 
@@ -510,7 +535,7 @@ export default function Settings() {
       await authApi.deleteAccount();
       onLogout();
     } catch {
-      reportActionError('No pudimos eliminar la cuenta. Intenta de nuevo.');
+      reportActionError(t('account.delete.error'));
     }
   };
 
@@ -525,7 +550,7 @@ export default function Settings() {
           ref={tabsScrollerRef}
           className="hide-scrollbar flex gap-1 overflow-x-auto py-2"
           role="tablist"
-          aria-label="Secciones de ajustes"
+          aria-label={t('tabsAriaLabel')}
         >
           {SECTIONS.map((section) => {
             const isActive = activeSection === section.id;
@@ -554,7 +579,7 @@ export default function Settings() {
 
       <div className="space-y-5 lg:space-y-6">
       <p className="px-1 text-sm text-[var(--text-secondary)]">
-        ¿Tienes comentarios o ideas? Escríbenos a{' '}
+        {t('feedback.prefix')}{' '}
         <a
           href="mailto:hola@efidesk.com?subject=Feedback%20Efi"
           className="font-semibold text-[var(--accent-solid)] hover:underline"
@@ -574,7 +599,7 @@ export default function Settings() {
             <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h2 className="text-lg font-bold tracking-tight text-slate-800 dark:text-slate-100">
-                  Plan
+                  {t('plan.title')}
                 </h2>
                 <StatusBadge tone={planIsPro ? 'success' : 'neutral'}>{planBadgeLabel}</StatusBadge>
               </div>
@@ -582,7 +607,7 @@ export default function Settings() {
             </div>
           </div>
           <Button tone="secondary" onClick={() => setIsUpgradeOpen(true)}>
-            Ver planes
+            {t('plan.viewPlans')}
           </Button>
         </div>
       </SurfaceCard>
@@ -601,10 +626,10 @@ export default function Settings() {
           <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-4">
             <div className="flex shrink-0 items-baseline gap-3">
               <h2 className="text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
-                Plantillas de mensajes
+                {t('templates.title')}
               </h2>
               <span className="hidden text-[11px] font-bold tracking-[0.18em] text-slate-400 uppercase dark:text-slate-500 sm:inline-block">
-                Plantillas
+                {t('templates.eyebrow')}
               </span>
             </div>
           </div>
@@ -620,20 +645,20 @@ export default function Settings() {
               className="w-full justify-center"
             >
               <Plus size={16} weight="regular" />
-              Nueva plantilla
+              {t('templates.newButton')}
             </Button>
 
             <div className="pt-2">
               <p className="text-[10px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
-                Variables disponibles
+                {t('templates.variablesEyebrow')}
               </p>
               <div className="mt-3 flex flex-wrap gap-1.5">
-                {TEMPLATE_VARIABLES.map((v) => (
+                {TEMPLATE_VARIABLE_KEYS.map((key) => (
                   <span
-                    key={v.key}
+                    key={key}
                     className="inline-flex rounded-md bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400"
                   >
-                    {v.label}
+                    {t(`templates.variableLabels.${key}`)}
                   </span>
                 ))}
               </div>
@@ -676,7 +701,7 @@ export default function Settings() {
                       setIsAddingTemplate(true);
                     }}
                     className="flex shrink-0 items-center justify-center text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)]"
-                    aria-label={`Editar plantilla ${template.name}`}
+                    aria-label={t('templates.editAriaLabel', { name: template.name })}
                   >
                     <PencilLine size={16} />
                   </button>
@@ -687,8 +712,8 @@ export default function Settings() {
             <div className="p-6 sm:p-8">
               <EmptyState
                 icon={Chat}
-                title="Aun no hay plantillas"
-                description="Crea una plantilla para acelerar respuestas, follow-ups y primeros contactos."
+                title={t('templates.empty.title')}
+                description={t('templates.empty.description')}
                 action={
                   <Button accentColor={accentGradient} onClick={() => {
                     setEditingTemplateId(null);
@@ -696,7 +721,7 @@ export default function Settings() {
                     setIsAddingTemplate(true);
                   }}>
                     <Plus size={16} weight="regular" />
-                    Crear plantilla
+                    {t('templates.empty.create')}
                   </Button>
                 }
               />
@@ -711,19 +736,19 @@ export default function Settings() {
       <SurfaceCard className="overflow-hidden p-0">
         <div className="p-6 lg:p-7">
           <h2 className="mb-1 text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
-            Pipeline
+            {t('pipeline.title')}
           </h2>
           <p className="mb-5 text-sm text-[var(--text-secondary)]">
-            Ajusta cómo funciona el pipeline para que se adapte a tu forma de trabajar.
+            {t('pipeline.description')}
           </p>
           <div className="space-y-1">
             <SettingRow
               icon={CurrencyCircleDollar}
-              title="Usar stage de Cobrado"
+              title={t('pipeline.cobrado.title')}
               description={
                 pipelineHasCobrado
-                  ? 'Las entregas pasan por Cobrado como último estado, ideal si haces seguimiento de pagos.'
-                  : 'Completada es el último estado del pipeline. Actívalo si quieres separar los pagos cobrados.'
+                  ? t('pipeline.cobrado.descriptionEnabled')
+                  : t('pipeline.cobrado.descriptionDisabled')
               }
               onClick={handleTogglePipelineCobrado}
               trailing={<ToggleSwitch checked={pipelineHasCobrado} accentColor={accentGradient} />}
@@ -750,17 +775,17 @@ export default function Settings() {
               />
               <div>
                 <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
-                  Tema
+                  {t('appearance.themeTitle')}
                 </p>
                 <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Tema actual: {activeAccent.name}.
+                  {t('appearance.themeCurrent', { name: activeAccent.name })}
                 </p>
               </div>
             </div>
 
             <div className="text-right">
               <p className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
-                {isAccentPaletteOpen ? 'Ocultar' : 'Cambiar'}
+                {isAccentPaletteOpen ? t('appearance.hide') : t('appearance.show')}
               </p>
               <CaretDown
                 size={18}
@@ -781,7 +806,7 @@ export default function Settings() {
                   <button
                     key={option.value}
                     type="button"
-                    aria-label={`Seleccionar ${option.name}`}
+                    aria-label={t('appearance.selectAccentAriaLabel', { name: option.name })}
                     title={option.name}
                     onClick={() => {
                       void setAccentColor(option.value);
@@ -805,8 +830,8 @@ export default function Settings() {
           <div className="mt-5 border-t border-slate-200/70 pt-3 dark:border-slate-700/60">
             <SettingRow
               icon={theme === 'dark' ? Moon : Sun}
-              title="Modo oscuro"
-              description="Cambia la iluminación general del workspace."
+              title={t('appearance.darkMode.title')}
+              description={t('appearance.darkMode.description')}
               onClick={() => void setTheme(theme === 'dark' ? 'light' : 'dark')}
               trailing={<ToggleSwitch checked={theme === 'dark'} accentColor={accentGradient} />}
               className="px-0 py-3"
@@ -819,12 +844,12 @@ export default function Settings() {
       <section id="onboarding" ref={setSectionRef('onboarding')} className="scroll-mt-24">
       <SettingRow
         icon={ArrowCounterClockwise}
-        title="Reiniciar onboarding"
-        description="Vuelve a mostrar el tour guiado la próxima vez que cargue la app."
+        title={t('onboarding.title')}
+        description={t('onboarding.description')}
         onClick={handleResetTour}
         trailing={
           <span className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
-            Reiniciar
+            {t('onboarding.action')}
           </span>
         }
         className="px-2 py-3"
@@ -835,37 +860,72 @@ export default function Settings() {
       <SurfaceCard className="overflow-hidden p-0">
         <div className="p-6 lg:p-7">
           <h2 className="mb-5 text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
-            Ajustes
+            {t('preferences.title')}
           </h2>
           <div className="space-y-1">
             <SettingRow
+              icon={Translate}
+              title={t('preferences.language.title')}
+              description={t('preferences.language.description')}
+              trailing={
+                <div
+                  role="group"
+                  aria-label={t('preferences.language.title')}
+                  className="inline-flex rounded-[0.85rem] border border-(--line-soft) bg-(--surface-card-strong) p-1"
+                >
+                  {(['es', 'en'] as const).map((lng) => {
+                    const isActive = locale === lng;
+                    return (
+                      <button
+                        key={lng}
+                        type="button"
+                        disabled={savingLocale}
+                        onClick={() => void handleLocaleChange(lng)}
+                        aria-pressed={isActive}
+                        className={cx(
+                          'rounded-[0.65rem] px-3 py-1.5 text-xs font-bold uppercase tracking-[0.12em] transition-colors',
+                          isActive
+                            ? 'bg-(--surface-card) text-(--text-primary) shadow-sm'
+                            : 'text-(--text-secondary) hover:text-(--text-primary)',
+                          savingLocale && 'opacity-60',
+                        )}
+                      >
+                        {t(`preferences.language.options.${lng}`)}
+                      </button>
+                    );
+                  })}
+                </div>
+              }
+              className="px-0 py-3"
+            />
+            <SettingRow
               icon={Bell}
-              title="Notificaciones push"
-              description="Recibe avisos cuando haya entregas cercanas o cambios relevantes."
+              title={t('preferences.notifications.title')}
+              description={t('preferences.notifications.description')}
               onClick={() => void toggleNotifications()}
               trailing={<ToggleSwitch checked={profile.notificationsEnabled} accentColor={accentGradient} />}
               className="px-0 py-3"
             />
             <SettingRow
               icon={Alarm}
-              title="Recordatorios de tareas"
-              description="Recibe avisos nativos un día antes y el día que vence cada entrega."
+              title={t('preferences.taskReminders.title')}
+              description={t('preferences.taskReminders.description')}
               onClick={() => void toggleTaskReminders()}
               trailing={<ToggleSwitch checked={taskRemindersEnabled} accentColor={accentGradient} />}
               className="px-0 py-3"
             />
             <SettingRow
               icon={CalendarBlank}
-              title="Google Calendar"
-              description={gcalConnected ? 'Conectado - tus entregas se sincronizan con Google Calendar.' : 'Sincroniza entregas y fechas con tu calendario.'}
+              title={t('preferences.googleCalendar.title')}
+              description={gcalConnected ? t('preferences.googleCalendar.descriptionConnected') : t('preferences.googleCalendar.descriptionDisconnected')}
               onClick={gcalLoading ? undefined : gcalConnected ? disconnectGoogleCalendar : connectGoogleCalendar}
               trailing={
                 gcalLoading ? (
                   <span className="text-xs text-[var(--text-secondary)]">…</span>
                 ) : gcalConnected ? (
-                  <StatusBadge tone="success">Conectado</StatusBadge>
+                  <StatusBadge tone="success">{t('preferences.googleCalendar.connected')}</StatusBadge>
                 ) : (
-                  <Button tone="secondary" className="text-xs">Conectar</Button>
+                  <Button tone="secondary" className="text-xs">{t('preferences.googleCalendar.connect')}</Button>
                 )
               }
               className="px-0 py-3"
@@ -879,12 +939,12 @@ export default function Settings() {
       <SurfaceCard className="overflow-hidden p-0">
         <div className="p-6 lg:p-7">
           <h2 className="mb-5 text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100">
-            Cuenta
+            {t('account.title')}
           </h2>
           <div className="mb-5 space-y-3">
             <div>
               <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
-                Nombre completo
+                {t('account.fields.nameLabel')}
               </label>
               <input
                 value={accountName}
@@ -892,15 +952,15 @@ export default function Settings() {
                 onBlur={() => void handleAccountNameBlur()}
                 className={fieldClass}
                 style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                placeholder="Tu nombre"
+                placeholder={t('account.fields.namePlaceholder')}
               />
             </div>
             <div>
               <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
-                Correo electrónico
+                {t('account.fields.emailLabel')}
               </label>
               <p className="rounded-[1rem] border border-[color:var(--line-soft)] bg-[var(--surface-muted)]/60 px-4 py-3.5 text-base sm:text-sm font-medium text-[var(--text-secondary)]">
-                {email || '-'}
+                {email || t('account.fields.emailFallback')}
               </p>
             </div>
           </div>
@@ -908,52 +968,52 @@ export default function Settings() {
           <div className="space-y-1">
             <SettingRow
               icon={Envelope}
-              title="Cambiar correo electrónico"
-              description="Actualiza el correo asociado a tu cuenta."
+              title={t('account.changeEmail.title')}
+              description={t('account.changeEmail.description')}
               onClick={() => setIsEmailModalOpen(true)}
               trailing={
                 <span className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
-                  Cambiar
+                  {t('account.changeEmail.action')}
                 </span>
               }
               className="px-0 py-3"
             />
             <SettingRow
               icon={LockKey}
-              title={provider === 'google' ? 'Agregar contraseña' : 'Cambiar contraseña'}
+              title={provider === 'google' ? t('account.changePassword.addTitle') : t('account.changePassword.changeTitle')}
               description={
                 provider === 'google'
-                  ? 'Agrega una contraseña para iniciar sesión también con tu email.'
-                  : 'Actualiza la contraseña de tu cuenta.'
+                  ? t('account.changePassword.addDescription')
+                  : t('account.changePassword.changeDescription')
               }
               onClick={() => setIsPasswordModalOpen(true)}
               trailing={
                 <span className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
-                  {provider === 'google' ? 'Agregar' : 'Cambiar'}
+                  {provider === 'google' ? t('account.changePassword.add') : t('account.changePassword.change')}
                 </span>
               }
               className="px-0 py-3"
             />
             <SettingRow
               icon={DownloadSimple}
-              title="Exportar mis datos"
-              description="Descarga un respaldo de tus tareas, clientes y contactos."
+              title={t('account.export.title')}
+              description={t('account.export.description')}
               onClick={() => void handleExport()}
               trailing={
                 <span className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
-                  Exportar
+                  {t('account.export.action')}
                 </span>
               }
               className="px-0 py-3"
             />
             <SettingRow
               icon={(props: any) => <SignOut {...props} weight="regular" />}
-              title="Cerrar sesión"
-              description="Cierra tu sesión actual en este dispositivo."
+              title={t('account.logout.title')}
+              description={t('account.logout.description')}
               onClick={onLogout}
               trailing={
                 <span className="text-[11px] font-bold tracking-[0.16em] text-slate-400 uppercase dark:text-slate-500">
-                  Salir
+                  {t('account.logout.action')}
                 </span>
               }
               className="px-0 py-3"
@@ -961,10 +1021,10 @@ export default function Settings() {
             {showDeleteConfirm ? (
               <div className="mt-2 rounded-[1rem] border border-rose-200 bg-rose-50 p-4 dark:border-rose-800/50 dark:bg-rose-950/30">
                 <p className="text-sm font-bold text-rose-700 dark:text-rose-400">
-                  ¿Estás seguro?
+                  {t('account.delete.confirmTitle')}
                 </p>
                 <p className="mt-1 text-sm text-rose-600/80 dark:text-rose-400/70">
-                  Esta acción cerrará tu sesión y eliminará tus datos. No se puede deshacer.
+                  {t('account.delete.confirmDescription')}
                 </p>
                 <div className="mt-4 flex gap-3">
                   <Button
@@ -973,26 +1033,26 @@ export default function Settings() {
                     className="justify-center"
                   >
                     <Trash size={16} />
-                    Si, eliminar cuenta
+                    {t('account.delete.confirm')}
                   </Button>
                   <Button
                     tone="secondary"
                     onClick={() => setShowDeleteConfirm(false)}
                     className="justify-center"
                   >
-                    Cancelar
+                    {t('account.delete.cancel')}
                   </Button>
                 </div>
               </div>
             ) : (
               <SettingRow
                 icon={UserMinus}
-                title="Eliminar cuenta"
-                description="Elimina tu cuenta y todos los datos asociados de forma permanente."
+                title={t('account.delete.title')}
+                description={t('account.delete.description')}
                 onClick={() => setShowDeleteConfirm(true)}
                 trailing={
                   <span className="text-[11px] font-bold tracking-[0.16em] text-rose-400 uppercase dark:text-rose-500">
-                    Eliminar
+                    {t('account.delete.action')}
                   </span>
                 }
                 className="px-0 py-3"
@@ -1010,8 +1070,8 @@ export default function Settings() {
           setEditingTemplateId(null);
         }}>
           <ModalPanel
-            title={editingTemplateId ? 'Editar plantilla' : 'Nueva plantilla'}
-            description={editingTemplateId ? 'Ajusta los detalles de tu mensaje reutilizable.' : 'Guarda un mensaje base para reutilizarlo despues con variables dinamicas.'}
+            title={editingTemplateId ? t('templates.modal.titleEdit') : t('templates.modal.titleNew')}
+            description={editingTemplateId ? t('templates.modal.descriptionEdit') : t('templates.modal.descriptionNew')}
             onClose={() => {
               setIsAddingTemplate(false);
               setEditingTemplateId(null);
@@ -1026,16 +1086,16 @@ export default function Settings() {
                       void deleteTemplate(editingTemplateId);
                       setIsAddingTemplate(false);
                       setEditingTemplateId(null);
-                      toast.info('Plantilla eliminada');
+                      toast.info(t('templates.toasts.deleted'));
                     }}
                     className="px-4"
-                    aria-label="Eliminar plantilla"
+                    aria-label={t('templates.modal.deleteAriaLabel')}
                   >
                     <Trash size={18} />
                   </Button>
                 )}
                 <Button type="submit" form="template-form" accentColor={accentGradient} className="flex-1 justify-center" disabled={savingTemplate}>
-                  {editingTemplateId ? 'Guardar cambios' : 'Guardar plantilla'}
+                  {editingTemplateId ? t('templates.modal.saveEdit') : t('templates.modal.saveNew')}
                 </Button>
               </div>
             }
@@ -1045,7 +1105,7 @@ export default function Settings() {
               <div>
                 <label className="mb-2 flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
                   <TextT size={14} />
-                  Nombre de la plantilla
+                  {t('templates.modal.nameLabel')}
                 </label>
                 <input
                   required
@@ -1053,20 +1113,20 @@ export default function Settings() {
                   onChange={(event) => setNewTemplate({ ...newTemplate, name: event.target.value })}
                   className={fieldClass}
                   style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                  placeholder="Ej. Primer contacto"
+                  placeholder={t('templates.modal.namePlaceholder')}
                 />
               </div>
             </div>
 
             <div className="rounded-[1.2rem] border bg-[var(--surface-muted)]/50 p-4 sm:p-5 [border-color:var(--line-soft)]">
               <h4 className="mb-4 text-[11px] font-extrabold tracking-[0.16em] text-[var(--text-primary)] uppercase">
-                Contenido del mensaje
+                {t('templates.modal.contentTitle')}
               </h4>
               <div className="space-y-4">
                 <div>
                   <label className="mb-2 flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
                     <TextAlignLeft size={14} />
-                    Cuerpo del mensaje
+                    {t('templates.modal.bodyLabel')}
                   </label>
                   <textarea
                     ref={bodyRef}
@@ -1075,24 +1135,24 @@ export default function Settings() {
                     onChange={(event) => setNewTemplate({ ...newTemplate, body: event.target.value })}
                     className={cx(fieldClass, 'min-h-[150px] bg-[var(--surface-card)]')}
                     style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                    placeholder="Hola {{contactName}}, me encantaria..."
+                    placeholder={t('templates.modal.bodyPlaceholder')}
                   />
                 </div>
 
                 <div>
                   <p className="mb-2 text-[10px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/70 uppercase">
-                    Insertar variable
+                    {t('templates.modal.insertVariable')}
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {TEMPLATE_VARIABLES.map((v) => (
+                    {TEMPLATE_VARIABLE_KEYS.map((key) => (
                       <button
-                        key={v.key}
+                        key={key}
                         type="button"
-                        onClick={() => insertVariable(v.key)}
+                        onClick={() => insertVariable(key)}
                         className="inline-flex items-center gap-1.5 rounded-full border border-[color:var(--line-soft)] bg-[var(--surface-card)] px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] transition-all hover:border-[color:var(--accent)] hover:text-[var(--accent)] active:scale-95"
                       >
                         <span className="text-[10px] opacity-60">{'{{'}</span>
-                        {v.label}
+                        {t(`templates.variableLabels.${key}`)}
                         <span className="text-[10px] opacity-60">{'}}'}</span>
                       </button>
                     ))}
@@ -1108,13 +1168,13 @@ export default function Settings() {
       {isEmailModalOpen ? (
         <OverlayModal onClose={closeEmailModal}>
           <ModalPanel
-            title="Cambiar correo electrónico"
-            description="Te enviaremos un enlace de confirmación al nuevo correo."
+            title={t('account.emailModal.title')}
+            description={t('account.emailModal.description')}
             onClose={closeEmailModal}
             footer={
               emailSent ? (
                 <Button tone="secondary" onClick={closeEmailModal} className="flex-1 justify-center">
-                  Cerrar
+                  {t('account.emailModal.close')}
                 </Button>
               ) : (
                 <Button
@@ -1124,14 +1184,14 @@ export default function Settings() {
                   className="flex-1 justify-center"
                   disabled={savingEmail}
                 >
-                  Enviar confirmación
+                  {t('account.emailModal.submit')}
                 </Button>
               )
             }
           >
             {emailSent ? (
               <div className="rounded-[1rem] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-800/50 dark:bg-emerald-950/30 dark:text-emerald-400">
-                Enviamos un enlace de confirmación a <strong>{emailForm.newEmail}</strong>. Haz clic en él para completar el cambio.
+                {t('account.emailModal.successPrefix')} <strong>{emailForm.newEmail}</strong>. {t('account.emailModal.successSuffix')}
               </div>
             ) : (
               <form id="email-form" onSubmit={(e: React.FormEvent) => void handleChangeEmail(e)} className="space-y-4">
@@ -1143,7 +1203,7 @@ export default function Settings() {
 
                 <div>
                   <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
-                    Nuevo correo
+                    {t('account.emailModal.newEmailLabel')}
                   </label>
                   <input
                     type="email"
@@ -1152,7 +1212,7 @@ export default function Settings() {
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmailForm({ ...emailForm, newEmail: e.target.value })}
                     className={fieldClass}
                     style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                    placeholder="nuevo@email.com"
+                    placeholder={t('account.emailModal.newEmailPlaceholder')}
                     autoComplete="email"
                   />
                 </div>
@@ -1160,7 +1220,7 @@ export default function Settings() {
                 {provider === 'email' && (
                   <div>
                     <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
-                      Confirmar con contraseña actual
+                      {t('account.emailModal.currentPasswordLabel')}
                     </label>
                     <input
                       type="password"
@@ -1169,7 +1229,7 @@ export default function Settings() {
                       onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmailForm({ ...emailForm, currentPassword: e.target.value })}
                       className={fieldClass}
                       style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                      placeholder="Tu contraseña actual"
+                      placeholder={t('account.emailModal.currentPasswordPlaceholder')}
                       autoComplete="current-password"
                     />
                   </div>
@@ -1183,11 +1243,11 @@ export default function Settings() {
       {isPasswordModalOpen ? (
         <OverlayModal onClose={closePasswordModal}>
           <ModalPanel
-            title={provider === 'google' ? 'Agregar contraseña' : 'Cambiar contraseña'}
+            title={provider === 'google' ? t('account.passwordModal.addTitle') : t('account.passwordModal.changeTitle')}
             description={
               provider === 'google'
-                ? 'Crea una contraseña para iniciar sesión con tu correo electrónico.'
-                : 'Introduce tu contraseña actual y define la nueva.'
+                ? t('account.passwordModal.addDescription')
+                : t('account.passwordModal.changeDescription')
             }
             onClose={closePasswordModal}
             footer={
@@ -1198,7 +1258,7 @@ export default function Settings() {
                 className="flex-1 justify-center"
                 disabled={savingPassword}
               >
-                {provider === 'google' ? 'Agregar contraseña' : 'Guardar contraseña'}
+                {provider === 'google' ? t('account.passwordModal.addSubmit') : t('account.passwordModal.changeSubmit')}
               </Button>
             }
           >
@@ -1211,12 +1271,12 @@ export default function Settings() {
 
               {provider === 'google' ? (
                 <div className="rounded-[1rem] border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-700 dark:border-sky-800/50 dark:bg-sky-950/30 dark:text-sky-400">
-                  Al agregar una contraseña podrás iniciar sesión con tu correo y esta contraseña, además de seguir usando Google.
+                  {t('account.passwordModal.googleNotice')}
                 </div>
               ) : (
                 <div>
                   <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
-                    Contraseña actual
+                    {t('account.passwordModal.currentPasswordLabel')}
                   </label>
                   <input
                     type="password"
@@ -1225,7 +1285,7 @@ export default function Settings() {
                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
                     className={fieldClass}
                     style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                    placeholder="Tu contraseña actual"
+                    placeholder={t('account.passwordModal.currentPasswordPlaceholder')}
                     autoComplete="current-password"
                   />
                 </div>
@@ -1233,7 +1293,7 @@ export default function Settings() {
 
               <div>
                 <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
-                  Nueva contraseña
+                  {t('account.passwordModal.newPasswordLabel')}
                 </label>
                 <input
                   type="password"
@@ -1242,14 +1302,14 @@ export default function Settings() {
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
                   className={fieldClass}
                   style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                  placeholder="Minimo 8 caracteres"
+                  placeholder={t('account.passwordModal.newPasswordPlaceholder')}
                   autoComplete="new-password"
                 />
               </div>
 
               <div>
                 <label className="mb-2 block text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
-                  Confirmar contraseña
+                  {t('account.passwordModal.confirmPasswordLabel')}
                 </label>
                 <input
                   type="password"
@@ -1258,7 +1318,7 @@ export default function Settings() {
                   onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
                   className={fieldClass}
                   style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                  placeholder="Repite la nueva contraseña"
+                  placeholder={t('account.passwordModal.confirmPasswordPlaceholder')}
                   autoComplete="new-password"
                 />
               </div>
@@ -1269,13 +1329,13 @@ export default function Settings() {
 
       {showCobradoConfirm ? (
         <ConfirmDialog
-          title="¿Desactivar el stage de Cobrado?"
+          title={t('pipeline.confirm.title')}
           description={
             cobradoTaskCount > 0
-              ? `Hay ${cobradoTaskCount} entrega${cobradoTaskCount === 1 ? '' : 's'} en Cobrado. Pasarán automáticamente a Completada y el stage dejará de mostrarse en el pipeline.`
-              : 'Completada pasará a ser el último estado del pipeline. Puedes volver a activar Cobrado cuando quieras.'
+              ? t('pipeline.confirm.descriptionWithTasks', { count: cobradoTaskCount })
+              : t('pipeline.confirm.descriptionEmpty')
           }
-          confirmLabel="Desactivar"
+          confirmLabel={t('pipeline.confirm.confirmLabel')}
           onConfirm={() => void confirmDisableCobrado()}
           onClose={() => setShowCobradoConfirm(false)}
           isConfirming={togglingCobrado}

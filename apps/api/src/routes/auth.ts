@@ -12,6 +12,7 @@ import type {
   DeleteAccountResponse,
   ForgotPasswordRequest,
   GoogleAuthUrlResponse,
+  Locale,
   LoginRequest,
   LogoutResponse,
   MeResponse,
@@ -19,7 +20,10 @@ import type {
   ResetPasswordRequest,
   SessionUser,
   SimpleSuccessResponse,
+  UpdateLocaleRequest,
+  UpdateLocaleResponse,
 } from '@shared';
+import { SUPPORTED_LOCALES } from '@shared';
 import { sendPasswordResetEmail, sendEmailChangeVerification, sendWelcomeEmail } from '../lib/email';
 import { ensureReferralCode, attachReferrer } from '../services/referrals';
 import type { GoogleCreds } from './calendar';
@@ -105,9 +109,10 @@ export function createAuthRouter(
     plan: 'free' | 'pro';
     trialEndsAt: string | null;
     subscribedUntil: string | null;
+    locale: 'es' | 'en';
   }> {
     const { rows } = await pool.query(
-      'SELECT plan, trial_ends_at, subscribed_until FROM users WHERE id = $1',
+      'SELECT plan, trial_ends_at, subscribed_until, locale FROM users WHERE id = $1',
       [userId],
     );
     const row = rows[0];
@@ -115,12 +120,13 @@ export function createAuthRouter(
       plan: (row?.plan === 'free' ? 'free' : 'pro'),
       trialEndsAt: row?.trial_ends_at ? new Date(row.trial_ends_at).toISOString() : null,
       subscribedUntil: row?.subscribed_until ? new Date(row.subscribed_until).toISOString() : null,
+      locale: row?.locale === 'en' ? 'en' : 'es',
     };
   }
 
   function withPlan(
-    base: Omit<SessionUser, 'plan' | 'trialEndsAt' | 'subscribedUntil' | 'earlyAccess'>,
-    planFields: { plan: 'free' | 'pro'; trialEndsAt: string | null; subscribedUntil: string | null },
+    base: Omit<SessionUser, 'plan' | 'trialEndsAt' | 'subscribedUntil' | 'earlyAccess' | 'locale'>,
+    planFields: { plan: 'free' | 'pro'; trialEndsAt: string | null; subscribedUntil: string | null; locale: 'es' | 'en' },
   ): SessionUser {
     return {
       ...base,
@@ -128,6 +134,7 @@ export function createAuthRouter(
       trialEndsAt: planFields.trialEndsAt,
       subscribedUntil: planFields.subscribedUntil,
       earlyAccess: earlyAccess,
+      locale: planFields.locale,
     };
   }
 
@@ -916,6 +923,34 @@ export function createAuthRouter(
     } catch (err) {
       console.error('Confirm email error:', err);
       res.redirect(`${appUrl}/?email_confirm=invalid`);
+    }
+  });
+
+  // ── PATCH /locale ─────────────────────────────────────────────
+  // Update the authenticated user's UI language preference.
+  router.patch('/locale', async (req, res) => {
+    const sessionUser = getSessionUser(req);
+    if (!sessionUser?.id) {
+      return res.status(401).json({ error: 'No autenticado.' });
+    }
+
+    const { locale } = (req.body ?? {}) as Partial<UpdateLocaleRequest>;
+    if (!locale || !SUPPORTED_LOCALES.includes(locale as Locale)) {
+      return res.status(400).json({ error: 'Idioma no soportado.' });
+    }
+
+    try {
+      await pool.query(
+        'UPDATE users SET locale = $1, updated_at = NOW() WHERE id = $2',
+        [locale, sessionUser.id],
+      );
+      const updated: SessionUser = { ...sessionUser, locale: locale as Locale };
+      setSessionUser(req, updated);
+      const response: UpdateLocaleResponse = { success: true, locale: locale as Locale };
+      res.json(response);
+    } catch (err) {
+      console.error('Update locale error:', err);
+      res.status(500).json({ error: 'Error al guardar el idioma.' });
     }
   });
 

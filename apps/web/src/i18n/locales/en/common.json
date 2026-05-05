@@ -1,0 +1,18 @@
+{
+  "settings": {
+    "language": {
+      "title": "Language",
+      "description": "Choose the interface language.",
+      "options": {
+        "es": "Español",
+        "en": "English"
+      },
+      "savingError": "We couldn't save your language. Please try again."
+    }
+  },
+  "landing": {
+    "languageToggle": {
+      "label": "Language"
+    }
+  }
+}

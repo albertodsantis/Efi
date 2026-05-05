@@ -1,0 +1,103 @@
+{
+  "nav": {
+    "languageLabel": "Idioma",
+    "betaBadge": "Beta",
+    "freeBadge": "Gratis"
+  },
+  "hero": {
+    "titlePart1": "La forma fácil de",
+    "titlePart2": "organizar tu trabajo.",
+    "subtitle": "Organiza <strong>tus tareas</strong>, <strong>tus clientes</strong> y <strong>tu presencia</strong>. Simple, todo en un solo lugar.",
+    "featuresEyebrowDesktop": "Lo que necesitas",
+    "featuresEyebrowMobile": "Todo lo que necesitas"
+  },
+  "features": {
+    "efilink": {
+      "title": "EfiLink",
+      "description": "Tu vitrina profesional. Un enlace único para tus clientes."
+    },
+    "pipeline": {
+      "title": "Pipeline",
+      "description": "Gestiona entregas con vistas Kanban, lista y calendario."
+    },
+    "directory": {
+      "title": "Directorio",
+      "description": "Organiza clientes y contactos con tus términos."
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "description": "Métricas, metas y actividad reciente en un solo vistazo."
+    },
+    "googleCalendar": {
+      "title": "Google Calendar",
+      "description": "Sincroniza tus entregas con tu calendario personal."
+    },
+    "aiAssistant": {
+      "title": "Asistente IA",
+      "description": "Consulta asistida por inteligencia artificial integrada."
+    }
+  },
+  "auth": {
+    "tabs": {
+      "login": "Iniciar sesión",
+      "register": "Crear cuenta"
+    },
+    "subtitle": {
+      "login": "Ingresa con tu cuenta existente.",
+      "register": "Crea tu workspace en segundos."
+    },
+    "serverUnreachable": "No se pudo contactar el servidor. Verifica tu conexión e intenta de nuevo.",
+    "googleButton": "Continuar con Google",
+    "divider": "o con email",
+    "fields": {
+      "name": {
+        "label": "Nombre",
+        "placeholder": "Tu nombre"
+      },
+      "email": {
+        "label": "Email",
+        "placeholder": "tu@email.com"
+      },
+      "password": {
+        "label": "Contraseña",
+        "placeholderLogin": "Tu contraseña",
+        "placeholderRegister": "Mínimo 8 caracteres",
+        "forgotLink": "¿Olvidaste tu contraseña?"
+      }
+    },
+    "consent": {
+      "prefix": "Acepto los",
+      "termsLink": "términos de servicio",
+      "and": "y la",
+      "privacyLink": "política de privacidad"
+    },
+    "submit": {
+      "loginIdle": "Iniciar sesión",
+      "loginLoading": "Ingresando…",
+      "registerIdle": "Crear cuenta",
+      "registerLoading": "Creando cuenta…"
+    },
+    "errors": {
+      "userNotFound": "No encontramos una cuenta con ese email. Crea una aquí.",
+      "generic": "Ocurrió un error. Intenta de nuevo.",
+      "googleUnavailable": "Login con Google no disponible. Configuración pendiente.",
+      "googleFailed": "No se pudo conectar con Google. Intenta de nuevo."
+    }
+  },
+  "forgot": {
+    "back": "← Volver",
+    "title": "Recuperar contraseña",
+    "description": "Ingresa tu email y te enviaremos un enlace para restablecer tu contraseña.",
+    "successMessage": "Si existe una cuenta con ese email, recibirás un enlace en los próximos minutos.",
+    "submitIdle": "Enviar enlace",
+    "submitLoading": "Enviando…"
+  },
+  "footer": {
+    "copyright": "© {{year}} Efi · workspace operativo para profesionales.",
+    "links": {
+      "terms": "Términos",
+      "privacy": "Privacidad",
+      "cookies": "Cookies"
+    }
+  }
+}

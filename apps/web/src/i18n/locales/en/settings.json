@@ -1,0 +1,228 @@
+{
+  "tabsAriaLabel": "Settings sections",
+  "sections": {
+    "plan": "Plan",
+    "referrals": "Referrals",
+    "templates": "Templates",
+    "pipeline": "Pipeline",
+    "appearance": "Appearance",
+    "onboarding": "Onboarding",
+    "preferences": "Preferences",
+    "account": "Account"
+  },
+  "feedback": {
+    "prefix": "Got feedback or ideas? Write to us at"
+  },
+  "plan": {
+    "title": "Plan",
+    "badges": {
+      "earlyAccess": "Pro · Early access",
+      "pro": "Pro",
+      "free": "Free"
+    },
+    "description": {
+      "earlyAccess": "Enjoy all Pro features for free during early access.",
+      "subscribed": "Subscription active until {{date}}.",
+      "trial": "{{days}} days left in your Pro trial.",
+      "free": "You're on the Free plan. Switch to Pro to unlock everything."
+    },
+    "viewPlans": "View plans"
+  },
+  "templates": {
+    "title": "Message templates",
+    "eyebrow": "Templates",
+    "newButton": "New template",
+    "variablesEyebrow": "Available variables",
+    "variableLabels": {
+      "brandName": "Client",
+      "contactName": "Contact",
+      "creatorName": "Me",
+      "deliverable": "Deliverable",
+      "mediaKitLink": "EfiLink"
+    },
+    "editAriaLabel": "Edit template {{name}}",
+    "empty": {
+      "title": "No templates yet",
+      "description": "Create a template to speed up replies, follow-ups, and first outreach.",
+      "create": "Create template"
+    },
+    "modal": {
+      "titleNew": "New template",
+      "titleEdit": "Edit template",
+      "descriptionNew": "Save a base message to reuse later with dynamic variables.",
+      "descriptionEdit": "Adjust the details of your reusable message.",
+      "saveNew": "Save template",
+      "saveEdit": "Save changes",
+      "deleteAriaLabel": "Delete template",
+      "nameLabel": "Template name",
+      "namePlaceholder": "e.g. First contact",
+      "contentTitle": "Message content",
+      "bodyLabel": "Message body",
+      "bodyPlaceholder": "Hi {{contactName}}, I'd love to...",
+      "insertVariable": "Insert variable"
+    },
+    "toasts": {
+      "saved": "Template saved",
+      "updated": "Template updated",
+      "deleted": "Template deleted",
+      "saveError": "We couldn't save the template."
+    }
+  },
+  "pipeline": {
+    "title": "Pipeline",
+    "description": "Tune how the pipeline works so it fits your way of working.",
+    "cobrado": {
+      "title": "Use Paid stage",
+      "descriptionEnabled": "Deliverables move through Paid as the last stage — ideal if you track payments.",
+      "descriptionDisabled": "Completed is the last stage of the pipeline. Enable it if you want to separate paid items.",
+      "enabledToast": "Paid stage enabled",
+      "disabledToastWithMoves_one": "Paid stage disabled. {{count}} deliverable moved to Completed.",
+      "disabledToastWithMoves_other": "Paid stage disabled. {{count}} deliverables moved to Completed.",
+      "disabledToast": "Paid stage disabled.",
+      "enableError": "We couldn't update the pipeline.",
+      "disableError": "We couldn't disable the stage."
+    },
+    "confirm": {
+      "title": "Disable the Paid stage?",
+      "descriptionWithTasks_one": "There is {{count}} deliverable in Paid. It will move automatically to Completed and the stage will no longer show in the pipeline.",
+      "descriptionWithTasks_other": "There are {{count}} deliverables in Paid. They will move automatically to Completed and the stage will no longer show in the pipeline.",
+      "descriptionEmpty": "Completed will become the last stage of the pipeline. You can re-enable Paid anytime.",
+      "confirmLabel": "Disable"
+    }
+  },
+  "appearance": {
+    "themeTitle": "Theme",
+    "themeCurrent": "Current theme: {{name}}.",
+    "currentAccentName": "Current",
+    "show": "Change",
+    "hide": "Hide",
+    "selectAccentAriaLabel": "Select {{name}}",
+    "darkMode": {
+      "title": "Dark mode",
+      "description": "Switches the workspace illumination."
+    }
+  },
+  "onboarding": {
+    "title": "Restart onboarding",
+    "description": "Show the guided tour again next time the app loads.",
+    "action": "Restart"
+  },
+  "preferences": {
+    "title": "Preferences",
+    "language": {
+      "title": "Language",
+      "description": "Choose the interface language.",
+      "options": {
+        "es": "Español",
+        "en": "English"
+      },
+      "savingError": "We couldn't save your language. Please try again."
+    },
+    "notifications": {
+      "title": "Push notifications",
+      "description": "Get alerts when you have nearby deliverables or relevant changes.",
+      "enabledToast": "Notifications enabled",
+      "disabledToast": "Notifications disabled",
+      "permissionRequired": "You need to allow browser notifications to enable them.",
+      "unsupported": "Your browser doesn't support push notifications."
+    },
+    "taskReminders": {
+      "title": "Task reminders",
+      "description": "Get native alerts the day before and the day each deliverable is due.",
+      "enabledToast": "Task reminders enabled",
+      "disabledToast": "Task reminders disabled",
+      "permissionRequired": "Enable notification permissions in your device settings."
+    },
+    "googleCalendar": {
+      "title": "Google Calendar",
+      "descriptionConnected": "Connected · your deliverables sync with Google Calendar.",
+      "descriptionDisconnected": "Sync deliverables and dates with your calendar.",
+      "connected": "Connected",
+      "connect": "Connect",
+      "connectedToast": "Google Calendar connected.",
+      "disconnectedToast": "Google Calendar disconnected.",
+      "connectError": "We couldn't start the Google Calendar connection.",
+      "disconnectError": "We couldn't disconnect Google Calendar."
+    }
+  },
+  "account": {
+    "title": "Account",
+    "fields": {
+      "nameLabel": "Full name",
+      "namePlaceholder": "Your name",
+      "emailLabel": "Email address",
+      "emailFallback": "—",
+      "nameUpdateError": "We couldn't update your name."
+    },
+    "changeEmail": {
+      "title": "Change email address",
+      "description": "Update the email tied to your account.",
+      "action": "Change"
+    },
+    "changePassword": {
+      "addTitle": "Add password",
+      "changeTitle": "Change password",
+      "addDescription": "Add a password to also sign in with your email.",
+      "changeDescription": "Update the password for your account.",
+      "add": "Add",
+      "change": "Change"
+    },
+    "export": {
+      "title": "Export my data",
+      "description": "Download a backup of your tasks, clients, and contacts.",
+      "action": "Export",
+      "successToast": "Data exported successfully",
+      "error": "We couldn't export your data."
+    },
+    "logout": {
+      "title": "Sign out",
+      "description": "Sign out from this device.",
+      "action": "Sign out"
+    },
+    "delete": {
+      "title": "Delete account",
+      "description": "Permanently delete your account and all associated data.",
+      "action": "Delete",
+      "confirmTitle": "Are you sure?",
+      "confirmDescription": "This will sign you out and delete your data. It can't be undone.",
+      "confirm": "Yes, delete account",
+      "cancel": "Cancel",
+      "error": "We couldn't delete your account. Please try again."
+    },
+    "emailModal": {
+      "title": "Change email address",
+      "description": "We'll send a confirmation link to the new email.",
+      "close": "Close",
+      "submit": "Send confirmation",
+      "newEmailLabel": "New email",
+      "newEmailPlaceholder": "new@email.com",
+      "currentPasswordLabel": "Confirm with current password",
+      "currentPasswordPlaceholder": "Your current password",
+      "successPrefix": "We sent a confirmation link to",
+      "successSuffix": "Click it to complete the change.",
+      "genericError": "We couldn't request the email change."
+    },
+    "passwordModal": {
+      "addTitle": "Add password",
+      "changeTitle": "Change password",
+      "addDescription": "Create a password to sign in with your email address.",
+      "changeDescription": "Enter your current password and choose a new one.",
+      "addSubmit": "Add password",
+      "changeSubmit": "Save password",
+      "googleNotice": "Once you add a password you'll be able to sign in with your email and this password, while still using Google.",
+      "currentPasswordLabel": "Current password",
+      "currentPasswordPlaceholder": "Your current password",
+      "newPasswordLabel": "New password",
+      "newPasswordPlaceholder": "At least 8 characters",
+      "confirmPasswordLabel": "Confirm password",
+      "confirmPasswordPlaceholder": "Repeat the new password",
+      "errors": {
+        "tooShort": "The password must be at least 8 characters.",
+        "mismatch": "Passwords don't match.",
+        "generic": "We couldn't change the password."
+      },
+      "successAdd": "Password added successfully",
+      "successChange": "Password updated successfully"
+    }
+  }
+}

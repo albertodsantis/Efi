@@ -3,6 +3,7 @@ import {createRoot} from 'react-dom/client';
 import { IconContext } from '@phosphor-icons/react';
 import App from './App.tsx';
 import './index.css';
+import './i18n';
 import { initializeStatusBar } from './lib/statusBar';
 import { initSentry } from './lib/sentry';
 import { initPostHog } from './lib/posthog';

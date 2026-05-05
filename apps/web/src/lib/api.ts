@@ -12,6 +12,8 @@ import type {
   ChangeEmailRequest,
   ChangePasswordRequest,
   ChangePasswordResponse,
+  Locale,
+  UpdateLocaleResponse,
   Contact,
   ContactWithAward,
   CreateContactRequest,
@@ -129,6 +131,11 @@ export const authApi = {
     apiRequest<{ success: boolean }>('/api/auth/change-email', {
       method: 'POST',
       body: JSON.stringify(payload),
+    }),
+  updateLocale: (locale: Locale) =>
+    apiRequest<UpdateLocaleResponse>('/api/auth/locale', {
+      method: 'PATCH',
+      body: JSON.stringify({ locale }),
     }),
 };
 

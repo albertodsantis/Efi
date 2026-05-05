@@ -26,6 +26,10 @@ export interface LoginRequest {
   password: string;
 }
 
+export type Locale = 'es' | 'en';
+
+export const SUPPORTED_LOCALES: readonly Locale[] = ['es', 'en'] as const;
+
 export interface SessionUser {
   id: string;
   email: string;
@@ -36,6 +40,16 @@ export interface SessionUser {
   trialEndsAt: string | null;
   subscribedUntil: string | null;
   earlyAccess: boolean;
+  locale: Locale;
+}
+
+export interface UpdateLocaleRequest {
+  locale: Locale;
+}
+
+export interface UpdateLocaleResponse {
+  success: boolean;
+  locale: Locale;
 }
 
 export interface MeResponse {

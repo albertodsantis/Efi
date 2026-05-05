@@ -1,0 +1,103 @@
+{
+  "nav": {
+    "languageLabel": "Language",
+    "betaBadge": "Beta",
+    "freeBadge": "Free"
+  },
+  "hero": {
+    "titlePart1": "The simple way to",
+    "titlePart2": "organize your work.",
+    "subtitle": "Organize <strong>your tasks</strong>, <strong>your clients</strong> and <strong>your presence</strong>. Simple, all in one place.",
+    "featuresEyebrowDesktop": "What you need",
+    "featuresEyebrowMobile": "Everything you need"
+  },
+  "features": {
+    "efilink": {
+      "title": "EfiLink",
+      "description": "Your professional showcase. A single link for your clients."
+    },
+    "pipeline": {
+      "title": "Pipeline",
+      "description": "Manage deliverables with Kanban, list and calendar views."
+    },
+    "directory": {
+      "title": "Directory",
+      "description": "Organize clients and contacts on your own terms."
+    },
+    "dashboard": {
+      "title": "Dashboard",
+      "description": "Metrics, goals and recent activity at a glance."
+    },
+    "googleCalendar": {
+      "title": "Google Calendar",
+      "description": "Sync your deliverables with your personal calendar."
+    },
+    "aiAssistant": {
+      "title": "AI Assistant",
+      "description": "Built-in assistance powered by AI."
+    }
+  },
+  "auth": {
+    "tabs": {
+      "login": "Sign in",
+      "register": "Create account"
+    },
+    "subtitle": {
+      "login": "Sign in to your existing account.",
+      "register": "Create your workspace in seconds."
+    },
+    "serverUnreachable": "We couldn't reach the server. Check your connection and try again.",
+    "googleButton": "Continue with Google",
+    "divider": "or with email",
+    "fields": {
+      "name": {
+        "label": "Name",
+        "placeholder": "Your name"
+      },
+      "email": {
+        "label": "Email",
+        "placeholder": "you@email.com"
+      },
+      "password": {
+        "label": "Password",
+        "placeholderLogin": "Your password",
+        "placeholderRegister": "At least 8 characters",
+        "forgotLink": "Forgot your password?"
+      }
+    },
+    "consent": {
+      "prefix": "I accept the",
+      "termsLink": "terms of service",
+      "and": "and the",
+      "privacyLink": "privacy policy"
+    },
+    "submit": {
+      "loginIdle": "Sign in",
+      "loginLoading": "Signing in…",
+      "registerIdle": "Create account",
+      "registerLoading": "Creating account…"
+    },
+    "errors": {
+      "userNotFound": "We couldn't find an account with that email. Create one here.",
+      "generic": "Something went wrong. Please try again.",
+      "googleUnavailable": "Google sign-in is unavailable. Configuration pending.",
+      "googleFailed": "We couldn't connect to Google. Please try again."
+    }
+  },
+  "forgot": {
+    "back": "← Back",
+    "title": "Recover password",
+    "description": "Enter your email and we'll send you a link to reset your password.",
+    "successMessage": "If an account exists with that email, you'll receive a link in the next few minutes.",
+    "submitIdle": "Send link",
+    "submitLoading": "Sending…"
+  },
+  "footer": {
+    "copyright": "© {{year}} Efi · operational workspace for professionals.",
+    "links": {
+      "terms": "Terms",
+      "privacy": "Privacy",
+      "cookies": "Cookies"
+    }
+  }
+}

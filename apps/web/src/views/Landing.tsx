@@ -8,12 +8,14 @@ import {
   Sparkle,
   Users,
 } from '@phosphor-icons/react';
-import type { SessionUser } from '@shared';
+import type { Locale, SessionUser } from '@shared';
+import { Trans, useTranslation } from 'react-i18next';
 import { authApi, ApiError } from '../lib/api';
 import { captureEvent } from '../lib/posthog';
 import { readReferralCode, clearReferralCode } from '../lib/referral';
 import { supabase } from '../lib/supabase';
 import { cx } from '../components/ui';
+import { isSupportedLocale, setI18nLocale } from '../i18n';
 import LegalModal, { type LegalPage } from '../components/LegalModal';
 
 type AuthMode = 'login' | 'register' | 'forgot';
@@ -24,38 +26,14 @@ const BRAND_ORANGE = '#F56040';
 const BRAND_PINK = '#E1306C';
 const BRAND_PURPLE = '#833AB4';
 
-const features = [
-  {
-    icon: Eye,
-    title: 'EfiLink',
-    description: 'Tu vitrina profesional. Un enlace único para tus clientes.',
-  },
-  {
-    icon: Kanban,
-    title: 'Pipeline',
-    description: 'Gestiona entregas con vistas Kanban, lista y calendario.',
-  },
-  {
-    icon: Users,
-    title: 'Directorio',
-    description: 'Organiza clientes y contactos con tus términos.',
-  },
-  {
-    icon: ChartBar,
-    title: 'Dashboard',
-    description: 'Métricas, metas y actividad reciente en un solo vistazo.',
-  },
-  {
-    icon: CalendarDots,
-    title: 'Google Calendar',
-    description: 'Sincroniza tus entregas con tu calendario personal.',
-  },
-  {
-    icon: Sparkle,
-    title: 'Asistente IA',
-    description: 'Consulta asistida por inteligencia artificial integrada.',
-  },
-];
+const FEATURE_KEYS = [
+  { id: 'efilink', icon: Eye },
+  { id: 'pipeline', icon: Kanban },
+  { id: 'directory', icon: Users },
+  { id: 'dashboard', icon: ChartBar },
+  { id: 'googleCalendar', icon: CalendarDots },
+  { id: 'aiAssistant', icon: Sparkle },
+] as const;
 
 export default function Landing({
   onLogin,
@@ -72,6 +50,15 @@ export default function Landing({
   const [serverUnreachable, setServerUnreachable] = useState(false);
   const [forgotSent, setForgotSent] = useState(false);
   const [legalPage, setLegalPage] = useState<LegalPage | null>(null);
+  const { t, i18n } = useTranslation('landing');
+  const currentLocale: Locale = isSupportedLocale(i18n.resolvedLanguage)
+    ? i18n.resolvedLanguage
+    : 'es';
+
+  const handleLandingLocaleChange = (next: Locale) => {
+    if (next === currentLocale) return;
+    void setI18nLocale(next);
+  };
 
   useEffect(() => {
     if (sessionStorage.getItem('efi:auth_network_error')) {
@@ -117,10 +104,10 @@ export default function Landing({
     } catch (err) {
       if (err instanceof ApiError && err.code === 'USER_NOT_FOUND') {
         setMode('register');
-        setError('No encontramos una cuenta con ese email. Crea una aqui.');
+        setError(t('auth.errors.userNotFound'));
         return;
       }
-      setError(err instanceof Error ? err.message : 'Ocurrio un error. Intenta de nuevo.');
+      setError(err instanceof Error ? err.message : t('auth.errors.generic'));
     } finally {
       setLoading(false);
     }
@@ -145,7 +132,7 @@ export default function Landing({
   const handleGoogleLogin = async () => {
     captureEvent('landing_cta_clicked', { cta: 'google_login' });
     if (!supabase) {
-      setError('Login con Google no disponible. Configuracion pendiente.');
+      setError(t('auth.errors.googleUnavailable'));
       return;
     }
 
@@ -158,10 +145,10 @@ export default function Landing({
       });
 
       if (sbError) {
-        setError('No se pudo conectar con Google. Intenta de nuevo.');
+        setError(t('auth.errors.googleFailed'));
       }
     } catch {
-      setError('No se pudo conectar con Google. Intenta de nuevo.');
+      setError(t('auth.errors.googleFailed'));
     }
   };
 
@@ -211,6 +198,32 @@ export default function Landing({
               <img src="/brand/wordmark.png" alt="Efi" width={26} height={32} className="select-none" draggable={false} />
             </picture>
           </div>
+          <div className="flex items-center gap-2">
+          <div
+            role="group"
+            aria-label={t('nav.languageLabel')}
+            className="inline-flex rounded-full border border-(--line-soft) bg-(--surface-card)/60 p-0.5 backdrop-blur-sm"
+          >
+            {(['es', 'en'] as const).map((lng) => {
+              const isActive = currentLocale === lng;
+              return (
+                <button
+                  key={lng}
+                  type="button"
+                  onClick={() => handleLandingLocaleChange(lng)}
+                  aria-pressed={isActive}
+                  className={cx(
+                    'rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] transition-colors',
+                    isActive
+                      ? 'bg-(--surface-card) text-(--text-primary) shadow-sm'
+                      : 'text-(--text-secondary) hover:text-(--text-primary)',
+                  )}
+                >
+                  {lng}
+                </button>
+              );
+            })}
+          </div>
           <span
             className="inline-flex items-center gap-1.5 rounded-full border bg-(--surface-card)/60 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-(--text-secondary) border-(--line-soft) backdrop-blur-sm"
           >
@@ -221,7 +234,7 @@ export default function Landing({
                 boxShadow: `0 0 8px ${BRAND_PINK}80`,
               }}
             />
-            Beta
+            {t('nav.betaBadge')}
             <span aria-hidden className="opacity-40">·</span>
             <span
               className="bg-clip-text text-transparent"
@@ -229,9 +242,10 @@ export default function Landing({
                 backgroundImage: `linear-gradient(135deg, ${BRAND_ORANGE}, ${BRAND_PINK})`,
               }}
             >
-              Gratis
+              {t('nav.freeBadge')}
             </span>
           </span>
+          </div>
         </nav>
 
         {/* Hero + Login */}
@@ -239,49 +253,50 @@ export default function Landing({
           {/* Left: Hero */}
           <div className="max-w-2xl">
             <h1 className="mt-2 text-[clamp(2.2rem,5.5vw,3.8rem)] font-black leading-[1.08] tracking-tight text-[var(--text-primary)]">
-              La forma fácil de{' '}
+              {t('hero.titlePart1')}{' '}
               <span
                 className="bg-clip-text text-transparent"
                 style={{
                   backgroundImage: `linear-gradient(135deg, ${BRAND_ORANGE}, ${BRAND_PINK}, ${BRAND_PURPLE})`,
                 }}
               >
-                organizar tu trabajo.
+                {t('hero.titlePart2')}
               </span>
             </h1>
 
             <p className="mt-6 max-w-xl text-base leading-7 text-(--text-primary) sm:text-lg sm:leading-8">
-              Organiza <strong className="font-semibold">tus tareas</strong>, <strong className="font-semibold">tus clientes</strong> y <strong className="font-semibold">tu presencia</strong>. Simple, todo en un solo lugar.
+              <Trans
+                ns="landing"
+                i18nKey="hero.subtitle"
+                components={{ strong: <strong className="font-semibold" /> }}
+              />
             </p>
 
             {/* Feature grid - visible on desktop below hero */}
             <div className="mt-12 hidden lg:block">
               <p className="text-[11px] font-bold tracking-[0.18em] text-[var(--text-secondary)]/80 uppercase">
-                Lo que necesitas
+                {t('hero.featuresEyebrowDesktop')}
               </p>
               <div className="mt-5 grid grid-cols-2 gap-3 xl:grid-cols-3">
-                {features.map((feat) => {
-                  const Icon = feat.icon;
-                  return (
+                {FEATURE_KEYS.map(({ id, icon: Icon }) => (
+                  <div
+                    key={id}
+                    className="rounded-[1.05rem] border bg-[var(--surface-card)]/60 p-4 backdrop-blur-sm transition-colors [border-color:var(--line-soft)]"
+                  >
                     <div
-                      key={feat.title}
-                      className="rounded-[1.05rem] border bg-[var(--surface-card)]/60 p-4 backdrop-blur-sm transition-colors [border-color:var(--line-soft)]"
+                      className="flex h-9 w-9 items-center justify-center rounded-lg"
+                      style={{ backgroundColor: `${BRAND_PURPLE}18`, color: BRAND_PURPLE }}
                     >
-                      <div
-                        className="flex h-9 w-9 items-center justify-center rounded-lg"
-                        style={{ backgroundColor: `${BRAND_PURPLE}18`, color: BRAND_PURPLE }}
-                      >
-                        <Icon size={16} />
-                      </div>
-                      <p className="mt-3 text-sm font-bold text-[var(--text-primary)]">
-                        {feat.title}
-                      </p>
-                      <p className="mt-1 text-xs leading-5 text-[var(--text-secondary)]">
-                        {feat.description}
-                      </p>
+                      <Icon size={16} />
                     </div>
-                  );
-                })}
+                    <p className="mt-3 text-sm font-bold text-[var(--text-primary)]">
+                      {t(`features.${id}.title`)}
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-[var(--text-secondary)]">
+                      {t(`features.${id}.description`)}
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -311,7 +326,7 @@ export default function Landing({
                           : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]',
                       )}
                     >
-                      Iniciar sesion
+                      {t('auth.tabs.login')}
                     </button>
                     <button
                       type="button"
@@ -323,7 +338,7 @@ export default function Landing({
                           : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]',
                       )}
                     >
-                      Crear cuenta
+                      {t('auth.tabs.register')}
                     </button>
                   </div>
                 )}
@@ -337,31 +352,31 @@ export default function Landing({
                         onClick={() => { switchMode('login'); setForgotSent(false); }}
                         className="mb-4 text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
                       >
-                        ← Volver
+                        {t('forgot.back')}
                       </button>
                       <h3 className="text-base font-bold text-[var(--text-primary)]">
-                        Recuperar contraseña
+                        {t('forgot.title')}
                       </h3>
                       <p className="mt-1 text-sm text-[var(--text-secondary)]">
-                        Ingresa tu email y te enviaremos un enlace para restablecer tu contraseña.
+                        {t('forgot.description')}
                       </p>
                     </div>
 
                     {forgotSent ? (
                       <div className="rounded-[0.85rem] border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700 dark:border-emerald-800/50 dark:bg-emerald-950/30 dark:text-emerald-400">
-                        Si existe una cuenta con ese email, recibirás un enlace en los próximos minutos.
+                        {t('forgot.successMessage')}
                       </div>
                     ) : (
                       <form onSubmit={(e) => void handleForgotPassword(e)} className="space-y-3.5">
                         <div>
                           <label className="mb-1.5 block text-xs font-bold text-[var(--text-secondary)]">
-                            Email
+                            {t('auth.fields.email.label')}
                           </label>
                           <input
                             type="email"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            placeholder="tu@email.com"
+                            placeholder={t('auth.fields.email.placeholder')}
                             required
                             autoComplete="email"
                             className="w-full rounded-[0.85rem] border bg-[var(--surface-card)] px-4 py-3 text-base sm:text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/40 transition-colors focus:bg-[var(--surface-card-strong)] [border-color:var(--line-soft)]"
@@ -373,7 +388,7 @@ export default function Landing({
                           className="flex w-full items-center justify-center gap-2 rounded-[1rem] px-4 py-3.5 text-sm font-bold text-white transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                           style={{ backgroundImage: `linear-gradient(135deg, ${BRAND_ORANGE}, ${BRAND_PINK}, ${BRAND_PURPLE})` }}
                         >
-                          {loading ? 'Enviando…' : 'Enviar enlace'}
+                          {loading ? t('forgot.submitLoading') : t('forgot.submitIdle')}
                         </button>
                       </form>
                     )}
@@ -381,14 +396,12 @@ export default function Landing({
                 ) : (
                   <>
                     <p className="mt-4 text-sm leading-6 text-[var(--text-secondary)]">
-                      {isLogin
-                        ? 'Ingresa con tu cuenta existente.'
-                        : 'Crea tu workspace en segundos.'}
+                      {isLogin ? t('auth.subtitle.login') : t('auth.subtitle.register')}
                     </p>
 
                     {serverUnreachable && (
                       <div className="mt-4 rounded-[0.85rem] border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-800/50 dark:bg-amber-950/30 dark:text-amber-400">
-                        No se pudo contactar el servidor. Verifica tu conexión e intenta de nuevo.
+                        {t('auth.serverUnreachable')}
                       </div>
                     )}
 
@@ -404,14 +417,14 @@ export default function Landing({
                         <path d="M3.964 10.71A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.71V4.958H.957A8.997 8.997 0 000 9c0 1.452.348 2.827.957 4.042l3.007-2.332z" fill="#FBBC05"/>
                         <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
                       </svg>
-                      Continuar con Google
+                      {t('auth.googleButton')}
                     </button>
 
                     {/* Divider */}
                     <div className="my-5 flex items-center gap-4">
                       <div className="h-px flex-1 bg-[var(--line-soft)]" />
                       <span className="text-[11px] font-bold tracking-[0.14em] text-[var(--text-secondary)]/60 uppercase">
-                        o con email
+                        {t('auth.divider')}
                       </span>
                       <div className="h-px flex-1 bg-[var(--line-soft)]" />
                     </div>
@@ -424,14 +437,14 @@ export default function Landing({
                             htmlFor="auth-name"
                             className="mb-1.5 block text-xs font-bold text-[var(--text-secondary)]"
                           >
-                            Nombre
+                            {t('auth.fields.name.label')}
                           </label>
                           <input
                             id="auth-name"
                             type="text"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            placeholder="Tu nombre"
+                            placeholder={t('auth.fields.name.placeholder')}
                             required={!isLogin}
                             autoComplete="name"
                             className="w-full rounded-[0.85rem] border bg-[var(--surface-card)] px-4 py-3 text-base sm:text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/40 transition-colors focus:bg-[var(--surface-card-strong)] [border-color:var(--line-soft)]"
@@ -444,14 +457,14 @@ export default function Landing({
                           htmlFor="auth-email"
                           className="mb-1.5 block text-xs font-bold text-[var(--text-secondary)]"
                         >
-                          Email
+                          {t('auth.fields.email.label')}
                         </label>
                         <input
                           id="auth-email"
                           type="email"
                           value={email}
                           onChange={(e) => setEmail(e.target.value)}
-                          placeholder="tu@email.com"
+                          placeholder={t('auth.fields.email.placeholder')}
                           required
                           autoComplete="email"
                           className="w-full rounded-[0.85rem] border bg-[var(--surface-card)] px-4 py-3 text-base sm:text-sm text-[var(--text-primary)] placeholder:text-[var(--text-secondary)]/40 transition-colors focus:bg-[var(--surface-card-strong)] [border-color:var(--line-soft)]"
@@ -463,7 +476,7 @@ export default function Landing({
                             htmlFor="auth-password"
                             className="text-xs font-bold text-[var(--text-secondary)]"
                           >
-                            Contraseña
+                            {t('auth.fields.password.label')}
                           </label>
                           {isLogin && (
                             <button
@@ -471,7 +484,7 @@ export default function Landing({
                               onClick={() => switchMode('forgot')}
                               className="text-[11px] font-bold text-[var(--text-secondary)]/60 hover:text-[var(--text-secondary)] transition-colors"
                             >
-                              ¿Olvidaste tu contraseña?
+                              {t('auth.fields.password.forgotLink')}
                             </button>
                           )}
                         </div>
@@ -481,7 +494,7 @@ export default function Landing({
                             type={showPassword ? 'text' : 'password'}
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            placeholder={isLogin ? 'Tu contraseña' : 'Mínimo 8 caracteres'}
+                            placeholder={isLogin ? t('auth.fields.password.placeholderLogin') : t('auth.fields.password.placeholderRegister')}
                             required
                             minLength={isLogin ? undefined : 8}
                             autoComplete={isLogin ? 'current-password' : 'new-password'}
@@ -506,21 +519,21 @@ export default function Landing({
                             className="mt-0.5 h-4 w-4 shrink-0 rounded border-[color:var(--line-soft)] accent-[var(--accent)]"
                           />
                           <span className="text-[11px] leading-5 text-[var(--text-secondary)]/70">
-                            Acepto los{' '}
+                            {t('auth.consent.prefix')}{' '}
                             <button
                               type="button"
                               onClick={(e) => { e.preventDefault(); setLegalPage('terms'); }}
                               className="font-bold text-(--text-secondary) underline underline-offset-2 hover:text-(--text-primary) transition-colors"
                             >
-                              términos de servicio
+                              {t('auth.consent.termsLink')}
                             </button>
-                            {' '}y la{' '}
+                            {' '}{t('auth.consent.and')}{' '}
                             <button
                               type="button"
                               onClick={(e) => { e.preventDefault(); setLegalPage('privacy'); }}
                               className="font-bold text-(--text-secondary) underline underline-offset-2 hover:text-(--text-primary) transition-colors"
                             >
-                              política de privacidad
+                              {t('auth.consent.privacyLink')}
                             </button>
                           </span>
                         </label>
@@ -540,8 +553,8 @@ export default function Landing({
                         }}
                       >
                         {loading
-                          ? (isLogin ? 'Ingresando…' : 'Creando cuenta…')
-                          : (isLogin ? 'Iniciar sesion' : 'Crear cuenta')}
+                          ? (isLogin ? t('auth.submit.loginLoading') : t('auth.submit.registerLoading'))
+                          : (isLogin ? t('auth.submit.loginIdle') : t('auth.submit.registerIdle'))}
                       </button>
                     </form>
                   </>
@@ -555,31 +568,28 @@ export default function Landing({
         {/* Features - mobile only (below login card) */}
         <div className="mt-12 pb-16 lg:hidden">
           <p className="text-[11px] font-bold tracking-[0.18em] text-[var(--text-secondary)]/80 uppercase">
-            Todo lo que necesitas
+            {t('hero.featuresEyebrowMobile')}
           </p>
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
-            {features.map((feat) => {
-              const Icon = feat.icon;
-              return (
+            {FEATURE_KEYS.map(({ id, icon: Icon }) => (
+              <div
+                key={id}
+                className="rounded-[1.05rem] border bg-[var(--surface-card)]/60 p-4 backdrop-blur-sm transition-colors [border-color:var(--line-soft)]"
+              >
                 <div
-                  key={feat.title}
-                  className="rounded-[1.05rem] border bg-[var(--surface-card)]/60 p-4 backdrop-blur-sm transition-colors [border-color:var(--line-soft)]"
+                  className="flex h-9 w-9 items-center justify-center rounded-lg"
+                  style={{ backgroundColor: `${BRAND_PURPLE}18`, color: BRAND_PURPLE }}
                 >
-                  <div
-                    className="flex h-9 w-9 items-center justify-center rounded-lg"
-                    style={{ backgroundColor: `${BRAND_PURPLE}18`, color: BRAND_PURPLE }}
-                  >
-                    <Icon size={16} />
-                  </div>
-                  <p className="mt-3 text-sm font-bold text-[var(--text-primary)]">
-                    {feat.title}
-                  </p>
-                  <p className="mt-1 text-xs leading-5 text-[var(--text-secondary)]">
-                    {feat.description}
-                  </p>
+                  <Icon size={16} />
                 </div>
-              );
-            })}
+                <p className="mt-3 text-sm font-bold text-[var(--text-primary)]">
+                  {t(`features.${id}.title`)}
+                </p>
+                <p className="mt-1 text-xs leading-5 text-[var(--text-secondary)]">
+                  {t(`features.${id}.description`)}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -587,21 +597,21 @@ export default function Landing({
         <div className="border-t py-8 [border-color:var(--line-soft)] lg:mt-16">
           <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
             <p className="text-xs text-(--text-secondary)/60">
-              © {new Date().getFullYear()} Efi - workspace operativo para profesionales.
+              {t('footer.copyright', { year: new Date().getFullYear() })}
             </p>
             <div className="flex items-center gap-4">
               {([
-                { label: 'Términos', page: 'terms' as LegalPage, href: '/terminos' },
-                { label: 'Privacidad', page: 'privacy' as LegalPage, href: '/privacidad' },
-                { label: 'Cookies', page: 'cookies' as LegalPage, href: undefined },
-              ]).map(({ label, page, href }) => (
+                { key: 'terms', page: 'terms' as LegalPage, href: '/terminos' },
+                { key: 'privacy', page: 'privacy' as LegalPage, href: '/privacidad' },
+                { key: 'cookies', page: 'cookies' as LegalPage, href: undefined },
+              ]).map(({ key, page, href }) => (
                 <a
                   key={page}
                   href={href ?? '#'}
                   onClick={(e) => { e.preventDefault(); setLegalPage(page); }}
                   className="text-xs text-(--text-secondary)/60 hover:text-(--text-secondary) transition-colors"
                 >
-                  {label}
+                  {t(`footer.links.${key}`)}
                 </a>
               ))}
             </div>

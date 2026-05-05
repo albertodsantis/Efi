@@ -11,6 +11,7 @@ import type {
   Contact,
   EfisystemAward,
   EfisystemSnapshot,
+  Locale,
   Partner,
   PlanState,
   Task,
@@ -18,7 +19,8 @@ import type {
   UpdateProfileRequest,
   UserProfile,
 } from '@shared';
-import { appApi } from '../lib/api';
+import { appApi, authApi } from '../lib/api';
+import { setI18nLocale } from '../i18n';
 import { getAccentCssVariables, getGradientCss, getRepresentativeHex, getSurfaceOverrides, isGradientAccent, isRetroAccent } from '../lib/accent';
 import { addLocalDays, formatLocalDateISO } from '../lib/date';
 import { toast } from '../lib/toast';
@@ -79,6 +81,8 @@ interface AppContextType extends AppState {
   provider: 'email' | 'google';
   onProviderChange: (provider: 'email' | 'google') => void;
   planState: PlanState;
+  locale: Locale;
+  setLocale: (locale: Locale) => Promise<void>;
   accentHex: string;
   accentGradient: string;
   isBootstrapping: boolean;
@@ -168,7 +172,38 @@ function upsertPartnerInState(partners: Partner[], incomingPartner: Partner) {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
-export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => void; email: string; provider: 'email' | 'google'; onProviderChange: (provider: 'email' | 'google') => void; planState: PlanState }> = ({ children, onLogout, email, provider, onProviderChange, planState }) => {
+export const AppProvider: React.FC<{
+  children: React.ReactNode;
+  onLogout: () => void;
+  email: string;
+  provider: 'email' | 'google';
+  onProviderChange: (provider: 'email' | 'google') => void;
+  planState: PlanState;
+  initialLocale: Locale;
+  onLocaleChange: (locale: Locale) => void;
+}> = ({ children, onLogout, email, provider, onProviderChange, planState, initialLocale, onLocaleChange }) => {
+  const [locale, setLocaleState] = useState<Locale>(initialLocale);
+
+  // Keep i18next in sync with the user's locale on mount and when it changes.
+  useEffect(() => {
+    void setI18nLocale(locale);
+  }, [locale]);
+
+  const setLocale = useCallback(async (next: Locale) => {
+    if (next === locale) return;
+    const previous = locale;
+    setLocaleState(next);
+    onLocaleChange(next);
+    try {
+      await authApi.updateLocale(next);
+    } catch (error) {
+      // Revert on failure so the UI matches what's actually persisted server-side.
+      setLocaleState(previous);
+      onLocaleChange(previous);
+      throw error;
+    }
+  }, [locale, onLocaleChange]);
+
   const [state, setState] = useState<AppState>(emptyState);
   const [efisystem, setEfisystem] = useState<EfisystemSnapshot>(emptyEfisystem);
   const [isBootstrapping, setIsBootstrapping] = useState(true);
@@ -798,6 +833,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     provider,
     onProviderChange,
     planState,
+    locale,
+    setLocale,
     accentHex,
     accentGradient,
     isBootstrapping,
@@ -836,6 +873,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode; onLogout: () => 
     provider,
     onProviderChange,
     planState,
+    locale,
+    setLocale,
     accentHex,
     accentGradient,
     isBootstrapping,
