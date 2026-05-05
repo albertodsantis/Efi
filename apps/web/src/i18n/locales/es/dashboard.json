@@ -1,0 +1,165 @@
+{
+  "taskStatus": {
+    "Pendiente": "Pendiente",
+    "En Progreso": "En Progreso",
+    "En Revisión": "En Revisión",
+    "Completada": "Completada",
+    "Cobrado": "Cobrado"
+  },
+  "taskCard": {
+    "noPartner": "Sin cliente",
+    "complete": "Completar"
+  },
+  "toasts": {
+    "taskCompleted": "¡Tarea completada!",
+    "taskCompleteError": "Error al actualizar la tarea"
+  },
+  "goalEffort": {
+    "title": "Tareas por objetivo",
+    "noGoal": "Sin objetivo"
+  },
+  "revenueChart": {
+    "yearTitle": "Ingresos {{year}}",
+    "projected": "Proyectado",
+    "collected": "Cobrado",
+    "income": "Ingresos",
+    "tooltipProjectedSuffix": "proy.",
+    "tooltipCollectedSuffix": "cobr.",
+    "tooltipIncomeSuffix": "ingr."
+  },
+  "badgesDrawer": {
+    "title": "Sala de Placas",
+    "progress": "{{unlocked}} de {{total}} ganados"
+  },
+  "badges": {
+    "lockedSecret": "???",
+    "secretHint": "Algunos logros no se anuncian",
+    "sections": {
+      "primeros-pasos": {
+        "title": "Primeros Pasos",
+        "subtitle": "Los cimientos de tu operación"
+      },
+      "hitos": {
+        "title": "Hitos",
+        "subtitle": "La huella de tu volumen"
+      },
+      "habitos": {
+        "title": "Hábitos",
+        "subtitle": "Cómo trabajas, no cuánto"
+      },
+      "rachas": {
+        "title": "Rachas y Constancia",
+        "subtitle": "Aparecer todos los días cuenta"
+      },
+      "leyenda": {
+        "title": "Leyenda",
+        "subtitle": "Las raras — algunas ni siquiera las ves venir"
+      }
+    },
+    "labels": {
+      "perfil_estelar": "EfiLink Activado",
+      "primer_trazo": "Primer Trazo",
+      "red_inicial": "Red Inicial",
+      "rumbo_fijo": "Rumbo Fijo",
+      "vision_clara": "Visión Clara",
+      "identidad_propia": "Identidad Propia",
+      "motor_de_ideas": "Motor de Ideas",
+      "fabrica_de_proyectos": "Fábrica de Proyectos",
+      "promesa_cumplida": "Promesa Cumplida",
+      "creador_imparable": "Creador Imparable",
+      "negocio_en_marcha": "Negocio en Marcha",
+      "lluvia_de_billetes": "Lluvia de Billetes",
+      "circulo_intimo": "Círculo Íntimo",
+      "directorio_dorado": "Directorio Dorado",
+      "madrugador": "Madrugador",
+      "noctambulo": "Noctámbulo",
+      "cierre_limpio": "Cierre Limpio",
+      "cobrador_implacable": "Cobrador Implacable",
+      "pipeline_zen": "Pipeline Zen",
+      "visionario_cumplido": "Visionario Cumplido",
+      "conector": "Conector",
+      "en_la_zona": "En la Zona",
+      "racha_de_hierro": "Racha de Hierro",
+      "inamovible": "Inamovible",
+      "semana_perfecta": "Semana Perfecta",
+      "mes_de_oro": "Mes de Oro",
+      "fundador": "Fundador",
+      "tres_en_un_dia": "Triple Jornada",
+      "cobro_finde": "Fin de Semana",
+      "icono_efi": "Ícono Efi",
+      "secretLocked": "Secreta"
+    },
+    "descriptions": {
+      "perfil_estelar": "Empezaste a construir tu EfiLink",
+      "primer_trazo": "Creaste tu primera entrega",
+      "red_inicial": "Sumaste 2 socios a tu red",
+      "rumbo_fijo": "Definiste 2 objetivos",
+      "vision_clara": "Definiste 3 objetivos estratégicos",
+      "identidad_propia": "Personalizaste tu color de acento",
+      "motor_de_ideas": "Creaste 5 entregas",
+      "fabrica_de_proyectos": "Creaste 25 entregas",
+      "promesa_cumplida": "Completaste 10 entregas",
+      "creador_imparable": "Completaste 25 entregas",
+      "negocio_en_marcha": "Cobraste 5 entregas",
+      "lluvia_de_billetes": "Cobraste 20 entregas",
+      "circulo_intimo": "Agregaste 5 socios a tu red",
+      "directorio_dorado": "10 socios y 10 contactos en tu red",
+      "madrugador": "Creaste entregas antes de las 8am en 5 días distintos",
+      "noctambulo": "Creaste entregas después de las 11pm en 5 días distintos",
+      "cierre_limpio": "Completaste 5 entregas sin mover la fecha original",
+      "cobrador_implacable": "Cobraste 5 entregas en menos de 7 días",
+      "pipeline_zen": "7 días seguidos sin entregas vencidas",
+      "visionario_cumplido": "Alcanzaste 3 objetivos estratégicos",
+      "conector": "Contactaste a 10 socios en los últimos 30 días",
+      "en_la_zona": "3 días seguidos activos",
+      "racha_de_hierro": "7 días seguidos activos",
+      "inamovible": "30 días seguidos activos",
+      "semana_perfecta": "1 semana con ≥3 completadas y 0 vencidas",
+      "mes_de_oro": "4 semanas perfectas en un mismo mes",
+      "fundador": "Formaste parte de la etapa beta de Efi",
+      "tres_en_un_dia": "Completaste 3 entregas el mismo día",
+      "cobro_finde": "Cobraste una entrega un sábado o domingo",
+      "icono_efi": "Desbloqueaste 25 placas"
+    }
+  },
+  "period": {
+    "all": "Todo",
+    "month": "Mes",
+    "year": "Año",
+    "previousAriaLabel": "Período anterior",
+    "nextAriaLabel": "Período siguiente"
+  },
+  "kpis": {
+    "open": "Abierto",
+    "collected": "Cobrado",
+    "toCollect": "Por cobrar",
+    "deliveries": "Entregas",
+    "clients": "Clientes",
+    "contacts": "Contactos"
+  },
+  "annualGoal": {
+    "title": "Meta anual",
+    "achieved": "{{percent}}% alcanzado"
+  },
+  "pipeline": {
+    "title": "Pipeline",
+    "taskCount_one": "{{count}} tarea",
+    "taskCount_other": "{{count}} tareas"
+  },
+  "agenda": {
+    "title": "Agenda",
+    "groups": {
+      "overdue": "Retrasadas ({{count}})",
+      "today": "Hoy ({{count}})",
+      "tomorrow": "Mañana ({{count}})",
+      "thisWeek": "Esta semana ({{count}})"
+    },
+    "empty": {
+      "title": "Día libre de entregas",
+      "description": "Aprovecha el tiempo para prospectar nuevos clientes o planificar contenido."
+    }
+  },
+  "toCollect": {
+    "title": "Por cobrar"
+  }
+}

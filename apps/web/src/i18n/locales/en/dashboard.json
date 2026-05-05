@@ -1,0 +1,165 @@
+{
+  "taskStatus": {
+    "Pendiente": "Pending",
+    "En Progreso": "In Progress",
+    "En Revisión": "In Review",
+    "Completada": "Completed",
+    "Cobrado": "Paid"
+  },
+  "taskCard": {
+    "noPartner": "No client",
+    "complete": "Complete"
+  },
+  "toasts": {
+    "taskCompleted": "Task completed!",
+    "taskCompleteError": "Couldn't update the task"
+  },
+  "goalEffort": {
+    "title": "Tasks by goal",
+    "noGoal": "No goal"
+  },
+  "revenueChart": {
+    "yearTitle": "Revenue {{year}}",
+    "projected": "Projected",
+    "collected": "Paid",
+    "income": "Income",
+    "tooltipProjectedSuffix": "proj.",
+    "tooltipCollectedSuffix": "paid",
+    "tooltipIncomeSuffix": "inc."
+  },
+  "badgesDrawer": {
+    "title": "Badge Hall",
+    "progress": "{{unlocked}} of {{total}} earned"
+  },
+  "badges": {
+    "lockedSecret": "???",
+    "secretHint": "Some achievements stay quiet",
+    "sections": {
+      "primeros-pasos": {
+        "title": "First Steps",
+        "subtitle": "The foundations of your operation"
+      },
+      "hitos": {
+        "title": "Milestones",
+        "subtitle": "The mark of your output"
+      },
+      "habitos": {
+        "title": "Habits",
+        "subtitle": "How you work, not how much"
+      },
+      "rachas": {
+        "title": "Streaks & Consistency",
+        "subtitle": "Showing up every day matters"
+      },
+      "leyenda": {
+        "title": "Legend",
+        "subtitle": "The rare ones — some you won't see coming"
+      }
+    },
+    "labels": {
+      "perfil_estelar": "EfiLink Activated",
+      "primer_trazo": "First Stroke",
+      "red_inicial": "Initial Network",
+      "rumbo_fijo": "Set Course",
+      "vision_clara": "Clear Vision",
+      "identidad_propia": "Own Identity",
+      "motor_de_ideas": "Idea Engine",
+      "fabrica_de_proyectos": "Project Factory",
+      "promesa_cumplida": "Promise Kept",
+      "creador_imparable": "Unstoppable Creator",
+      "negocio_en_marcha": "Business in Motion",
+      "lluvia_de_billetes": "Money Rain",
+      "circulo_intimo": "Inner Circle",
+      "directorio_dorado": "Golden Directory",
+      "madrugador": "Early Bird",
+      "noctambulo": "Night Owl",
+      "cierre_limpio": "Clean Close",
+      "cobrador_implacable": "Relentless Collector",
+      "pipeline_zen": "Pipeline Zen",
+      "visionario_cumplido": "Vision Fulfilled",
+      "conector": "Connector",
+      "en_la_zona": "In the Zone",
+      "racha_de_hierro": "Iron Streak",
+      "inamovible": "Immovable",
+      "semana_perfecta": "Perfect Week",
+      "mes_de_oro": "Golden Month",
+      "fundador": "Founder",
+      "tres_en_un_dia": "Triple Day",
+      "cobro_finde": "Weekend Run",
+      "icono_efi": "Efi Icon",
+      "secretLocked": "Secret"
+    },
+    "descriptions": {
+      "perfil_estelar": "You started building your EfiLink",
+      "primer_trazo": "You created your first deliverable",
+      "red_inicial": "You added 2 partners to your network",
+      "rumbo_fijo": "You defined 2 goals",
+      "vision_clara": "You defined 3 strategic goals",
+      "identidad_propia": "You personalized your accent color",
+      "motor_de_ideas": "You created 5 deliverables",
+      "fabrica_de_proyectos": "You created 25 deliverables",
+      "promesa_cumplida": "You completed 10 deliverables",
+      "creador_imparable": "You completed 25 deliverables",
+      "negocio_en_marcha": "You got paid for 5 deliverables",
+      "lluvia_de_billetes": "You got paid for 20 deliverables",
+      "circulo_intimo": "You added 5 partners to your network",
+      "directorio_dorado": "10 partners and 10 contacts in your network",
+      "madrugador": "You created deliverables before 8 AM on 5 different days",
+      "noctambulo": "You created deliverables after 11 PM on 5 different days",
+      "cierre_limpio": "You completed 5 deliverables without moving the original date",
+      "cobrador_implacable": "You got paid for 5 deliverables in under 7 days",
+      "pipeline_zen": "7 days in a row with no overdue deliverables",
+      "visionario_cumplido": "You reached 3 strategic goals",
+      "conector": "You contacted 10 partners in the last 30 days",
+      "en_la_zona": "3 days in a row active",
+      "racha_de_hierro": "7 days in a row active",
+      "inamovible": "30 days in a row active",
+      "semana_perfecta": "1 week with ≥3 completed and 0 overdue",
+      "mes_de_oro": "4 perfect weeks in the same month",
+      "fundador": "You were part of the Efi beta",
+      "tres_en_un_dia": "You completed 3 deliverables on the same day",
+      "cobro_finde": "You got paid for a deliverable on a Saturday or Sunday",
+      "icono_efi": "You unlocked 25 badges"
+    }
+  },
+  "period": {
+    "all": "All",
+    "month": "Month",
+    "year": "Year",
+    "previousAriaLabel": "Previous period",
+    "nextAriaLabel": "Next period"
+  },
+  "kpis": {
+    "open": "Open",
+    "collected": "Paid",
+    "toCollect": "To collect",
+    "deliveries": "Deliveries",
+    "clients": "Clients",
+    "contacts": "Contacts"
+  },
+  "annualGoal": {
+    "title": "Annual goal",
+    "achieved": "{{percent}}% reached"
+  },
+  "pipeline": {
+    "title": "Pipeline",
+    "taskCount_one": "{{count}} task",
+    "taskCount_other": "{{count}} tasks"
+  },
+  "agenda": {
+    "title": "Agenda",
+    "groups": {
+      "overdue": "Overdue ({{count}})",
+      "today": "Today ({{count}})",
+      "tomorrow": "Tomorrow ({{count}})",
+      "thisWeek": "This week ({{count}})"
+    },
+    "empty": {
+      "title": "No deliverables today",
+      "description": "Use the time to prospect new clients or plan content."
+    }
+  },
+  "toCollect": {
+    "title": "To collect"
+  }
+}

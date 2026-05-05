@@ -34,8 +34,9 @@ import {
   useDraggable,
   useDroppable,
 } from '@dnd-kit/core';
-import { getPartnerLookupKey, type ChecklistItem, type Partner, type Task, type TaskStatus } from '@shared';
+import { getPartnerLookupKey, type ChecklistItem, type Locale, type Partner, type Task, type TaskStatus } from '@shared';
 import { Target } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { useAppContext } from '../context/AppContext';
 import OverlayModal from '../components/OverlayModal';
 import {
@@ -58,7 +59,7 @@ import { hapticLight, hapticMedium, hapticWarning } from '../lib/haptics';
 
 const REVIEW_STATUS = 'En Revisión' as TaskStatus;
 const ALL_STATUSES: TaskStatus[] = ['Pendiente', 'En Progreso', REVIEW_STATUS, 'Completada', 'Cobrado'];
-const WEEKDAY_LABELS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+const localeToBcp47 = (locale: Locale): string => (locale === 'en' ? 'en-US' : 'es-ES');
 const EMPTY_FORM = {
   title: '',
   description: '',
@@ -74,11 +75,12 @@ const EMPTY_FORM = {
 const fieldClass =
   'w-full rounded-[1rem] border bg-[var(--surface-muted)] px-4 py-3.5 text-base sm:text-sm font-medium text-[var(--text-primary)] transition-all placeholder:text-[var(--text-secondary)] focus:border-transparent focus:bg-[var(--surface-card)] focus:outline-none focus:ring-2 [border-color:var(--line-soft)]';
 
-const formatCurrency = (value: number) => `$${value.toLocaleString('es-ES')}`;
+const formatCurrency = (value: number, locale: Locale = 'es') =>
+  `$${value.toLocaleString(localeToBcp47(locale))}`;
 
-const formatTaskDate = (value: string, options?: Intl.DateTimeFormatOptions) =>
+const formatTaskDate = (value: string, locale: Locale = 'es', options?: Intl.DateTimeFormatOptions) =>
   parseLocalDate(value).toLocaleDateString(
-    'es-ES',
+    localeToBcp47(locale),
     options ?? {
       day: '2-digit',
       month: 'short',
@@ -159,17 +161,20 @@ const getStatusDotStyle = (status: TaskStatus, accentColor: string): React.CSSPr
   return { backgroundColor: '#64748b' };
 };
 
-const getRelativeTimeLabel = (dateString: string) => {
+const getRelativeTimeLabel = (
+  dateString: string,
+  t: (key: string, options?: Record<string, unknown>) => string,
+) => {
   const today = startOfLocalDay(new Date());
   const target = startOfLocalDay(parseLocalDate(dateString));
   const diffTime = target.getTime() - today.getTime();
   const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
-  if (diffDays === 0) return 'Hoy';
-  if (diffDays === 1) return 'Mañana';
-  if (diffDays === -1) return 'Ayer';
-  if (diffDays > 1 && diffDays <= 6) return `En ${diffDays} días`;
-  if (diffDays < -1 && diffDays >= -6) return `Hace ${Math.abs(diffDays)} días`;
+  if (diffDays === 0) return t('relativeTime.today');
+  if (diffDays === 1) return t('relativeTime.tomorrow');
+  if (diffDays === -1) return t('relativeTime.yesterday');
+  if (diffDays > 1 && diffDays <= 6) return t('relativeTime.inDays', { count: diffDays });
+  if (diffDays < -1 && diffDays >= -6) return t('relativeTime.daysAgo', { count: Math.abs(diffDays) });
   return null;
 };
 
@@ -396,7 +401,6 @@ interface WeekCalendarProps {
 }
 
 const HOUR_HEIGHT_PX = 48;
-const WEEKDAY_SHORT = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 const SNAP_MIN = 15;
 
 function timeToMinutes(time: string): number {
@@ -431,6 +435,8 @@ function WeekCalendar({
   onCreateInSlot,
   onTaskReschedule,
 }: WeekCalendarProps) {
+  const { t } = useTranslation('pipeline');
+  const { locale } = useAppContext();
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
   const [interaction, setInteraction] = useState<Interaction | null>(null);
@@ -492,10 +498,11 @@ function WeekCalendar({
   const weekLabel = useMemo(() => {
     const end = addLocalDays(weekStart, 6);
     const sameMonth = weekStart.getMonth() === end.getMonth();
-    const startStr = weekStart.toLocaleDateString('es-ES', { day: 'numeric', month: sameMonth ? undefined : 'short' });
-    const endStr = end.toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' });
+    const bcp = localeToBcp47(locale);
+    const startStr = weekStart.toLocaleDateString(bcp, { day: 'numeric', month: sameMonth ? undefined : 'short' });
+    const endStr = end.toLocaleDateString(bcp, { day: 'numeric', month: 'short', year: 'numeric' });
     return `${startStr} – ${endStr}`;
-  }, [weekStart]);
+  }, [weekStart, locale]);
 
   const partnerById = useMemo(() => {
     const m = new Map<string, Partner>();
@@ -681,7 +688,7 @@ function WeekCalendar({
       <div className="mb-4 flex items-center justify-between gap-3">
         <IconButton
           icon={CaretLeft}
-          label="Semana anterior"
+          label={t('weekCalendar.previousAria')}
           onClick={() => setWeekStart(addLocalDays(weekStart, -7))}
           tone="ghost"
         />
@@ -692,12 +699,12 @@ function WeekCalendar({
             onClick={() => setWeekStart(startOfWeek(new Date()))}
             className="rounded-[0.8rem] border bg-[var(--surface-muted)] px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-[var(--text-secondary)] hover:text-[var(--text-primary)] [border-color:var(--line-soft)]"
           >
-            Hoy
+            {t('weekCalendar.today')}
           </button>
         </div>
         <IconButton
           icon={CaretRight}
-          label="Semana siguiente"
+          label={t('weekCalendar.nextAria')}
           onClick={() => setWeekStart(addLocalDays(weekStart, 7))}
           tone="ghost"
         />
@@ -712,7 +719,7 @@ function WeekCalendar({
           return (
             <div key={iso} className="flex flex-col items-center gap-1 py-2">
               <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--text-secondary)]/70">
-                {WEEKDAY_SHORT[(d.getDay() + 6) % 7]}
+                {t(`weekdaysShort.${d.getDay()}`)}
               </span>
               <span
                 className={cx(
@@ -731,7 +738,7 @@ function WeekCalendar({
       {/* All-day row */}
       <div className="grid grid-cols-[3.5rem_repeat(7,minmax(0,1fr))] border-b [border-color:var(--line-soft)]">
         <div className="flex items-start justify-end pr-2 pt-1 text-[9px] font-bold uppercase tracking-[0.14em] text-[var(--text-secondary)]/70">
-          Todo el día
+          {t('weekCalendar.allDay')}
         </div>
         {weekDays.map((d, idx) => {
           const iso = formatLocalDateISO(d);
@@ -930,6 +937,7 @@ function WeekCalendar({
 }
 
 export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed }: PipelineProps = {}) {
+  const { t } = useTranslation('pipeline');
   const {
     tasks,
     partners,
@@ -945,6 +953,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
     reportActionError,
     profile,
     pipelineHasCobrado,
+    locale,
   } = useAppContext();
   const STATUSES = useMemo<TaskStatus[]>(
     () => (pipelineHasCobrado ? ALL_STATUSES : ALL_STATUSES.filter((s) => s !== 'Cobrado')),
@@ -1078,9 +1087,9 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
   });
   const editingTask = editingTaskId ? sortedTasks.find((task) => task.id === editingTaskId) ?? null : null;
   const calendarPanelTasks = selectedDate ? selectedDateTasks : monthTasks;
-  const monthLabel = currentMonth.toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+  const monthLabel = currentMonth.toLocaleDateString(localeToBcp47(locale), { month: 'long', year: 'numeric' });
   const calendarPanelLabel = selectedDate
-    ? formatTaskDate(selectedDate, { day: 'numeric', month: 'long', year: 'numeric' })
+    ? formatTaskDate(selectedDate, locale, { day: 'numeric', month: 'long', year: 'numeric' })
     : monthLabel;
   const partnerInputLookupKey = getPartnerLookupKey(form.partnerName);
   const selectedPartner = findPartnerByName(form.partnerName);
@@ -1109,8 +1118,8 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
   const shouldShowPartnerSuggestions = isPartnerPickerOpen && partnerSuggestions.length > 0;
   const calendarPanelSummary =
     calendarPanelTasks.length === 1
-      ? '1 tarea programada en este bloque de tiempo.'
-      : `${calendarPanelTasks.length} tareas programadas en este bloque de tiempo.`;
+      ? t('monthCalendar.summarySingle')
+      : t('monthCalendar.summaryMultiple', { count: calendarPanelTasks.length });
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
 
@@ -1199,15 +1208,15 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
 
       if (modalMode === 'edit' && editingTaskId) {
         await updateTask(editingTaskId, payload);
-        toast.success('Tarea actualizada correctamente');
+        toast.success(t('toasts.taskUpdated'));
       } else {
         await addTask(payload);
-        toast.success('Nueva tarea añadida al pipeline');
+        toast.success(t('toasts.taskCreated'));
       }
 
       resetModal();
     } catch (error) {
-      toast.error('Revisa los datos de la tarea');
+      toast.error(t('toasts.saveError'));
     } finally {
       setIsSubmittingTask(false);
     }
@@ -1218,7 +1227,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
     try {
       await updateTask(editingTaskId, { checklistItems: items } as any);
     } catch {
-      toast.error('Error al guardar el checklist');
+      toast.error(t('toasts.checklistError'));
     }
   };
 
@@ -1291,7 +1300,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
     try {
       await updateTask(taskId, { checklistItems: updated } as any);
     } catch {
-      toast.error('Error al actualizar la sub-tarea');
+      toast.error(t('toasts.subtaskError'));
     }
   };
 
@@ -1357,7 +1366,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
       ) {
         setSelectedDate(null);
       }
-      toast.info('Tarea eliminada');
+      toast.info(t('toasts.taskDeleted'));
     } finally {
       setDeletingTaskId(null);
       setTaskPendingDeletion(null);
@@ -1371,13 +1380,13 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
       const partner = partners.find((item) => item.id === task.partnerId);
       const data = await calendarApi.syncTask({ task: { ...task, partnerName: partner?.name ?? '' } });
       await updateTask(task.id, { gcalEventId: data.eventId ?? undefined });
-      toast.success('Tarea sincronizada con Google Calendar.');
+      toast.success(t('toasts.syncSuccess'));
     } catch (error) {
       if (error instanceof Error && error.message.toLowerCase().includes('unauthorized')) {
         window.dispatchEvent(new CustomEvent('efi:unauthorized'));
         return;
       }
-      reportActionError('No pudimos sincronizar la tarea. Conecta Google Calendar desde Ajustes.');
+      reportActionError(t('toasts.syncError'));
     } finally {
       setSyncingTaskId(null);
     }
@@ -1412,7 +1421,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
         window.dispatchEvent(new CustomEvent('efi:unauthorized'));
         return;
       }
-      reportActionError('No pudimos traer cambios desde Google Calendar.');
+      reportActionError(t('toasts.syncDownError'));
     } finally {
       setIsSyncingDown(false);
     }
@@ -1423,7 +1432,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
     const isCalendarVariant = variant === 'calendar';
     const isOverdue =
       startOfLocalDay(parseLocalDate(task.dueDate)) < startOfLocalDay(new Date()) && task.status !== 'Cobrado';
-    const relativeTime = getRelativeTimeLabel(task.dueDate);
+    const relativeTime = getRelativeTimeLabel(task.dueDate, t);
 
     const isUpdating = updatingTaskId === task.id;
 
@@ -1447,7 +1456,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
               <div className="flex items-center gap-2">
                 <span className="h-2.5 w-2.5 rounded-full" style={{ background: accentGradient }} />
                 <p className="truncate text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/70 uppercase">
-                  {partner?.name || 'Sin cliente'}
+                  {partner?.name || t('noPartner')}
                 </p>
               </div>
               <h3 className="mt-2 text-sm font-bold leading-5 text-[var(--text-primary)]">
@@ -1455,13 +1464,13 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
               </h3>
             </div>
             <p className="shrink-0 text-sm font-black text-[var(--text-primary)]">
-              {formatCurrency(task.value)}
+              {formatCurrency(task.value, locale)}
             </p>
           </div>
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <StatusBadge tone={isOverdue ? 'danger' : 'neutral'}>
-              {formatTaskDate(task.dueDate, { day: '2-digit', month: 'short' })}{relativeTime ? ` · ${relativeTime}` : ''}
+              {formatTaskDate(task.dueDate, locale, { day: '2-digit', month: 'short' })}{relativeTime ? ` · ${relativeTime}` : ''}
             </StatusBadge>
             {task.startTime && task.endTime ? (
               <StatusBadge tone="neutral">
@@ -1476,7 +1485,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
               isCalendarVariant ? 'line-clamp-3' : 'line-clamp-2',
             )}
           >
-            {task.description || 'Sin descripción todavía.'}
+            {task.description || t('card.noDescription')}
           </p>
 
           {task.checklistItems.length > 0 && (
@@ -1510,7 +1519,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                   className="flex items-center gap-1 pt-0.5 text-xs font-semibold text-[var(--text-secondary)]/60 transition-colors hover:text-[var(--text-primary)]"
                 >
                   <CaretDown size={11} className={cx('transition-transform duration-150', expandedChecklists.has(task.id) && 'rotate-180')} />
-                  {expandedChecklists.has(task.id) ? 'Ver menos' : `Ver ${task.checklistItems.length - 3} más`}
+                  {expandedChecklists.has(task.id) ? t('card.viewLess') : t('card.viewMore', { count: task.checklistItems.length - 3 })}
                 </button>
               )}
             </div>
@@ -1521,7 +1530,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
               value={task.status}
               disabled={updatingTaskId === task.id}
               onChange={(val) => void changeStatus(task.id, val as TaskStatus)}
-              options={STATUSES.map(s => ({ value: s, label: s }))}
+              options={STATUSES.map(s => ({ value: s, label: t(`taskStatus.${s}`) }))}
               buttonStyle={getStatusSelectStyle(task.status, accentHex)}
               buttonClassName="py-2.5 px-3 rounded-[0.8rem]"
               useBottomSheet
@@ -1535,7 +1544,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                   ) : (
                     <CalendarBlank size={14} className="shrink-0" />
                   )}
-                  <span className="truncate">{task.gcalEventId ? 'Calendar activo' : 'Sin sincronizar'}</span>
+                  <span className="truncate">{task.gcalEventId ? t('card.calendarActive') : t('card.notSynced')}</span>
                 </span>
               )}
 
@@ -1545,7 +1554,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                     type="button"
                     disabled={syncingTaskId === task.id}
                     onClick={() => void syncTask(task)}
-                    title={task.gcalEventId ? 'Actualizar en Google Calendar' : 'Sincronizar con Google Calendar'}
+                    title={task.gcalEventId ? t('card.syncTitleUpdate') : t('card.syncTitleNew')}
                     className={cx(
                       'inline-flex h-10 items-center justify-center rounded-[0.8rem] border px-3 text-xs font-bold transition-colors [border-color:var(--line-soft)]',
                       syncingTaskId === task.id
@@ -1554,14 +1563,14 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                           ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/15 dark:text-emerald-300'
                           : 'bg-[var(--surface-card)] text-[var(--text-secondary)] hover:bg-[var(--surface-muted)]',
                     )}
-                    aria-label="Sincronizar con Google Calendar"
+                    aria-label={t('card.syncAria')}
                   >
                     {syncingTaskId === task.id ? <ArrowClockwise size={14} className="animate-spin" /> : <CalendarBlank size={14} />}
                   </button>
                 )}
                 <IconButton
                   icon={PencilLine}
-                  label={`Editar ${task.title}`}
+                  label={t('card.editAria', { title: task.title })}
                   onClick={() => openEdit(task)}
                   tone="ghost"
                   className="h-10 w-8 rounded-[0.45rem]"
@@ -1578,7 +1587,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
     const partner = partners.find((item) => item.id === task.partnerId);
     const isOverdue =
       startOfLocalDay(parseLocalDate(task.dueDate)) < startOfLocalDay(new Date()) && task.status !== 'Cobrado';
-    const relativeTime = getRelativeTimeLabel(task.dueDate);
+    const relativeTime = getRelativeTimeLabel(task.dueDate, t);
 
     return (
       <div
@@ -1588,17 +1597,17 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-2">
             <p className="text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/70 uppercase">
-              {partner?.name || 'Sin cliente'}
+              {partner?.name || t('noPartner')}
             </p>
             {gcalConnected && task.gcalEventId ? (
               <span className="rounded-[0.75rem] bg-emerald-50 px-2.5 py-1 text-[10px] font-bold tracking-[0.12em] text-emerald-600 uppercase dark:bg-emerald-500/15 dark:text-emerald-300">
-                Calendar
+                {t('card.calendarBadge')}
               </span>
             ) : null}
           </div>
           <h3 className="mt-2 text-sm font-bold leading-5 text-[var(--text-primary)]">{task.title}</h3>
           <p className="mt-1 line-clamp-2 text-sm leading-6 text-[var(--text-secondary)]">
-            {task.description || 'Sin descripción todavía.'}
+            {task.description || t('card.noDescription')}
           </p>
           {task.checklistItems.length > 0 && (
             <div className="mt-2 space-y-1.5">
@@ -1631,7 +1640,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                   className="flex items-center gap-1 pt-0.5 text-xs font-semibold text-[var(--text-secondary)]/60 transition-colors hover:text-[var(--text-primary)]"
                 >
                   <CaretDown size={11} className={cx('transition-transform duration-150', expandedChecklists.has(task.id) && 'rotate-180')} />
-                  {expandedChecklists.has(task.id) ? 'Ver menos' : `Ver ${task.checklistItems.length - 3} más`}
+                  {expandedChecklists.has(task.id) ? t('card.viewLess') : t('card.viewMore', { count: task.checklistItems.length - 3 })}
                 </button>
               )}
             </div>
@@ -1640,7 +1649,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
 
         <div className="flex flex-wrap items-center gap-2 xl:pt-[1.55rem]">
           <StatusBadge tone={isOverdue ? 'danger' : 'neutral'}>
-            {formatTaskDate(task.dueDate)}{relativeTime ? ` · ${relativeTime}` : ''}
+            {formatTaskDate(task.dueDate, locale)}{relativeTime ? ` · ${relativeTime}` : ''}
           </StatusBadge>
           {task.startTime && task.endTime ? (
             <StatusBadge tone="neutral">
@@ -1651,7 +1660,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
 
         <div className="xl:pt-[1.3rem]">
           <p className="text-base font-extrabold text-[var(--text-primary)]">
-            {formatCurrency(task.value)}
+            {formatCurrency(task.value, locale)}
           </p>
         </div>
 
@@ -1660,7 +1669,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
             value={task.status}
             disabled={updatingTaskId === task.id}
             onChange={(val) => void changeStatus(task.id, val as TaskStatus)}
-            options={STATUSES.map(s => ({ value: s, label: s }))}
+            options={STATUSES.map(s => ({ value: s, label: t(`taskStatus.${s}`) }))}
             buttonStyle={getStatusSelectStyle(task.status, accentHex)}
             buttonClassName="py-2.5 px-3 rounded-[0.8rem]"
             className="w-full xl:w-[10.5rem]"
@@ -1771,7 +1780,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                   'text-[var(--text-secondary)]/70',
                 )}
               >
-                +{dayTasks.length - 2} más
+                {t('monthCalendar.moreCount', { count: dayTasks.length - 2 })}
             </p>
           ) : null}
         </div>
@@ -1784,9 +1793,9 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex h-12 items-center gap-1 sm:gap-2">
             {[
-              { id: 'kanban', icon: Kanban, label: 'Kanban' },
-              { id: 'list', icon: List, label: 'Lista' },
-              { id: 'calendar', icon: CalendarBlank, label: 'Calendario' },
+              { id: 'kanban', icon: Kanban, label: t('header.tabs.kanban') },
+              { id: 'list', icon: List, label: t('header.tabs.list') },
+              { id: 'calendar', icon: CalendarBlank, label: t('header.tabs.calendar') },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -1812,8 +1821,8 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                 sessionStorage.setItem('efi:settings_initial_section', 'pipeline');
                 window.dispatchEvent(new CustomEvent('efi:navigate', { detail: { tab: 'settings' } }));
               }}
-              aria-label="Ajustes del pipeline"
-              title="Ajustes del pipeline"
+              aria-label={t('header.settingsAria')}
+              title={t('header.settingsTitle')}
               className="flex h-full w-12 items-center justify-center rounded-[1rem] border border-transparent text-[var(--text-secondary)] transition-all hover:bg-[var(--surface-muted)]/50 hover:text-[var(--text-primary)]"
             >
               <Gear size={18} />
@@ -1824,7 +1833,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
             <MagnifyingGlass className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)]" size={18} />
             <input
               type="text"
-              placeholder="Buscar en tareas o clientes..."
+              placeholder={t('header.searchPlaceholder')}
               value={searchQuery}
               onChange={(event) => setMagnifyingGlassQuery(event.target.value)}
               className="w-full rounded-[1rem] border bg-[var(--surface-muted)] py-3 pl-10 pr-4 text-base sm:text-sm font-medium text-[var(--text-primary)] transition-all placeholder:text-[var(--text-secondary)]/70 focus:border-transparent focus:bg-[var(--surface-card)] focus:outline-none focus:ring-2 [border-color:var(--line-soft)]"
@@ -1846,7 +1855,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                 )}
               >
                 <Funnel size={16} weight={(filterPartnerIds.length > 0 || filterStatuses.length > 0) ? 'fill' : 'regular'} />
-                <span>Filtros</span>
+                <span>{t('header.filtersButton')}</span>
                 {(filterPartnerIds.length + filterStatuses.length) > 0 && (
                   <span
                     className="flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-black text-white"
@@ -1860,21 +1869,21 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
               {isFilterOpen && (
                 <div className="absolute left-0 top-[calc(100%+6px)] z-50 w-72 rounded-[1.1rem] border bg-[var(--surface-card)] shadow-[var(--shadow-strong)] [border-color:var(--line-soft)] sm:left-auto sm:right-0">
                   <div className="flex items-center justify-between border-b px-4 py-3 [border-color:var(--line-soft)]">
-                    <span className="text-sm font-extrabold text-[var(--text-primary)]">Filtros</span>
+                    <span className="text-sm font-extrabold text-[var(--text-primary)]">{t('header.filtersTitle')}</span>
                     {(filterPartnerIds.length > 0 || filterStatuses.length > 0) && (
                       <button
                         type="button"
                         onClick={() => { setFilterPartnerIds([]); setFilterStatuses([]); }}
                         className="text-xs font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
                       >
-                        Limpiar todo
+                        {t('header.clearAll')}
                       </button>
                     )}
                   </div>
 
                   {/* Estado */}
                   <div className="px-4 py-3">
-                    <p className="mb-2 text-[11px] font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">Estado</p>
+                    <p className="mb-2 text-[11px] font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">{t('header.filterStatus')}</p>
                     <div className="flex flex-wrap gap-1.5">
                       {STATUSES.map((status) => {
                         const active = filterStatuses.includes(status);
@@ -1895,7 +1904,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                             )}
                             style={active ? { backgroundColor: accentHex } : undefined}
                           >
-                            {status}
+                            {t(`taskStatus.${status}`)}
                           </button>
                         );
                       })}
@@ -1905,7 +1914,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                   {/* Cliente */}
                   {partners.length > 0 && (
                     <div className="border-t px-4 py-3 [border-color:var(--line-soft)]">
-                      <p className="mb-2 text-[11px] font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">Cliente</p>
+                      <p className="mb-2 text-[11px] font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">{t('header.filterClient')}</p>
                       <div className="max-h-44 space-y-0.5 overflow-y-auto">
                         {[...partners].sort((a, b) => a.name.localeCompare(b.name, 'es-ES')).map((partner) => {
                           const active = filterPartnerIds.includes(partner.id);
@@ -1947,7 +1956,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
 
             <Button accentColor={accentGradient} onClick={openCreate} className="flex-1 sm:flex-none">
               <Plus size={16} weight="regular" />
-              Nueva tarea
+              {t('header.newTask')}
             </Button>
           </div>
         </div>
@@ -1959,23 +1968,23 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
               <div className="flex items-center justify-between gap-3">
                 <IconButton
                   icon={CaretLeft}
-                  label="Ver fase anterior"
+                  label={t('kanban.previousPhaseAria')}
                   onClick={() => setCurrentStatusIdx(Math.max(0, currentStatusIdx - 1))}
                   disabled={currentStatusIdx === 0}
                   tone="ghost"
                 />
                 <div className="text-center">
                   <p className="text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/70 uppercase">
-                    {currentStatusIdx + 1} de {STATUSES.length}
+                    {t('kanban.mobilePagination', { current: currentStatusIdx + 1, total: STATUSES.length })}
                   </p>
                   <div className="mt-1 flex items-center justify-center gap-2">
                     <span className="h-2.5 w-2.5 rounded-full" style={getStatusDotStyle(currentStatus, accentHex)} />
-                    <h2 className="text-lg font-extrabold text-[var(--text-primary)]">{currentStatus}</h2>
+                    <h2 className="text-lg font-extrabold text-[var(--text-primary)]">{t(`taskStatus.${currentStatus}`)}</h2>
                   </div>
                 </div>
                 <IconButton
                   icon={CaretRight}
-                  label="Ver siguiente fase"
+                  label={t('kanban.nextPhaseAria')}
                   onClick={() => setCurrentStatusIdx(Math.min(STATUSES.length - 1, currentStatusIdx + 1))}
                   disabled={currentStatusIdx === STATUSES.length - 1}
                   tone="ghost"
@@ -1995,8 +2004,8 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
               ) : (
                 <EmptyState
                   icon={Kanban}
-                  title="No hay tareas aquí"
-                  description="Cuando muevas tareas o crees una nueva, aparecerán aquí."
+                  title={t('kanban.emptyMobile.title')}
+                  description={t('kanban.emptyMobile.description')}
                 />
               )}
             </div>
@@ -2025,11 +2034,11 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                                 style={getStatusDotStyle(status, accentHex)}
                               />
                               <h2 className="text-[1rem] font-extrabold text-[var(--text-primary)]">
-                                {status}
+                                {t(`taskStatus.${status}`)}
                               </h2>
                             </div>
                             <p className="mt-1 text-xs font-medium text-[var(--text-secondary)]">
-                              {formatCurrency(columnValue)}
+                              {formatCurrency(columnValue, locale)}
                             </p>
                           </div>
                           <span className="rounded-[0.8rem] border bg-[var(--surface-card)] px-3 py-1.5 text-xs font-black text-[var(--text-primary)] shadow-[var(--shadow-soft)] [border-color:var(--line-soft)]">
@@ -2054,8 +2063,8 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                             })
                           ) : (
                             <EmptyState
-                              title="Sin tareas aquí"
-                              description="Añade una entrega o mueve una tarea para equilibrar el flujo."
+                              title={t('kanban.emptyColumn.title')}
+                              description={t('kanban.emptyColumn.description')}
                               className="px-4 py-6"
                             />
                           )}
@@ -2077,10 +2086,10 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
         listTasks.length > 0 ? (
           <SurfaceCard tone="muted" className="overflow-hidden p-0">
             <div className="hidden grid-cols-[minmax(0,1.5fr)_minmax(8rem,0.7fr)_minmax(7.5rem,0.65fr)_minmax(11rem,0.9fr)] gap-4 border-b px-5 py-3 text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/70 uppercase xl:grid [border-color:var(--line-soft)]">
-              <span>Tarea</span>
-              <span>Entrega</span>
-              <span>Valor</span>
-              <span>Estado</span>
+              <span>{t('list.headers.task')}</span>
+              <span>{t('list.headers.delivery')}</span>
+              <span>{t('list.headers.value')}</span>
+              <span>{t('list.headers.status')}</span>
             </div>
             <div className="space-y-0">
               {listTasks.map((task, index) => (
@@ -2093,12 +2102,12 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
         ) : (
           <EmptyState
             icon={List}
-            title="Todavía no hay tareas"
-            description="Añade tu primera entrega para empezar a construir el pipeline."
+            title={t('list.empty.title')}
+            description={t('list.empty.description')}
             action={
               <Button accentColor={accentGradient} onClick={openCreate}>
                 <Plus size={16} weight="regular" />
-                Crear tarea
+                {t('list.empty.createButton')}
               </Button>
             }
           />
@@ -2109,8 +2118,8 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
         <div className="space-y-4">
           <div className="flex h-11 items-center gap-1 self-start rounded-[1rem] bg-[var(--surface-muted)] p-1">
             {[
-              { id: 'week', label: 'Semana' },
-              { id: 'month', label: 'Mes' },
+              { id: 'week', label: t('calendar.modes.week') },
+              { id: 'month', label: t('calendar.modes.month') },
             ].map((mode) => (
               <button
                 key={mode.id}
@@ -2135,7 +2144,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                 <div className="mb-5 flex items-center justify-between gap-3">
                   <IconButton
                     icon={CaretLeft}
-                    label="Mes anterior"
+                    label={t('monthCalendar.previousAria')}
                     onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1))}
                     tone="ghost"
                   />
@@ -2145,22 +2154,22 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                         {monthLabel}
                       </h2>
                       <span className="text-[10px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/70 uppercase sm:text-[11px]">
-                        Vista mensual
+                        {t('monthCalendar.monthlyView')}
                       </span>
                     </div>
                   </div>
                   <IconButton
                     icon={CaretRight}
-                    label="Mes siguiente"
+                    label={t('monthCalendar.nextAria')}
                     onClick={() => setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1))}
                     tone="ghost"
                   />
                 </div>
 
                 <div className="mb-3 grid grid-cols-7 gap-1 sm:gap-2">
-                  {WEEKDAY_LABELS.map((day) => (
+                  {(t('monthCalendarWeekdays', { returnObjects: true }) as string[]).map((day, idx) => (
                     <div
-                      key={day}
+                      key={idx}
                       className="py-1.5 text-center text-[9px] font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase sm:py-2 sm:text-[10px]"
                     >
                       {day}
@@ -2183,13 +2192,13 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                           {calendarPanelLabel}
                         </h3>
                         <span className="hidden text-[11px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/70 uppercase sm:inline-block">
-                          {selectedDate ? 'Agenda del día' : 'Agenda del mes'}
+                          {selectedDate ? t('monthCalendar.agendaForDay') : t('monthCalendar.agendaForMonth')}
                         </span>
                       </div>
                       <p className="text-sm text-[var(--text-secondary)]">
                         {calendarPanelTasks.length > 0
                           ? calendarPanelSummary
-                          : 'No hay tareas programadas en este bloque de tiempo.'}
+                          : t('monthCalendar.emptyDescription')}
                       </p>
                     </div>
                     {selectedDate ? (
@@ -2198,7 +2207,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                         onClick={() => setSelectedDate(null)}
                         className="rounded-[0.8rem] border bg-[var(--surface-card)] px-3 py-2 text-xs font-bold text-[var(--text-secondary)] transition-colors hover:text-[var(--text-primary)] [border-color:var(--line-soft)]"
                       >
-                        Ver mes
+                        {t('monthCalendar.viewMonth')}
                       </button>
                     ) : null}
                   </div>
@@ -2209,8 +2218,8 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                     ) : (
                       <EmptyState
                         icon={CalendarDots}
-                        title="Sin tareas programadas"
-                        description="Selecciona otro día o crea una nueva entrega para poblar el calendario."
+                        title={t('monthCalendar.emptyState.title')}
+                        description={t('monthCalendar.emptyState.description')}
                         className="px-4 py-6"
                       />
                     )}
@@ -2259,7 +2268,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                     }
                   }
                 } catch {
-                  reportActionError('No pudimos actualizar la tarea.');
+                  reportActionError(t('toasts.rescheduleError'));
                 }
               }}
             />
@@ -2271,8 +2280,8 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
         <div className="2xl:hidden">
           <OverlayModal onClose={() => setSelectedDate(null)}>
             <ModalPanel
-              title={formatTaskDate(selectedDate, { day: 'numeric', month: 'long', year: 'numeric' })}
-              description={selectedDateTasks.length === 1 ? '1 tarea programada para esta fecha.' : `${selectedDateTasks.length} tareas programadas para esta fecha.`}
+              title={formatTaskDate(selectedDate, locale, { day: 'numeric', month: 'long', year: 'numeric' })}
+              description={selectedDateTasks.length === 1 ? t('calendar.selectedDate.summarySingle') : t('calendar.selectedDate.summaryMultiple', { count: selectedDateTasks.length })}
               onClose={() => setSelectedDate(null)}
               size="lg"
             >
@@ -2280,7 +2289,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                 {selectedDateTasks.length > 0 ? (
                   selectedDateTasks.map((task) => <div key={task.id}>{renderTaskCard(task, 'calendar')}</div>)
                 ) : (
-                  <EmptyState title="No hay tareas para este día" />
+                  <EmptyState title={t('calendar.selectedDate.empty')} />
                 )}
               </div>
             </ModalPanel>
@@ -2289,9 +2298,9 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
       ) : null}
       {taskPendingDeletion ? (
         <ConfirmDialog
-          title="Eliminar tarea"
-          description={`Se eliminará "${taskPendingDeletion.title}" del pipeline y no podrás recuperarla desde esta vista.`}
-          confirmLabel="Eliminar"
+          title={t('deletion.title')}
+          description={t('deletion.description', { title: taskPendingDeletion.title })}
+          confirmLabel={t('deletion.confirm')}
           onConfirm={() => void confirmTaskDeletion()}
           onClose={() => setTaskPendingDeletion(null)}
           isConfirming={deletingTaskId === taskPendingDeletion.id}
@@ -2300,8 +2309,8 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
       {modalMode ? (
         <OverlayModal onClose={resetModal}>
           <ModalPanel
-            title={modalMode === 'edit' ? 'Editar tarea' : 'Nueva tarea'}
-            description="Completa la información principal para que el pipeline se mantenga claro y accionable."
+            title={modalMode === 'edit' ? t('modal.titleEdit') : t('modal.titleNew')}
+            description={t('modal.description')}
             onClose={resetModal}
             footer={
               <div className="flex gap-3">
@@ -2312,7 +2321,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                     onClick={() => requestTaskDeletion(editingTask)}
                     disabled={deletingTaskId === editingTask.id}
                   >
-                    {deletingTaskId === editingTask.id ? 'Eliminando...' : 'Eliminar'}
+                    {deletingTaskId === editingTask.id ? t('modal.deletingButton') : t('modal.deleteButton')}
                   </Button>
                 ) : null}
                 <Button
@@ -2323,10 +2332,10 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                   disabled={isSubmittingTask}
                 >
                   {isSubmittingTask
-                    ? 'Guardando...'
+                    ? t('modal.savingButton')
                     : modalMode === 'edit'
-                      ? 'Guardar cambios'
-                      : 'Crear tarea'}
+                      ? t('modal.saveEdit')
+                      : t('modal.saveNew')}
                 </Button>
               </div>
             }
@@ -2336,7 +2345,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
             <div>
               <label className="mb-2 flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
                 <TextT size={14} />
-                Título
+                {t('modal.fields.title')}
               </label>
               <input
                 required
@@ -2351,7 +2360,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
             <div>
               <label className="mb-2 flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
                 <TextAlignLeft size={14} />
-                Descripción
+                {t('modal.fields.description')}
               </label>
               <textarea
                 value={form.description}
@@ -2365,13 +2374,13 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
 
           <div className="rounded-[1.2rem] border bg-[var(--surface-muted)]/50 p-4 sm:p-5 [border-color:var(--line-soft)]">
             <h4 className="mb-4 text-[11px] font-extrabold tracking-[0.16em] text-[var(--text-primary)] uppercase">
-              Detalles Operativos
+              {t('modal.operationalDetails')}
             </h4>
             <div className="grid min-w-0 gap-4 grid-cols-1 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <label className="mb-2 flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
                   <Buildings size={14} />
-                  Cliente
+                  {t('modal.fields.client')}
                 </label>
                 <div className="relative">
                   <input
@@ -2388,13 +2397,13 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                     }}
                     className={cx(fieldClass, 'bg-[var(--surface-card)]')}
                     style={{ '--tw-ring-color': accentHex } as React.CSSProperties}
-                    placeholder="Busca en Directorio o escribe un cliente nuevo"
+                    placeholder={t('modal.fields.clientPlaceholder')}
                   />
 
                   {shouldShowPartnerSuggestions ? (
                     <div className="absolute inset-x-0 top-[calc(100%+0.55rem)] z-20 overflow-hidden rounded-[1rem] border bg-[var(--surface-card)] p-2 shadow-[0_22px_40px_-28px_rgba(59,43,34,0.3)] [border-color:var(--line-soft)]">
                       <p className="px-2 pb-2 text-[10px] font-bold tracking-[0.16em] text-[var(--text-secondary)]/70 uppercase">
-                        Directorio
+                        {t('modal.fields.directoryEyebrow')}
                       </p>
 
                       <div className="space-y-1">
@@ -2416,11 +2425,11 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                                   {partner.name}
                                 </p>
                                 <p className="truncate text-xs text-[var(--text-secondary)]">
-                                  {partner.contacts.length} contactos
+                                  {t('modal.fields.contactsCount', { count: partner.contacts.length })}
                                 </p>
                               </div>
                               <StatusBadge tone={isExactMatch ? 'accent' : 'neutral'}>
-                                {isExactMatch ? 'Seleccionada' : partner.status}
+                                {isExactMatch ? t('modal.fields.selected') : partner.status}
                               </StatusBadge>
                             </button>
                           );
@@ -2432,17 +2441,17 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
 
                 <p className="mt-2 text-[11px] leading-5 text-[var(--text-secondary)]">
                   {selectedPartner
-                    ? `Se vinculara con ${selectedPartner.name}, existente en el directorio.`
+                    ? t('modal.fields.linkExisting', { name: selectedPartner.name })
                     : shouldCreatePartnerOnSave
-                      ? `No existe todavia. ${form.partnerName.trim()} se creara como nuevo cliente.`
-                      : 'Selecciona un cliente existente o escribe uno nuevo.'}
+                      ? t('modal.fields.willCreateNew', { name: form.partnerName.trim() })
+                      : t('modal.fields.selectOrCreate')}
                 </p>
               </div>
 
               <div className="min-w-0">
                 <label className="mb-2 flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
                   <CurrencyCircleDollar size={14} />
-                  Valor
+                  {t('modal.fields.value')}
                 </label>
                 <input
                   type="number"
@@ -2458,7 +2467,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
               <div className="min-w-0">
                 <label className="mb-2 flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
                   <CalendarDots size={14} />
-                  Fecha límite
+                  {t('modal.fields.dueDate')}
                 </label>
                 <input
                   type="date"
@@ -2474,7 +2483,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                 <div className="min-w-0">
                   <label className="mb-2 flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
                     <CalendarDots size={14} />
-                    Hora inicio
+                    {t('modal.fields.startTime')}
                   </label>
                   <input
                     type="time"
@@ -2499,7 +2508,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                 <div className="min-w-0">
                   <label className="mb-2 flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
                     <CalendarDots size={14} />
-                    Hora fin
+                    {t('modal.fields.endTime')}
                   </label>
                   <input
                     type="time"
@@ -2514,12 +2523,12 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
               <div className="sm:col-span-2 mt-1">
                 <label className="mb-2 flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
                   <Pulse size={14} />
-                  Estado inicial
+                  {t('modal.fields.initialStatus')}
                 </label>
                 <CustomSelect
                   value={form.status}
                   onChange={(val) => setForm({ ...form, status: val as TaskStatus })}
-                  options={STATUSES.map(s => ({ value: s, label: s }))}
+                  options={STATUSES.map(s => ({ value: s, label: t(`taskStatus.${s}`) }))}
                   buttonStyle={{ '--tw-ring-color': accentHex } as React.CSSProperties}
                   buttonClassName="py-3.5 font-medium bg-[var(--surface-card)] border-[var(--line-soft)] focus:border-transparent"
                 />
@@ -2529,14 +2538,14 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                 <div className="sm:col-span-2 mt-1">
                   <label className="mb-2 flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
                     <Target size={14} />
-                    Objetivo estratégico
+                    {t('modal.fields.strategicGoal')}
                   </label>
                   <CustomSelect
                     value={form.goalId}
                     onChange={(val) => setForm({ ...form, goalId: val })}
                     options={[
-                      { value: '', label: 'Sin objetivo' },
-                      ...profile.goals.map(g => ({ value: g.id, label: g.generalGoal || g.area || 'Sin nombre' })),
+                      { value: '', label: t('modal.fields.noGoal') },
+                      ...profile.goals.map(g => ({ value: g.id, label: g.generalGoal || g.area || t('modal.fields.unnamedGoal') })),
                     ]}
                     buttonStyle={{ '--tw-ring-color': accentHex } as React.CSSProperties}
                     buttonClassName="py-3.5 font-medium bg-[var(--surface-card)] border-[var(--line-soft)] focus:border-transparent"
@@ -2550,7 +2559,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
               <div className="mb-3 flex items-center justify-between">
                 <label className="flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-[var(--text-secondary)]/70 uppercase">
                   <ListChecks size={14} />
-                  Sub-Tareas
+                  {t('modal.subtasks')}
                 </label>
                 {checklistItems.length > 0 && (
                   <span className="text-xs font-bold tabular-nums text-[var(--text-secondary)]">
@@ -2572,7 +2581,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                       type="button"
                       onClick={() => toggleChecklistItem(item.id)}
                       className="shrink-0"
-                      aria-label={item.done ? 'Marcar pendiente' : 'Marcar completado'}
+                      aria-label={item.done ? t('modal.checkPendingAria') : t('modal.checkDoneAria')}
                     >
                       <span className={cx('inline-flex', poppingId === item.id && 'animate-check-pop')}>
                         {item.done ? (
@@ -2606,7 +2615,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                       type="button"
                       onClick={() => deleteChecklistItem(item.id)}
                       className="shrink-0 text-[var(--text-secondary)]/40 transition-opacity hover:text-[var(--text-secondary)] opacity-40 group-hover:opacity-100"
-                      aria-label="Eliminar elemento"
+                      aria-label={t('modal.removeItemAria')}
                     >
                       <X size={14} />
                     </button>
@@ -2626,7 +2635,7 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                         addChecklistItem();
                       }
                     }}
-                    placeholder="Añadir elemento..."
+                    placeholder={t('modal.addSubtaskPlaceholder')}
                     className="flex-1 bg-transparent text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-secondary)]/40"
                   />
                   {newItemText.trim() && (
@@ -2635,9 +2644,9 @@ export default function Pipeline({ pendingPartnerName, onPendingPartnerConsumed 
                       onClick={addChecklistItem}
                       className="shrink-0 rounded-md px-2 py-0.5 text-xs font-semibold text-white transition-opacity"
                       style={{ backgroundColor: accentHex }}
-                      aria-label="Añadir sub-tarea"
+                      aria-label={t('modal.addSubtaskAria')}
                     >
-                      Añadir
+                      {t('modal.addSubtask')}
                     </button>
                   )}
                 </div>

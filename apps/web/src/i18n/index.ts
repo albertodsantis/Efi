@@ -10,6 +10,10 @@ import esLanding from './locales/es/landing.json';
 import enLanding from './locales/en/landing.json';
 import esSettings from './locales/es/settings.json';
 import enSettings from './locales/en/settings.json';
+import esDashboard from './locales/es/dashboard.json';
+import enDashboard from './locales/en/dashboard.json';
+import esPipeline from './locales/es/pipeline.json';
+import enPipeline from './locales/en/pipeline.json';
 
 export const DEFAULT_LOCALE: Locale = 'es';
 
@@ -36,13 +40,13 @@ void i18n
   .use(initReactI18next)
   .init({
     resources: {
-      es: { common: esCommon, landing: esLanding, settings: esSettings },
-      en: { common: enCommon, landing: enLanding, settings: enSettings },
+      es: { common: esCommon, landing: esLanding, settings: esSettings, dashboard: esDashboard, pipeline: esPipeline },
+      en: { common: enCommon, landing: enLanding, settings: enSettings, dashboard: enDashboard, pipeline: enPipeline },
     },
     fallbackLng: DEFAULT_LOCALE,
     supportedLngs: SUPPORTED_LOCALES as readonly string[] as string[],
     nonExplicitSupportedLngs: true,
-    ns: ['common', 'landing', 'settings'],
+    ns: ['common', 'landing', 'settings', 'dashboard', 'pipeline'],
     defaultNS: 'common',
     interpolation: { escapeValue: false },
     detection: {

@@ -1,0 +1,169 @@
+{
+  "weekdaysShort": {
+    "0": "Sun",
+    "1": "Mon",
+    "2": "Tue",
+    "3": "Wed",
+    "4": "Thu",
+    "5": "Fri",
+    "6": "Sat"
+  },
+  "monthCalendarWeekdays": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+  "weekCalendar": {
+    "previousAria": "Previous week",
+    "nextAria": "Next week",
+    "today": "Today",
+    "allDay": "All day"
+  },
+  "monthCalendar": {
+    "previousAria": "Previous month",
+    "nextAria": "Next month",
+    "monthlyView": "Monthly view",
+    "moreCount": "+{{count}} more",
+    "agendaForDay": "Day agenda",
+    "agendaForMonth": "Month agenda",
+    "viewMonth": "View month",
+    "summarySingle": "1 task scheduled in this time block.",
+    "summaryMultiple": "{{count}} tasks scheduled in this time block.",
+    "emptyDescription": "No tasks scheduled in this time block.",
+    "emptyState": {
+      "title": "No tasks scheduled",
+      "description": "Pick another day or create a new deliverable to populate the calendar."
+    }
+  },
+  "relativeTime": {
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "yesterday": "Yesterday",
+    "inDays": "In {{count}} days",
+    "daysAgo": "{{count}} days ago"
+  },
+  "taskStatus": {
+    "Pendiente": "Pending",
+    "En Progreso": "In Progress",
+    "En Revisión": "In Review",
+    "Completada": "Completed",
+    "Cobrado": "Paid"
+  },
+  "noPartner": "No client",
+  "header": {
+    "tabs": {
+      "kanban": "Kanban",
+      "list": "List",
+      "calendar": "Calendar"
+    },
+    "settingsAria": "Pipeline settings",
+    "settingsTitle": "Pipeline settings",
+    "searchPlaceholder": "Search tasks or clients...",
+    "filtersButton": "Filters",
+    "filtersTitle": "Filters",
+    "clearAll": "Clear all",
+    "filterStatus": "Status",
+    "filterClient": "Client",
+    "newTask": "New task"
+  },
+  "kanban": {
+    "mobilePagination": "{{current}} of {{total}}",
+    "previousPhaseAria": "Previous phase",
+    "nextPhaseAria": "Next phase",
+    "emptyMobile": {
+      "title": "No tasks here",
+      "description": "When you move tasks or create a new one, they'll show up here."
+    },
+    "emptyColumn": {
+      "title": "No tasks here",
+      "description": "Add a deliverable or move a task to balance the flow."
+    }
+  },
+  "list": {
+    "headers": {
+      "task": "Task",
+      "delivery": "Delivery",
+      "value": "Value",
+      "status": "Status"
+    },
+    "empty": {
+      "title": "No tasks yet",
+      "description": "Add your first deliverable to start building the pipeline.",
+      "createButton": "Create task"
+    }
+  },
+  "card": {
+    "noDescription": "No description yet.",
+    "viewLess": "View less",
+    "viewMore": "View {{count}} more",
+    "calendarActive": "Calendar active",
+    "notSynced": "Not synced",
+    "calendarBadge": "Calendar",
+    "syncTitleUpdate": "Update in Google Calendar",
+    "syncTitleNew": "Sync with Google Calendar",
+    "syncAria": "Sync with Google Calendar",
+    "editAria": "Edit {{title}}"
+  },
+  "calendar": {
+    "modes": {
+      "week": "Week",
+      "month": "Month"
+    },
+    "selectedDate": {
+      "summarySingle": "1 task scheduled for this date.",
+      "summaryMultiple": "{{count}} tasks scheduled for this date.",
+      "empty": "No tasks for this day"
+    }
+  },
+  "deletion": {
+    "title": "Delete task",
+    "description": "\"{{title}}\" will be removed from the pipeline and you won't recover it from this view.",
+    "confirm": "Delete"
+  },
+  "modal": {
+    "titleEdit": "Edit task",
+    "titleNew": "New task",
+    "description": "Fill in the main info so the pipeline stays clear and actionable.",
+    "deleteButton": "Delete",
+    "deletingButton": "Deleting...",
+    "savingButton": "Saving...",
+    "saveEdit": "Save changes",
+    "saveNew": "Create task",
+    "fields": {
+      "title": "Title",
+      "description": "Description",
+      "client": "Client",
+      "clientPlaceholder": "Search Directory or type a new client",
+      "directoryEyebrow": "Directory",
+      "contactsCount": "{{count}} contacts",
+      "selected": "Selected",
+      "linkExisting": "Will be linked to {{name}}, existing in the directory.",
+      "willCreateNew": "Doesn't exist yet. {{name}} will be created as a new client.",
+      "selectOrCreate": "Select an existing client or type a new one.",
+      "value": "Value",
+      "dueDate": "Due date",
+      "startTime": "Start time",
+      "endTime": "End time",
+      "initialStatus": "Initial status",
+      "strategicGoal": "Strategic goal",
+      "noGoal": "No goal",
+      "unnamedGoal": "Unnamed"
+    },
+    "operationalDetails": "Operational Details",
+    "subtasks": "Sub-tasks",
+    "addSubtaskPlaceholder": "Add item...",
+    "addSubtask": "Add",
+    "addSubtaskAria": "Add sub-task",
+    "removeItemAria": "Remove item",
+    "checkPendingAria": "Mark pending",
+    "checkDoneAria": "Mark completed"
+  },
+  "toasts": {
+    "taskUpdated": "Task updated",
+    "taskCreated": "New task added to the pipeline",
+    "saveError": "Check the task data",
+    "checklistError": "Couldn't save the checklist",
+    "subtaskError": "Couldn't update the sub-task",
+    "taskDeleted": "Task deleted",
+    "syncSuccess": "Task synced with Google Calendar.",
+    "syncError": "We couldn't sync the task. Connect Google Calendar from Settings.",
+    "syncDownError": "We couldn't pull changes from Google Calendar.",
+    "rescheduleError": "We couldn't update the task."
+  }
+}

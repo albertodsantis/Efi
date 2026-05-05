@@ -36,14 +36,18 @@ import {
   Question,
   CalendarHeart,
 } from '@phosphor-icons/react';
+import { useTranslation } from 'react-i18next';
 import { useAppContext } from '../context/AppContext';
 import { EmptyState, StatusBadge, SurfaceCard, cx } from '../components/ui';
 import { toast } from '../lib/toast';
 import type { BadgeKey, Task, TaskStatus } from '@shared/domain';
+import type { Locale } from '@shared';
 import { formatLocalDateISO, parseLocalDate, startOfLocalDay } from '../lib/date';
 import EfisystemWidget from '../components/EfisystemWidget';
 import LevelsModal from '../components/LevelsModal';
 import { hapticSuccess } from '../lib/haptics';
+
+const localeToBcp47 = (locale: Locale): string => (locale === 'en' ? 'en-US' : 'es-ES');
 
 /* ── constants ──────────────────────────────────────────────── */
 
@@ -71,10 +75,14 @@ const pipelineBarColors: Record<TaskStatus, string> = {
   Cobrado: '#64748b',
 };
 
-const formatCurrency = (v: number) => `$${v.toLocaleString('es-ES')}`;
+const formatCurrency = (v: number, locale: Locale = 'es') =>
+  `$${v.toLocaleString(localeToBcp47(locale))}`;
 
-const formatTaskDate = (task: Task) =>
-  parseLocalDate(task.dueDate).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' });
+const formatTaskDate = (task: Task, locale: Locale = 'es') =>
+  parseLocalDate(task.dueDate).toLocaleDateString(localeToBcp47(locale), {
+    day: '2-digit',
+    month: 'short',
+  });
 
 /* ── GoalsMarquee ───────────────────────────────────────────── */
 
@@ -172,6 +180,8 @@ function TaskCard({
   accentHex: string;
   onComplete: (id: string) => void;
 }) {
+  const { t } = useTranslation('dashboard');
+  const { locale } = useAppContext();
   return (
     <div className="group flex items-start gap-3 rounded-[0.85rem] border border-[var(--line-soft)] bg-[var(--surface-card)]/80 px-3.5 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-sm">
       <div className="min-w-0 flex-1">
@@ -179,15 +189,15 @@ function TaskCard({
           <h3 className="truncate text-[13px] font-bold text-[var(--text-primary)]">
             {task.title}
           </h3>
-          <StatusBadge tone={statusToneMap[task.status]}>{task.status}</StatusBadge>
+          <StatusBadge tone={statusToneMap[task.status]}>{t(`taskStatus.${task.status}`)}</StatusBadge>
         </div>
         <p className="mt-1.5 text-[11px] font-medium text-[var(--text-secondary)]">
-          {partner?.name || 'Sin cliente'} · {formatTaskDate(task)}
+          {partner?.name || t('taskCard.noPartner')} · {formatTaskDate(task, locale)}
         </p>
       </div>
       <div className="flex shrink-0 flex-col items-end gap-1.5">
         <p className="text-[13px] font-black text-[var(--text-primary)]">
-          {formatCurrency(task.value)}
+          {formatCurrency(task.value, locale)}
         </p>
         {task.status !== 'Completada' && task.status !== 'Cobrado' && (
           <button
@@ -196,7 +206,7 @@ function TaskCard({
             className="flex items-center gap-1 rounded-[0.7rem] bg-[var(--surface-muted)] px-2 py-1 text-[10px] font-bold text-[var(--text-secondary)] transition-colors hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-500/15 dark:hover:text-emerald-400"
           >
             <CheckCircle size={12} />
-            Completar
+            {t('taskCard.complete')}
           </button>
         )}
       </div>
@@ -217,6 +227,8 @@ function GoalEffortWidget({
   accentHex: string;
   accentGradient: string;
 }) {
+  const { t } = useTranslation('dashboard');
+  const { locale } = useAppContext();
   const distribution = useMemo(() => {
     const goalMap = new Map<string, { name: string; taskCount: number; value: number }>();
     for (const g of goals) {
@@ -268,7 +280,7 @@ function GoalEffortWidget({
       color: COLORS[i % COLORS.length],
     })),
     ...(distribution.unassignedCount > 0
-      ? [{ label: 'Sin objetivo', count: distribution.unassignedCount, value: distribution.unassignedValue, color: '#94a3b8' }]
+      ? [{ label: t('goalEffort.noGoal'), count: distribution.unassignedCount, value: distribution.unassignedValue, color: '#94a3b8' }]
       : []),
   ];
 
@@ -277,7 +289,7 @@ function GoalEffortWidget({
       <div className="flex items-center gap-2">
         <Target size={14} className="text-[var(--text-secondary)]" />
         <p className="text-[11px] font-bold tracking-[0.18em] text-[var(--text-secondary)] uppercase">
-          Tareas por objetivo
+          {t('goalEffort.title')}
         </p>
       </div>
 
@@ -309,7 +321,7 @@ function GoalEffortWidget({
               <span className="shrink-0 text-[var(--text-secondary)]">({item.count})</span>
             </div>
             <span className="shrink-0 font-bold text-[var(--text-secondary)]">
-              ${item.value.toLocaleString('es-ES')}
+              ${item.value.toLocaleString(localeToBcp47(locale))}
             </span>
           </div>
         ))}
@@ -331,15 +343,19 @@ function RevenueChart({
   accentGradient: string;
   pipelineHasCobrado: boolean;
 }) {
+  const { t } = useTranslation('dashboard');
+  const { locale } = useAppContext();
   const [hoveredMonth, setHoveredMonth] = useState<number | null>(null);
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth();
-  const collectedLabel = pipelineHasCobrado ? 'Cobrado' : 'Ingresos';
+  const collectedLabel = pipelineHasCobrado
+    ? t('revenueChart.collected')
+    : t('revenueChart.income');
 
   const monthlyData = useMemo(() => {
     const months = Array.from({ length: 12 }, (_, i) => ({
       index: i,
-      label: new Date(currentYear, i).toLocaleDateString('es-ES', { month: 'short' }),
+      label: new Date(currentYear, i).toLocaleDateString(localeToBcp47(locale), { month: 'short' }),
       projected: 0,
       collected: 0,
     }));
@@ -368,7 +384,7 @@ function RevenueChart({
     });
 
     return months;
-  }, [tasks, currentYear, pipelineHasCobrado]);
+  }, [tasks, currentYear, pipelineHasCobrado, locale]);
 
   const maxValue = Math.max(...monthlyData.flatMap((m) => [m.projected, m.collected]), 1);
   const BAR_HEIGHT = 140;
@@ -380,7 +396,7 @@ function RevenueChart({
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-[11px] font-bold tracking-[0.18em] text-[var(--text-secondary)] uppercase">
-            Ingresos {currentYear}
+            {t('revenueChart.yearTitle', { year: currentYear })}
           </p>
           <div className="mt-2 flex items-center gap-4 text-[11px] font-medium text-[var(--text-secondary)]">
             <span className="flex items-center gap-1.5">
@@ -388,7 +404,7 @@ function RevenueChart({
                 className="inline-block h-2.5 w-2.5 rounded-[3px]"
                 style={{ backgroundColor: `${accentHex}35` }}
               />
-              Proyectado
+              {t('revenueChart.projected')}
             </span>
             <span className="flex items-center gap-1.5">
               <span
@@ -402,10 +418,10 @@ function RevenueChart({
         <div className="flex gap-6 text-right">
           <div>
             <p className="text-[10px] font-bold tracking-[0.12em] text-[var(--text-secondary)] uppercase">
-              Proyectado
+              {t('revenueChart.projected')}
             </p>
             <p className="text-lg font-black text-[var(--text-primary)]">
-              {formatCurrency(yearProjected)}
+              {formatCurrency(yearProjected, locale)}
             </p>
           </div>
           <div>
@@ -413,7 +429,7 @@ function RevenueChart({
               {collectedLabel}
             </p>
             <p className="text-lg font-black" style={{ color: accentHex }}>
-              {formatCurrency(yearCollected)}
+              {formatCurrency(yearCollected, locale)}
             </p>
           </div>
         </div>
@@ -450,13 +466,13 @@ function RevenueChart({
                     {month.label} {currentYear}
                   </p>
                   <p className="mt-0.5 whitespace-nowrap text-[11px] font-bold text-[var(--text-primary)]">
-                    {formatCurrency(month.projected)} proy.
+                    {formatCurrency(month.projected, locale)} {t('revenueChart.tooltipProjectedSuffix')}
                   </p>
                   <p
                     className="whitespace-nowrap text-[11px] font-bold"
                     style={{ color: accentHex }}
                   >
-                    {formatCurrency(month.collected)} {pipelineHasCobrado ? 'cobr.' : 'ingr.'}
+                    {formatCurrency(month.collected, locale)} {pipelineHasCobrado ? t('revenueChart.tooltipCollectedSuffix') : t('revenueChart.tooltipIncomeSuffix')}
                   </p>
                 </div>
               )}
@@ -503,92 +519,77 @@ function RevenueChart({
 
 interface BadgeDef {
   key: BadgeKey;
-  label: string;
-  description: string;
   icon: React.ElementType;
   secret?: boolean;           // cuando está bloqueada se muestra como "???"
-  secretHint?: string;        // descripción críptica mientras está bloqueada
 }
 
 interface BadgeSection {
   id: string;
-  title: string;
-  subtitle: string;
   badges: BadgeDef[];
 }
 
 const SECTIONS: BadgeSection[] = [
   {
     id: 'primeros-pasos',
-    title: 'Primeros Pasos',
-    subtitle: 'Los cimientos de tu operación',
     badges: [
-      { key: 'perfil_estelar',    label: 'EfiLink Activado', description: 'Empezaste a construir tu EfiLink',     icon: Star },
-      { key: 'primer_trazo',      label: 'Primer Trazo',     description: 'Creaste tu primera entrega',           icon: PencilSimpleLine },
-      { key: 'red_inicial',       label: 'Red Inicial',      description: 'Sumaste 2 socios a tu red',            icon: UserPlus },
-      { key: 'rumbo_fijo',        label: 'Rumbo Fijo',       description: 'Definiste 2 objetivos',                icon: Compass },
-      { key: 'vision_clara',      label: 'Visión Clara',     description: 'Definiste 3 objetivos estratégicos',   icon: Eye },
-      { key: 'identidad_propia',  label: 'Identidad Propia', description: 'Personalizaste tu color de acento',    icon: Palette },
+      { key: 'perfil_estelar',    icon: Star },
+      { key: 'primer_trazo',      icon: PencilSimpleLine },
+      { key: 'red_inicial',       icon: UserPlus },
+      { key: 'rumbo_fijo',        icon: Compass },
+      { key: 'vision_clara',      icon: Eye },
+      { key: 'identidad_propia',  icon: Palette },
     ],
   },
   {
     id: 'hitos',
-    title: 'Hitos',
-    subtitle: 'La huella de tu volumen',
     badges: [
-      { key: 'motor_de_ideas',       label: 'Motor de Ideas',       description: 'Creaste 5 entregas',                     icon: Rocket },
-      { key: 'fabrica_de_proyectos', label: 'Fábrica de Proyectos', description: 'Creaste 25 entregas',                    icon: Stack },
-      { key: 'promesa_cumplida',     label: 'Promesa Cumplida',     description: 'Completaste 10 entregas',                icon: Medal },
-      { key: 'creador_imparable',    label: 'Creador Imparable',    description: 'Completaste 25 entregas',                icon: Target },
-      { key: 'negocio_en_marcha',    label: 'Negocio en Marcha',    description: 'Cobraste 5 entregas',                    icon: CurrencyDollar },
-      { key: 'lluvia_de_billetes',   label: 'Lluvia de Billetes',   description: 'Cobraste 20 entregas',                   icon: Money },
-      { key: 'circulo_intimo',       label: 'Círculo Íntimo',       description: 'Agregaste 5 socios a tu red',            icon: Users },
-      { key: 'directorio_dorado',    label: 'Directorio Dorado',    description: '10 socios y 10 contactos en tu red',     icon: Trophy },
+      { key: 'motor_de_ideas',       icon: Rocket },
+      { key: 'fabrica_de_proyectos', icon: Stack },
+      { key: 'promesa_cumplida',     icon: Medal },
+      { key: 'creador_imparable',    icon: Target },
+      { key: 'negocio_en_marcha',    icon: CurrencyDollar },
+      { key: 'lluvia_de_billetes',   icon: Money },
+      { key: 'circulo_intimo',       icon: Users },
+      { key: 'directorio_dorado',    icon: Trophy },
     ],
   },
   {
     id: 'habitos',
-    title: 'Hábitos',
-    subtitle: 'Cómo trabajás, no cuánto',
     badges: [
-      { key: 'madrugador',           label: 'Madrugador',           description: 'Creaste entregas antes de las 8am en 5 días distintos',      icon: Sun },
-      { key: 'noctambulo',           label: 'Noctámbulo',           description: 'Creaste entregas después de las 11pm en 5 días distintos',   icon: Moon },
-      { key: 'cierre_limpio',        label: 'Cierre Limpio',        description: 'Completaste 5 entregas sin mover la fecha original',         icon: CheckSquare },
-      { key: 'cobrador_implacable',  label: 'Cobrador Implacable',  description: 'Cobraste 5 entregas en menos de 7 días',                     icon: Lightning },
-      { key: 'pipeline_zen',         label: 'Pipeline Zen',         description: '7 días seguidos sin entregas vencidas',                      icon: Leaf },
-      { key: 'visionario_cumplido',  label: 'Visionario Cumplido',  description: 'Alcanzaste 3 objetivos estratégicos',                        icon: Eye },
-      { key: 'conector',             label: 'Conector',             description: 'Contactaste a 10 socios en los últimos 30 días',             icon: UsersThree },
+      { key: 'madrugador',           icon: Sun },
+      { key: 'noctambulo',           icon: Moon },
+      { key: 'cierre_limpio',        icon: CheckSquare },
+      { key: 'cobrador_implacable',  icon: Lightning },
+      { key: 'pipeline_zen',         icon: Leaf },
+      { key: 'visionario_cumplido',  icon: Eye },
+      { key: 'conector',             icon: UsersThree },
     ],
   },
   {
     id: 'rachas',
-    title: 'Rachas y Constancia',
-    subtitle: 'Aparecer todos los días cuenta',
     badges: [
-      { key: 'en_la_zona',         label: 'En la Zona',       description: '3 días seguidos activos',                         icon: Flame },
-      { key: 'racha_de_hierro',    label: 'Racha de Hierro',  description: '7 días seguidos activos',                         icon: Flame },
-      { key: 'inamovible',         label: 'Inamovible',       description: '30 días seguidos activos',                        icon: Flame },
-      { key: 'semana_perfecta',    label: 'Semana Perfecta',  description: '1 semana con ≥3 completadas y 0 vencidas',        icon: CalendarCheck },
-      { key: 'mes_de_oro',         label: 'Mes de Oro',       description: '4 semanas perfectas en un mismo mes',             icon: CalendarHeart },
+      { key: 'en_la_zona',         icon: Flame },
+      { key: 'racha_de_hierro',    icon: Flame },
+      { key: 'inamovible',         icon: Flame },
+      { key: 'semana_perfecta',    icon: CalendarCheck },
+      { key: 'mes_de_oro',         icon: CalendarHeart },
     ],
   },
   {
     id: 'leyenda',
-    title: 'Leyenda',
-    subtitle: 'Las raras - algunas ni siquiera las ves venir',
     badges: [
-      { key: 'fundador',       label: 'Fundador',  description: 'Formaste parte de la etapa beta de Efi', icon: SealCheck },
-      { key: 'tres_en_un_dia', label: 'Secreta',   description: 'Algunos logros no se anuncian',          icon: Question, secret: true, secretHint: 'Algunos logros no se anuncian' },
-      { key: 'cobro_finde',    label: 'Secreta',   description: 'Algunos logros no se anuncian',          icon: Question, secret: true, secretHint: 'Algunos logros no se anuncian' },
-      { key: 'icono_efi',      label: 'Ícono Efi', description: 'Desbloqueaste 25 placas',                icon: Crown },
+      { key: 'fundador',       icon: SealCheck },
+      { key: 'tres_en_un_dia', icon: Question, secret: true },
+      { key: 'cobro_finde',    icon: Question, secret: true },
+      { key: 'icono_efi',      icon: Crown },
     ],
   },
 ];
 
-// Labels reales de las placas secretas, mostrados sólo cuando ya están desbloqueadas.
-const SECRET_REVEALED: Partial<Record<BadgeKey, { label: string; description: string; icon: React.ElementType }>> = {
-  tres_en_un_dia: { label: 'Triple Jornada',  description: 'Completaste 3 entregas el mismo día', icon: Lightning },
-  cobro_finde:    { label: 'Fin de Semana ',  description: 'Cobraste una entrega un sábado o domingo', icon: Money },
+// Icons for secret badges once unlocked (the label/description are read from i18n).
+const SECRET_REVEALED_ICONS: Partial<Record<BadgeKey, React.ElementType>> = {
+  tres_en_un_dia: Lightning,
+  cobro_finde: Money,
 };
 
 const ALL_BADGES: BadgeDef[] = SECTIONS.flatMap(s => s.badges);
@@ -715,16 +716,19 @@ const BADGE_MATERIALS: Record<BadgeKey, MaterialStyle> = Object.fromEntries(
 ) as Record<BadgeKey, MaterialStyle>;
 
 function BadgeTile({ badge, unlocked, accentHex }: { badge: BadgeDef; unlocked: boolean; accentHex: string }) {
+  const { t } = useTranslation('dashboard');
   const mat = BADGE_MATERIALS[badge.key];
 
   // Secret badges show a muted mystery label/icon until unlocked.
   const isSecretLocked = !!badge.secret && !unlocked;
-  const revealed = unlocked && badge.secret ? SECRET_REVEALED[badge.key] : null;
-  const displayLabel = revealed?.label ?? badge.label;
+  const revealedIcon = unlocked && badge.secret ? SECRET_REVEALED_ICONS[badge.key] : null;
+  const displayLabel = badge.secret && !unlocked
+    ? t('badges.labels.secretLocked')
+    : t(`badges.labels.${badge.key}`);
   const displayDescription = isSecretLocked
-    ? (badge.secretHint ?? 'Algunos logros no se anuncian')
-    : (revealed?.description ?? badge.description);
-  const DisplayIcon = revealed?.icon ?? badge.icon;
+    ? t('badges.secretHint')
+    : t(`badges.descriptions.${badge.key}`);
+  const DisplayIcon = revealedIcon ?? badge.icon;
 
   // Extract a more opaque spotlight color from the border color
   const spotlightColor = mat.tileBorderColor.replace(/rgba\(([^,]+,[^,]+,[^,]+),.*\)/, 'rgba($1,0.40)');
@@ -800,7 +804,7 @@ function BadgeTile({ badge, unlocked, accentHex }: { badge: BadgeDef; unlocked: 
           className="text-[11px] font-semibold leading-tight"
           style={{ color: unlocked ? '#d0d0e0' : isSecretLocked ? '#7a7a88' : '#606068' }}
         >
-          {isSecretLocked ? '???' : displayLabel}
+          {isSecretLocked ? t('badges.lockedSecret') : displayLabel}
         </p>
         <p
           className="mt-0.5 text-[10px] leading-tight"
@@ -816,6 +820,7 @@ function BadgeTile({ badge, unlocked, accentHex }: { badge: BadgeDef; unlocked: 
 /* ── BadgesDrawer ───────────────────────────────────────────── */
 
 function BadgesDrawer({ unlockedBadges, onClose, accentHex }: { unlockedBadges: BadgeKey[]; onClose: () => void; accentHex: string }) {
+  const { t } = useTranslation('dashboard');
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -855,9 +860,9 @@ function BadgesDrawer({ unlockedBadges, onClose, accentHex }: { unlockedBadges: 
           style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}
         >
           <div>
-            <h2 className="text-base font-bold" style={{ color: '#dcdcf0' }}>Sala de Placas</h2>
+            <h2 className="text-base font-bold" style={{ color: '#dcdcf0' }}>{t('badgesDrawer.title')}</h2>
             <p className="mt-0.5 text-xs" style={{ color: `${accentHex}88` }}>
-              {unlockedBadges.length} de {ALL_BADGES.length} ganados
+              {t('badgesDrawer.progress', { unlocked: unlockedBadges.length, total: ALL_BADGES.length })}
             </p>
           </div>
           <button
@@ -887,13 +892,13 @@ function BadgesDrawer({ unlockedBadges, onClose, accentHex }: { unlockedBadges: 
                         className="text-[10px] font-bold tracking-[0.18em] uppercase shrink-0"
                         style={{ color: '#dcdcf0' }}
                       >
-                        {section.title}
+                        {t(`badges.sections.${section.id}.title`)}
                       </h3>
                       <p
                         className="truncate text-[10px]"
                         style={{ color: '#787890' }}
                       >
-                        {section.subtitle}
+                        {t(`badges.sections.${section.id}.subtitle`)}
                       </p>
                     </div>
                     <span
@@ -927,7 +932,8 @@ function BadgesDrawer({ unlockedBadges, onClose, accentHex }: { unlockedBadges: 
 /* ── Dashboard ──────────────────────────────────────────────── */
 
 export default function Dashboard() {
-  const { tasks, partners, accentColor, accentHex, accentGradient, updateTaskStatus, profile, efisystem, pipelineHasCobrado } = useAppContext();
+  const { tasks, partners, accentColor, accentHex, accentGradient, updateTaskStatus, profile, efisystem, pipelineHasCobrado, locale } = useAppContext();
+  const { t } = useTranslation('dashboard');
   const today = new Date();
   const todayIso = formatLocalDateISO(today);
   const startOfToday = startOfLocalDay(today);
@@ -944,13 +950,13 @@ export default function Dashboard() {
   const [periodYear, setPeriodYear] = useState(today.getFullYear());
 
   const periodLabel = useMemo(() => {
-    if (periodView === 'all') return 'Todo';
+    if (periodView === 'all') return t('period.all');
     if (periodView === 'year') return String(periodYear);
-    return new Date(periodYear, periodMonth).toLocaleDateString('es-ES', {
+    return new Date(periodYear, periodMonth).toLocaleDateString(localeToBcp47(locale), {
       month: 'long',
       year: 'numeric',
     }).replace(/^\w/, (c) => c.toUpperCase());
-  }, [periodView, periodMonth, periodYear]);
+  }, [periodView, periodMonth, periodYear, locale, t]);
 
   const navigatePeriod = (dir: -1 | 1) => {
     if (periodView === 'month') {
@@ -978,9 +984,9 @@ export default function Dashboard() {
     try {
       await hapticSuccess();
       await updateTaskStatus(taskId, 'Completada');
-      toast.success('¡Tarea completada!');
+      toast.success(t('toasts.taskCompleted'));
     } catch {
-      toast.error('Error al actualizar la tarea');
+      toast.error(t('toasts.taskCompleteError'));
     }
   };
 
@@ -1166,7 +1172,7 @@ export default function Dashboard() {
                     <button
                       type="button"
                       onClick={() => navigatePeriod(-1)}
-                      aria-label="Período anterior"
+                      aria-label={t('period.previousAriaLabel')}
                       className="rounded-lg p-1 text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]"
                     >
                       <CaretLeft size={16} />
@@ -1179,7 +1185,7 @@ export default function Dashboard() {
                     <button
                       type="button"
                       onClick={() => navigatePeriod(1)}
-                      aria-label="Período siguiente"
+                      aria-label={t('period.nextAriaLabel')}
                       className="rounded-lg p-1 text-[var(--text-secondary)] transition-colors hover:bg-[var(--surface-muted)] hover:text-[var(--text-primary)]"
                     >
                       <CaretRight size={16} />
@@ -1188,9 +1194,9 @@ export default function Dashboard() {
                 </div>
                 <div className="flex items-center gap-1 rounded-[0.6rem] bg-[var(--surface-muted)]/70 p-0.5">
                   {([
-                    { key: 'month' as const, label: 'Mes' },
-                    { key: 'year' as const, label: 'Año' },
-                    { key: 'all' as const, label: 'Todo' },
+                    { key: 'month' as const, label: t('period.month') },
+                    { key: 'year' as const, label: t('period.year') },
+                    { key: 'all' as const, label: t('period.all') },
                   ]).map((opt) => (
                     <button
                       key={opt.key}
@@ -1222,36 +1228,36 @@ export default function Dashboard() {
               <div className="mt-4 grid grid-cols-3 gap-x-3 gap-y-4 sm:gap-x-4">
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold tracking-[0.14em] text-[var(--text-secondary)] uppercase truncate">
-                    Abierto
+                    {t('kpis.open')}
                   </p>
                   <p className="mt-1 truncate text-lg font-black tracking-tight text-[var(--text-primary)] sm:text-xl">
-                    {formatCurrency(periodSummary.activePipelineValue)}
+                    {formatCurrency(periodSummary.activePipelineValue, locale)}
                   </p>
                 </div>
                 {pipelineHasCobrado ? (
                   <div className="min-w-0">
                     <p className="text-[10px] font-bold tracking-[0.14em] text-[var(--text-secondary)] uppercase truncate">
-                      Cobrado
+                      {t('kpis.collected')}
                     </p>
                     <p
                       className="mt-1 truncate text-lg font-black tracking-tight sm:text-xl"
                       style={{ color: accentHex }}
                     >
-                      {formatCurrency(periodSummary.closedPipelineValue)}
+                      {formatCurrency(periodSummary.closedPipelineValue, locale)}
                     </p>
                   </div>
                 ) : null}
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold tracking-[0.14em] text-[var(--text-secondary)] uppercase truncate">
-                    Por cobrar
+                    {t('kpis.toCollect')}
                   </p>
                   <p className="mt-1 truncate text-lg font-black tracking-tight text-amber-600 dark:text-amber-400 sm:text-xl">
-                    {formatCurrency(periodSummary.pendingPaymentValue)}
+                    {formatCurrency(periodSummary.pendingPaymentValue, locale)}
                   </p>
                 </div>
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold tracking-[0.14em] text-[var(--text-secondary)] uppercase truncate">
-                    Entregas
+                    {t('kpis.deliveries')}
                   </p>
                   <p className="mt-1 truncate text-lg font-black tracking-tight text-[var(--text-primary)] sm:text-xl">
                     {periodSummary.deliveriesCount}
@@ -1259,7 +1265,7 @@ export default function Dashboard() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold tracking-[0.14em] text-[var(--text-secondary)] uppercase truncate">
-                    Clientes
+                    {t('kpis.clients')}
                   </p>
                   <p className="mt-1 truncate text-lg font-black tracking-tight text-[var(--text-primary)] sm:text-xl">
                     {periodSummary.activePartners}
@@ -1270,7 +1276,7 @@ export default function Dashboard() {
                 </div>
                 <div className="min-w-0">
                   <p className="text-[10px] font-bold tracking-[0.14em] text-[var(--text-secondary)] uppercase truncate">
-                    Contactos
+                    {t('kpis.contacts')}
                   </p>
                   <p className="mt-1 truncate text-lg font-black tracking-tight text-[var(--text-primary)] sm:text-xl">
                     {periodSummary.totalContacts}
@@ -1283,11 +1289,11 @@ export default function Dashboard() {
                 <div className="mt-4 rounded-[0.7rem] bg-[var(--surface-muted)]/60 px-3.5 py-3">
                   <div className="flex items-center justify-between">
                     <p className="text-[10px] font-bold tracking-[0.12em] text-[var(--text-secondary)] uppercase">
-                      Meta anual
+                      {t('annualGoal.title')}
                     </p>
                     <p className="text-[11px] font-bold text-[var(--text-secondary)]">
-                      {formatCurrency(annualRevenue)} /{' '}
-                      {formatCurrency(estimatedRevenue)}
+                      {formatCurrency(annualRevenue, locale)} /{' '}
+                      {formatCurrency(estimatedRevenue, locale)}
                     </p>
                   </div>
                   <div className="mt-2 h-2 overflow-hidden rounded-full bg-[var(--surface-inset)]">
@@ -1300,7 +1306,7 @@ export default function Dashboard() {
                     />
                   </div>
                   <p className="mt-1.5 text-[10px] font-medium text-[var(--text-secondary)]">
-                    {Math.round((annualRevenue / estimatedRevenue) * 100)}% alcanzado
+                    {t('annualGoal.achieved', { percent: Math.round((annualRevenue / estimatedRevenue) * 100) })}
                   </p>
                 </div>
               )}
@@ -1311,9 +1317,9 @@ export default function Dashboard() {
           <SurfaceCard className="p-5 lg:p-6">
             <div className="flex items-center justify-between">
               <p className="text-[11px] font-bold tracking-[0.18em] text-[var(--text-secondary)] uppercase">
-                Pipeline
+                {t('pipeline.title')}
               </p>
-              <StatusBadge tone="neutral">{totalBreakdownCount} tareas</StatusBadge>
+              <StatusBadge tone="neutral">{t('pipeline.taskCount', { count: totalBreakdownCount })}</StatusBadge>
             </div>
 
             {/* Segmented bar */}
@@ -1346,10 +1352,10 @@ export default function Dashboard() {
                 >
                   <div className="flex min-w-0 items-center gap-2">
                     <StatusBadge tone={statusToneMap[item.status]}>{item.count}</StatusBadge>
-                    <span className="truncate font-medium text-[var(--text-primary)]">{item.status}</span>
+                    <span className="truncate font-medium text-[var(--text-primary)]">{t(`taskStatus.${item.status}`)}</span>
                   </div>
                   <span className="shrink-0 font-bold text-[var(--text-secondary)]">
-                    {formatCurrency(item.value)}
+                    {formatCurrency(item.value, locale)}
                   </span>
                 </div>
               ))}
@@ -1371,7 +1377,7 @@ export default function Dashboard() {
         <div className="order-1 min-w-0 space-y-5 xl:order-2">
         <SurfaceCard className="p-5 lg:p-6">
           <p className="text-[11px] font-bold tracking-[0.18em] text-[var(--text-secondary)] uppercase">
-            Agenda
+            {t('agenda.title')}
           </p>
 
           {hasAgendaItems ? (
@@ -1379,7 +1385,7 @@ export default function Dashboard() {
               {/* Overdue */}
               {groupedAgenda.overdue.length > 0 && (
                 <AgendaGroup
-                  label={`Retrasadas (${groupedAgenda.overdue.length})`}
+                  label={t('agenda.groups.overdue', { count: groupedAgenda.overdue.length })}
                   icon={<Clock size={13} className="text-amber-500" />}
                   labelClassName="text-amber-600 dark:text-amber-400"
                   tasks={groupedAgenda.overdue}
@@ -1392,7 +1398,7 @@ export default function Dashboard() {
               {/* Today */}
               {groupedAgenda.todayTasks.length > 0 && (
                 <AgendaGroup
-                  label={`Hoy (${groupedAgenda.todayTasks.length})`}
+                  label={t('agenda.groups.today', { count: groupedAgenda.todayTasks.length })}
                   tasks={groupedAgenda.todayTasks}
                   partners={partners}
                   accentHex={accentHex}
@@ -1403,7 +1409,7 @@ export default function Dashboard() {
               {/* Tomorrow */}
               {groupedAgenda.tomorrowTasks.length > 0 && (
                 <AgendaGroup
-                  label={`Mañana (${groupedAgenda.tomorrowTasks.length})`}
+                  label={t('agenda.groups.tomorrow', { count: groupedAgenda.tomorrowTasks.length })}
                   tasks={groupedAgenda.tomorrowTasks}
                   partners={partners}
                   accentHex={accentHex}
@@ -1414,7 +1420,7 @@ export default function Dashboard() {
               {/* This week */}
               {groupedAgenda.thisWeekTasks.length > 0 && (
                 <AgendaGroup
-                  label={`Esta semana (${groupedAgenda.thisWeekTasks.length})`}
+                  label={t('agenda.groups.thisWeek', { count: groupedAgenda.thisWeekTasks.length })}
                   tasks={groupedAgenda.thisWeekTasks}
                   partners={partners}
                   accentHex={accentHex}
@@ -1425,8 +1431,8 @@ export default function Dashboard() {
           ) : (
             <EmptyState
               icon={CalendarDot}
-              title="Día libre de entregas"
-              description="Aprovecha el tiempo para prospectar nuevos clientes o planificar contenido."
+              title={t('agenda.empty.title')}
+              description={t('agenda.empty.description')}
               className="py-10"
             />
           )}
@@ -1438,11 +1444,11 @@ export default function Dashboard() {
               <div className="flex items-center gap-2">
                 <Money size={16} className="text-emerald-500" />
                 <p className="text-[11px] font-bold tracking-[0.18em] text-[var(--text-secondary)] uppercase">
-                  Por cobrar
+                  {t('toCollect.title')}
                 </p>
               </div>
               <p className="text-[13px] font-black text-[var(--text-primary)]">
-                {formatCurrency(toCollectTotal)}
+                {formatCurrency(toCollectTotal, locale)}
               </p>
             </div>
             <div className="mt-4 space-y-2">

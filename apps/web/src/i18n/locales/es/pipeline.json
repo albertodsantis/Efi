@@ -1,0 +1,169 @@
+{
+  "weekdaysShort": {
+    "0": "Dom",
+    "1": "Lun",
+    "2": "Mar",
+    "3": "Mié",
+    "4": "Jue",
+    "5": "Vie",
+    "6": "Sáb"
+  },
+  "monthCalendarWeekdays": ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"],
+  "weekCalendar": {
+    "previousAria": "Semana anterior",
+    "nextAria": "Semana siguiente",
+    "today": "Hoy",
+    "allDay": "Todo el día"
+  },
+  "monthCalendar": {
+    "previousAria": "Mes anterior",
+    "nextAria": "Mes siguiente",
+    "monthlyView": "Vista mensual",
+    "moreCount": "+{{count}} más",
+    "agendaForDay": "Agenda del día",
+    "agendaForMonth": "Agenda del mes",
+    "viewMonth": "Ver mes",
+    "summarySingle": "1 tarea programada en este bloque de tiempo.",
+    "summaryMultiple": "{{count}} tareas programadas en este bloque de tiempo.",
+    "emptyDescription": "No hay tareas programadas en este bloque de tiempo.",
+    "emptyState": {
+      "title": "Sin tareas programadas",
+      "description": "Selecciona otro día o crea una nueva entrega para poblar el calendario."
+    }
+  },
+  "relativeTime": {
+    "today": "Hoy",
+    "tomorrow": "Mañana",
+    "yesterday": "Ayer",
+    "inDays": "En {{count}} días",
+    "daysAgo": "Hace {{count}} días"
+  },
+  "taskStatus": {
+    "Pendiente": "Pendiente",
+    "En Progreso": "En Progreso",
+    "En Revisión": "En Revisión",
+    "Completada": "Completada",
+    "Cobrado": "Cobrado"
+  },
+  "noPartner": "Sin cliente",
+  "header": {
+    "tabs": {
+      "kanban": "Kanban",
+      "list": "Lista",
+      "calendar": "Calendario"
+    },
+    "settingsAria": "Ajustes del pipeline",
+    "settingsTitle": "Ajustes del pipeline",
+    "searchPlaceholder": "Buscar en tareas o clientes...",
+    "filtersButton": "Filtros",
+    "filtersTitle": "Filtros",
+    "clearAll": "Limpiar todo",
+    "filterStatus": "Estado",
+    "filterClient": "Cliente",
+    "newTask": "Nueva tarea"
+  },
+  "kanban": {
+    "mobilePagination": "{{current}} de {{total}}",
+    "previousPhaseAria": "Ver fase anterior",
+    "nextPhaseAria": "Ver siguiente fase",
+    "emptyMobile": {
+      "title": "No hay tareas aquí",
+      "description": "Cuando muevas tareas o crees una nueva, aparecerán aquí."
+    },
+    "emptyColumn": {
+      "title": "Sin tareas aquí",
+      "description": "Añade una entrega o mueve una tarea para equilibrar el flujo."
+    }
+  },
+  "list": {
+    "headers": {
+      "task": "Tarea",
+      "delivery": "Entrega",
+      "value": "Valor",
+      "status": "Estado"
+    },
+    "empty": {
+      "title": "Todavía no hay tareas",
+      "description": "Añade tu primera entrega para empezar a construir el pipeline.",
+      "createButton": "Crear tarea"
+    }
+  },
+  "card": {
+    "noDescription": "Sin descripción todavía.",
+    "viewLess": "Ver menos",
+    "viewMore": "Ver {{count}} más",
+    "calendarActive": "Calendar activo",
+    "notSynced": "Sin sincronizar",
+    "calendarBadge": "Calendar",
+    "syncTitleUpdate": "Actualizar en Google Calendar",
+    "syncTitleNew": "Sincronizar con Google Calendar",
+    "syncAria": "Sincronizar con Google Calendar",
+    "editAria": "Editar {{title}}"
+  },
+  "calendar": {
+    "modes": {
+      "week": "Semana",
+      "month": "Mes"
+    },
+    "selectedDate": {
+      "summarySingle": "1 tarea programada para esta fecha.",
+      "summaryMultiple": "{{count}} tareas programadas para esta fecha.",
+      "empty": "No hay tareas para este día"
+    }
+  },
+  "deletion": {
+    "title": "Eliminar tarea",
+    "description": "Se eliminará \"{{title}}\" del pipeline y no podrás recuperarla desde esta vista.",
+    "confirm": "Eliminar"
+  },
+  "modal": {
+    "titleEdit": "Editar tarea",
+    "titleNew": "Nueva tarea",
+    "description": "Completa la información principal para que el pipeline se mantenga claro y accionable.",
+    "deleteButton": "Eliminar",
+    "deletingButton": "Eliminando...",
+    "savingButton": "Guardando...",
+    "saveEdit": "Guardar cambios",
+    "saveNew": "Crear tarea",
+    "fields": {
+      "title": "Título",
+      "description": "Descripción",
+      "client": "Cliente",
+      "clientPlaceholder": "Busca en Directorio o escribe un cliente nuevo",
+      "directoryEyebrow": "Directorio",
+      "contactsCount": "{{count}} contactos",
+      "selected": "Seleccionada",
+      "linkExisting": "Se vinculará con {{name}}, existente en el directorio.",
+      "willCreateNew": "No existe todavía. {{name}} se creará como nuevo cliente.",
+      "selectOrCreate": "Selecciona un cliente existente o escribe uno nuevo.",
+      "value": "Valor",
+      "dueDate": "Fecha límite",
+      "startTime": "Hora inicio",
+      "endTime": "Hora fin",
+      "initialStatus": "Estado inicial",
+      "strategicGoal": "Objetivo estratégico",
+      "noGoal": "Sin objetivo",
+      "unnamedGoal": "Sin nombre"
+    },
+    "operationalDetails": "Detalles Operativos",
+    "subtasks": "Sub-Tareas",
+    "addSubtaskPlaceholder": "Añadir elemento...",
+    "addSubtask": "Añadir",
+    "addSubtaskAria": "Añadir sub-tarea",
+    "removeItemAria": "Eliminar elemento",
+    "checkPendingAria": "Marcar pendiente",
+    "checkDoneAria": "Marcar completado"
+  },
+  "toasts": {
+    "taskUpdated": "Tarea actualizada correctamente",
+    "taskCreated": "Nueva tarea añadida al pipeline",
+    "saveError": "Revisa los datos de la tarea",
+    "checklistError": "Error al guardar el checklist",
+    "subtaskError": "Error al actualizar la sub-tarea",
+    "taskDeleted": "Tarea eliminada",
+    "syncSuccess": "Tarea sincronizada con Google Calendar.",
+    "syncError": "No pudimos sincronizar la tarea. Conecta Google Calendar desde Ajustes.",
+    "syncDownError": "No pudimos traer cambios desde Google Calendar.",
+    "rescheduleError": "No pudimos actualizar la tarea."
+  }
+}
